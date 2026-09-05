@@ -1,0 +1,150 @@
+import "server-only";
+import Anthropic from "@anthropic-ai/sdk";
+import {
+  hydratePrediction,
+  isCompactPrediction,
+  type HydratedPrediction,
+} from "@/lib/hydrate";
+import type { FixtureStatsContext } from "@/lib/api-football";
+
+/**
+ * Token-optimized prediction service.
+ *
+ * Two cost levers, per project spec:
+ *  1. Prompt caching — the system instructions (rules + output schema) are
+ *     identical on every call, so they're marked `cache_control: ephemeral`
+ *     and reused across every batch in a run.
+ *  2. Compact output — Claude replies with single-letter JSON keys instead
+ *     of prose-labeled fields, cutting completion tokens. `lib/hydrate.ts`
+ *     expands that shorthand into UI/DB-ready labels afterward.
+ */
+
+const DEFAULT_MODEL = "claude-sonnet-5";
+const BATCH_SIZE = 8; // fixtures per Claude call — keeps prompts small & cacheable
+
+export interface FixtureContext {
+  matchId: number;
+  homeTeam: string;
+  awayTeam: string;
+  leagueName: string;
+  kickoff: string; // ISO date
+  /** Recent-form / head-to-head / stats context fetched from API-Football. */
+  stats: FixtureStatsContext;
+}
+
+const SYSTEM_PROMPT = `You are a football (soccer) prediction analyst for SoccerRadar.
+
+For each fixture provided, analyze the supplied stats (recent form, head-to-head, home/away splits) and predict the following markets. Respond ONLY with a compact JSON array — no prose, no markdown fences, no explanation outside the JSON.
+
+Each array element must have EXACTLY these keys:
+- "id": the match_id (integer), copied from the input
+- "o": full-time outcome, one of "1" (home win) | "X" (draw) | "2" (away win)
+- "ht": first-half outcome, same coding as "o"
+- "sh": highest scoring half, one of "1st" | "2nd" | "Equal"
+- "g": [over_1_5, over_2_5] each 0 or 1, whether total goals will exceed that line
+- "c": [over_7_5, over_8_5, ht_over_3_5] each 0 or 1, corner count over that line (last value is first-half corners over 3.5)
+- "conf": integer confidence score 1-100 for this prediction set
+- "sum": one short sentence (max ~25 words) of tactical reasoning
+
+Corner-market methodology: weigh head-to-head history for these two specific teams at least as heavily as current form. Look at the corner counts from their last 3 meetings (headToHead in the input) specifically:
+- If that history consistently shows high corner counts between these two teams, treat it as a strong signal corners will be high again this time — head-to-head tendencies between specific opponents tend to repeat (tactical matchups, playing styles) more than random chance would suggest.
+- If at least 2 of the last 3 meetings had low corner counts, treat that as a red flag against the over lines, even if current form looks corner-heavy.
+- Head-to-head history should inform the prediction, not override it outright — still weigh current form, and fall back to current form and team style when head-to-head data is sparse, absent, or fewer than 3 matches are available.
+
+Output strictly valid JSON: an array of objects with exactly those keys, no additional keys, no trailing commentary.`;
+
+function getAnthropicClient() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/** Strips markdown code fences if the model wraps the JSON despite instructions. */
+function extractJsonArray(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced ? fenced[1] : raw;
+  const start = candidate.indexOf("[");
+  const end = candidate.lastIndexOf("]");
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error("No JSON array found in model response");
+  }
+  return candidate.slice(start, end + 1);
+}
+
+function parseCompactResponse(raw: string): HydratedPrediction[] {
+  const json = extractJsonArray(raw);
+  const parsed: unknown = JSON.parse(json);
+  if (!Array.isArray(parsed)) {
+    throw new Error("Model response JSON is not an array");
+  }
+  return parsed.filter(isCompactPrediction).map(hydratePrediction);
+}
+
+async function predictBatch(
+  client: Anthropic,
+  batch: FixtureContext[],
+): Promise<HydratedPrediction[]> {
+  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
+
+  const userPayload = batch.map((fixture) => ({
+    id: fixture.matchId,
+    league: fixture.leagueName,
+    kickoff: fixture.kickoff,
+    home: fixture.homeTeam,
+    away: fixture.awayTeam,
+    stats: fixture.stats,
+  }));
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 400 * batch.length,
+    system: [
+      {
+        type: "text",
+        text: SYSTEM_PROMPT,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: JSON.stringify(userPayload),
+      },
+    ],
+  });
+
+  const textBlock = response.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("Anthropic response contained no text block");
+  }
+
+  return parseCompactResponse(textBlock.text);
+}
+
+/**
+ * Generates predictions for a set of fixtures, batching requests to keep
+ * prompts small while reusing the cached system prompt across batches.
+ * Batches run sequentially so a single API-Football/Claude rate limit
+ * doesn't cause a burst of failures.
+ */
+export async function generatePredictions(
+  fixtures: FixtureContext[],
+): Promise<HydratedPrediction[]> {
+  if (fixtures.length === 0) return [];
+
+  const client = getAnthropicClient();
+  const results: HydratedPrediction[] = [];
+
+  for (const batch of chunk(fixtures, BATCH_SIZE)) {
+    const batchResults = await predictBatch(client, batch);
+    results.push(...batchResults);
+  }
+
+  return results;
+}
