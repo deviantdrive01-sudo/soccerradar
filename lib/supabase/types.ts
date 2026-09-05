@@ -1,4 +1,4 @@
-import type { HydratedMarkets } from "@/lib/hydrate";
+import type { ActualResult, HydratedMarkets } from "@/lib/hydrate";
 
 export interface League {
   id: number;
@@ -19,6 +19,7 @@ export interface Prediction {
   markets: HydratedMarkets;
   confidence: number;
   summary: string;
+  actual_result: ActualResult | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,8 +46,11 @@ export interface Database {
       predictions: {
         Row: Row<Prediction>;
         Insert: Row<
-          Omit<Prediction, "id" | "created_at" | "updated_at"> & {
+          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result"> & {
             id?: number;
+            // Optional so upserts that omit it (e.g. the weekly cron re-fetching a
+            // fixture) don't clobber an actual_result already recorded for that match.
+            actual_result?: ActualResult | null;
           }
         >;
         Update: Row<Partial<Omit<Prediction, "id">>>;

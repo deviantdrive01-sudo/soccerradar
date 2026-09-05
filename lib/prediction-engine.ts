@@ -39,7 +39,8 @@ For each fixture provided, analyze the supplied stats (recent form, head-to-head
 Each array element must have EXACTLY these keys:
 - "id": the match_id (integer), copied from the input
 - "o": full-time outcome, one of "1" (home win) | "X" (draw) | "2" (away win)
-- "ht": first-half outcome, same coding as "o"
+- "ht": first-half-only outcome (goals scored in the 1st half only), same coding as "o"
+- "h2": second-half-only outcome (goals scored in the 2nd half only), same coding as "o" — predict this independently, don't just infer it from "o" and "ht", since a team can win the match overall while losing the second-half goal battle outright
 - "sh": highest scoring half, one of "1st" | "2nd" | "Equal"
 - "g": [over_1_5, over_2_5] each 0 or 1, whether total goals will exceed that line
 - "c": [over_7_5, over_8_5, ht_over_3_5] each 0 or 1, corner count over that line (last value is first-half corners over 3.5)

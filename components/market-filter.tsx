@@ -1,23 +1,28 @@
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { cn } from "cn";
 
-export type MarketFilter = "all" | "outcome" | "corners" | "goals";
+export type MarketFilter =
+  | "all"
+  | "ftDraw"
+  | "highestHalf"
+  | "winEitherHalf"
+  | "drawOrOver"
+  | "goals"
+  | "corners";
 
 const OPTIONS: { value: MarketFilter; label: string }[] = [
-  { value: "all", label: "All Markets" },
-  { value: "outcome", label: "Win / Draw / Win" },
-  { value: "corners", label: "Corners" },
+  { value: "all", label: "All" },
+  { value: "ftDraw", label: "FT Draw" },
+  { value: "highestHalf", label: "Highest Half" },
+  { value: "winEitherHalf", label: "Win Either Half" },
+  { value: "drawOrOver", label: "Draw/O2.5" },
   { value: "goals", label: "Goals" },
+  { value: "corners", label: "Corners" },
 ];
 
-export function MarketFilterSelect({
+export function MarketFilterToggle({
   value,
   onChange,
 }: {
@@ -25,17 +30,22 @@ export function MarketFilterSelect({
   onChange: (value: MarketFilter) => void;
 }) {
   return (
-    <Select value={value} onValueChange={(v) => onChange(v as MarketFilter)}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Filter markets" />
-      </SelectTrigger>
-      <SelectContent>
-        {OPTIONS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="inline-flex flex-wrap gap-0.5 rounded-md border border-border/60 p-0.5">
+      {OPTIONS.map((option) => (
+        <Button
+          key={option.value}
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => onChange(option.value)}
+          className={cn(
+            "h-7 whitespace-nowrap px-3",
+            value === option.value && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+          )}
+        >
+          {option.label}
+        </Button>
+      ))}
+    </div>
   );
 }

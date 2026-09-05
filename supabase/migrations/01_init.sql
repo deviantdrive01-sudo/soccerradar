@@ -76,7 +76,9 @@ insert into leagues (name, country, api_league_id, is_active) values
   ('Super League',           'Switzerland', 207, true),
   ('Superliga',              'Romania',     283, true),
   ('Brasileirão Série A',    'Brazil',      71,  true),
-  ('Liga Profesional Argentina', 'Argentina', 128, true)
+  ('Liga Profesional Argentina', 'Argentina', 128, true),
+  ('Primera Nacional',       'Argentina',   129, true),
+  ('Brasileiro Série B',     'Brazil',      72,  true)
 on conflict (api_league_id) do update
   set name = excluded.name,
       country = excluded.country,
