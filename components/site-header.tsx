@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BarChart3, Goal } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderSearch } from "@/components/header-search";
+import { HeaderAccount } from "@/components/header-account";
 
 export function SiteHeader() {
   return (
@@ -27,6 +28,7 @@ export function SiteHeader() {
             Track Record
           </Link>
           <ThemeToggle />
+          <HeaderAccount />
         </div>
       </div>
     </header>

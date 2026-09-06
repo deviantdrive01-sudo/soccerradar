@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
- * Single-admin app — any authenticated Supabase user is "the admin" (there's
- * no signup flow, so the only account that can ever exist is the one created
- * for this purpose). Redirects to the login page if there's no session.
+ * Requires a session AND profiles.is_admin — public sign-up now exists, so
+ * being logged in is no longer sufficient (see supabase/migrations/03_accounts.sql).
+ * Redirects to the admin login page otherwise.
  */
 export const verifySession = cache(async () => {
   const supabase = await createSupabaseServerClient();
@@ -15,6 +15,12 @@ export const verifySession = cache(async () => {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    redirect("/admin/login");
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
+
+  if (!profile?.is_admin) {
     redirect("/admin/login");
   }
 

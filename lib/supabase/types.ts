@@ -27,6 +27,34 @@ export interface AdEvent {
   created_at: string;
 }
 
+export interface Profile {
+  id: string;
+  username: string | null;
+  is_admin: boolean;
+  created_at: string;
+}
+
+export interface FavoriteCountry {
+  id: number;
+  user_id: string;
+  country: string;
+  created_at: string;
+}
+
+export interface FavoriteLeague {
+  id: number;
+  user_id: string;
+  league_id: number;
+  created_at: string;
+}
+
+export interface FavoriteMatch {
+  id: number;
+  user_id: string;
+  prediction_id: number;
+  created_at: string;
+}
+
 export interface Prediction {
   id: number;
   league_id: number;
@@ -84,6 +112,30 @@ export interface Database {
         Row: Row<AdEvent>;
         Insert: Row<Omit<AdEvent, "id" | "created_at"> & { id?: number }>;
         Update: Row<Partial<Omit<AdEvent, "id">>>;
+        Relationships: [];
+      };
+      profiles: {
+        Row: Row<Profile>;
+        Insert: Row<Partial<Omit<Profile, "created_at">> & { id: string }>;
+        Update: Row<Partial<Omit<Profile, "id" | "created_at">>>;
+        Relationships: [];
+      };
+      favorite_countries: {
+        Row: Row<FavoriteCountry>;
+        Insert: Row<Omit<FavoriteCountry, "id" | "created_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<FavoriteCountry, "id">>>;
+        Relationships: [];
+      };
+      favorite_leagues: {
+        Row: Row<FavoriteLeague>;
+        Insert: Row<Omit<FavoriteLeague, "id" | "created_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<FavoriteLeague, "id">>>;
+        Relationships: [];
+      };
+      favorite_matches: {
+        Row: Row<FavoriteMatch>;
+        Insert: Row<Omit<FavoriteMatch, "id" | "created_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<FavoriteMatch, "id">>>;
         Relationships: [];
       };
     };

@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CookieConsent } from "@/components/cookie-consent";
 import { AdSettingsProvider } from "@/components/ad-settings-provider";
+import { AccountProvider } from "@/components/account-provider";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import "./globals.css";
 
@@ -65,10 +66,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               : null
           }
         >
-          <SiteHeader />
-          {children}
-          <SiteFooter />
-          <CookieConsent />
+          <AccountProvider>
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+            <CookieConsent />
+          </AccountProvider>
         </AdSettingsProvider>
       </body>
     </html>

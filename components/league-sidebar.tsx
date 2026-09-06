@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "cn";
+import { FavoriteButton } from "@/components/favorite-button";
 import type { League } from "@/lib/supabase/types";
 
 export const ALL_LEAGUES = "all";
@@ -76,41 +77,51 @@ export function LeagueSidebar({
           const countryCount = countryLeagues.reduce((sum, l) => sum + (counts.get(l.id) ?? 0), 0);
           return (
           <div key={country}>
-            <button
-              type="button"
-              onClick={() => onChange(countryValue)}
+            <div
               className={cn(
-                "flex w-full items-center justify-between px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+                "flex items-center transition-colors",
                 isCountryActive ? "bg-primary text-primary-foreground" : "text-muted-foreground/80 hover:bg-muted",
               )}
             >
-              <span>{country}</span>
-              <span className={cn(isCountryActive ? "text-primary-foreground/80" : "text-muted-foreground/80")}>
-                {countryCount}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => onChange(countryValue)}
+                className="flex min-w-0 flex-1 items-center justify-between px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wide"
+              >
+                <span>{country}</span>
+                <span className={cn("mr-1", isCountryActive ? "text-primary-foreground/80" : "text-muted-foreground/80")}>
+                  {countryCount}
+                </span>
+              </button>
+              <FavoriteButton target={{ type: "country", country }} className="mr-2" />
+            </div>
             {countryLeagues.map((league) => {
               const isActive = activeLeague === String(league.id);
               return (
-                <button
+                <div
                   key={league.id}
-                  type="button"
-                  onClick={() => onChange(String(league.id))}
                   className={cn(
-                    "flex w-full items-center justify-between py-2 pl-5 pr-3 text-sm transition-colors",
+                    "flex items-center transition-colors",
                     isActive ? "bg-primary font-semibold text-primary-foreground" : "text-foreground/90 hover:bg-muted",
                   )}
                 >
-                  <span className="truncate">{league.name}</span>
-                  <span
-                    className={cn(
-                      "ml-2 shrink-0 text-xs font-medium",
-                      isActive ? "text-primary-foreground/80" : "text-muted-foreground",
-                    )}
+                  <button
+                    type="button"
+                    onClick={() => onChange(String(league.id))}
+                    className="flex min-w-0 flex-1 items-center justify-between py-2 pl-5 pr-3 text-sm"
                   >
-                    {counts.get(league.id) ?? 0}
-                  </span>
-                </button>
+                    <span className="truncate">{league.name}</span>
+                    <span
+                      className={cn(
+                        "ml-2 shrink-0 text-xs font-medium",
+                        isActive ? "text-primary-foreground/80" : "text-muted-foreground",
+                      )}
+                    >
+                      {counts.get(league.id) ?? 0}
+                    </span>
+                  </button>
+                  <FavoriteButton target={{ type: "league", leagueId: league.id }} className="mr-2" />
+                </div>
               );
             })}
           </div>

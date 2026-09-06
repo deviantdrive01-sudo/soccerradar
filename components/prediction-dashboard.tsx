@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -45,6 +45,19 @@ function defaultActiveDate(availableDates: { key: string }[]): string {
   return todayOrLater?.key ?? availableDates[availableDates.length - 1].key;
 }
 
+/** Lets a favorited-country/league link (e.g. from /account/favorites) land on the filtered view. */
+function subscribeUrlLeague() {
+  return () => {};
+}
+
+function getUrlLeagueSnapshot(): string | null {
+  return new URLSearchParams(window.location.search).get("league");
+}
+
+function getUrlLeagueServerSnapshot(): string | null {
+  return null;
+}
+
 export function PredictionDashboard({
   leagues,
   predictions,
@@ -66,7 +79,9 @@ export function PredictionDashboard({
     return Array.from(seen, ([key, label]) => ({ key, label }));
   }, [sortedPredictions]);
 
-  const [activeLeague, setActiveLeague] = useState<string>(ALL_LEAGUES);
+  const urlLeague = useSyncExternalStore(subscribeUrlLeague, getUrlLeagueSnapshot, getUrlLeagueServerSnapshot);
+  const [activeLeagueOverride, setActiveLeagueOverride] = useState<string | null>(null);
+  const activeLeague = activeLeagueOverride ?? urlLeague ?? ALL_LEAGUES;
   const [activeDate, setActiveDate] = useState<string>(() => defaultActiveDate(availableDates));
   const [marketFilter, setMarketFilter] = useState<MarketFilter>("all");
   // Table's dense multi-column layout needs room a phone doesn't have — default
@@ -122,7 +137,7 @@ export function PredictionDashboard({
           counts={leagueCounts}
           totalCount={dateFilteredPredictions.length}
           activeLeague={activeLeague}
-          onChange={setActiveLeague}
+          onChange={setActiveLeagueOverride}
           footer={
             <AdSlot
               slotId="7984118524"
@@ -135,7 +150,7 @@ export function PredictionDashboard({
       <div className="min-w-0 flex-1 space-y-6">
         <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:mx-0 lg:rounded-lg lg:border">
           <div className="lg:hidden">
-            <Select value={activeLeague} onValueChange={setActiveLeague}>
+            <Select value={activeLeague} onValueChange={setActiveLeagueOverride}>
               <SelectTrigger size="sm" className="h-9 w-full">
                 <SelectValue />
               </SelectTrigger>

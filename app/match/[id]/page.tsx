@@ -6,6 +6,7 @@ import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { AdSlot } from "@/components/ad-slot";
 import { ShareButtons } from "@/components/share-buttons";
+import { FavoriteButton } from "@/components/favorite-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SITE_URL } from "@/lib/site";
@@ -74,10 +75,16 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
           <ArrowLeft className="size-4" />
           All predictions
         </Link>
-        <ShareButtons
-          url={`${SITE_URL}/match/${prediction.id}`}
-          title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}
-        />
+        <div className="flex items-center gap-2">
+          <FavoriteButton
+            target={{ type: "match", predictionId: prediction.id }}
+            className="rounded-md border border-border/60"
+          />
+          <ShareButtons
+            url={`${SITE_URL}/match/${prediction.id}`}
+            title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}
+          />
+        </div>
       </div>
 
       <div className="space-y-3 rounded-lg border border-border/60 bg-muted/60 p-5">
