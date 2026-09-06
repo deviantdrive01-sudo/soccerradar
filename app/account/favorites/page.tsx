@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/account/dal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { countryFilterValue } from "@/components/league-sidebar";
+import { countryFilterValue } from "@/lib/country-filter";
 import { FavoriteButton } from "@/components/favorite-button";
 
 export const dynamic = "force-dynamic";

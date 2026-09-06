@@ -9,7 +9,8 @@ import { MatchCard } from "@/components/match-card";
 import { PredictionsTable } from "@/components/predictions-table";
 import { MarketFilterToggle, type MarketFilter } from "@/components/market-filter";
 import { StatsSummary } from "@/components/stats-summary";
-import { LeagueSidebar, ALL_LEAGUES, countryFilterValue, countryFromFilterValue, isCountryFilterValue } from "@/components/league-sidebar";
+import { LeagueSidebar } from "@/components/league-sidebar";
+import { ALL_LEAGUES, countryFilterValue, countryFromFilterValue, isCountryFilterValue } from "@/lib/country-filter";
 import { TodaysPickSidebar } from "@/components/todays-pick-sidebar";
 import { AdSlot } from "@/components/ad-slot";
 import {
