@@ -35,7 +35,6 @@ export function TopPicksView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <StatsSummary predictions={predictions} />
         <div className="flex items-center gap-3">
-          <ShareButtons url={shareUrl} title={shareTitle} />
           <div className="inline-flex rounded-md border border-border/60 p-0.5">
             <Button
               type="button"
@@ -55,6 +54,10 @@ export function TopPicksView({
             >
               Table
             </Button>
+          </div>
+
+          <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1">
+            <ShareButtons url={shareUrl} title={shareTitle} />
           </div>
         </div>
       </div>
