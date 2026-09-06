@@ -69,10 +69,16 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" />
-        All predictions
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" />
+          All predictions
+        </Link>
+        <ShareButtons
+          url={`${SITE_URL}/match/${prediction.id}`}
+          title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}
+        />
+      </div>
 
       <div className="space-y-3 rounded-lg border border-border/60 bg-muted/60 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium text-foreground/80">
@@ -94,11 +100,6 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
             {prediction.confidence}% confidence
           </Badge>
         </div>
-
-        <ShareButtons
-          url={`${SITE_URL}/match/${prediction.id}`}
-          title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}
-        />
 
         {settled && actual && (
           <div className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-3">

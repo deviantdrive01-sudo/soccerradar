@@ -18,7 +18,7 @@ export function SiteHeader() {
           <HeaderSearch />
         </div>
 
-        <div className="order-2 ml-auto flex items-center gap-1 sm:order-3 sm:ml-0">
+        <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:order-3">
           <Link
             href="/accuracy"
             className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

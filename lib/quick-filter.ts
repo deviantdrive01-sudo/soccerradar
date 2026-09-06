@@ -1,4 +1,4 @@
-import { winEitherHalfCode } from "@/lib/hydrate";
+import { isFullTimeDraw, winEitherHalfCode } from "@/lib/hydrate";
 import type { MarketFilter } from "@/components/market-filter";
 import type { Prediction } from "@/lib/supabase/types";
 
@@ -10,7 +10,8 @@ export type QuickFilter =
   | "halfDrawYes"
   | "over1_5Yes"
   | "over2_5Yes"
-  | "winEitherYes";
+  | "winEitherYes"
+  | "ftDrawYes";
 
 export interface QuickFilterOption {
   value: QuickFilter;
@@ -36,7 +37,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     value: "halfDrawYes",
     label: "Half Draw: Yes",
     slug: "half-draw",
-    collectionTitle: "Half-Time Draw",
+    collectionTitle: "Half Time",
     marketFilter: "ftDraw",
   },
   {
@@ -60,6 +61,13 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     collectionTitle: "Win Either Half",
     marketFilter: "winEitherHalf",
   },
+  {
+    value: "ftDrawYes",
+    label: "FT Draw: Yes",
+    slug: "ft-draw",
+    collectionTitle: "FT Draw",
+    marketFilter: "ftDraw",
+  },
 ];
 
 export function quickFilterOptionBySlug(slug: string): QuickFilterOption | undefined {
@@ -81,5 +89,7 @@ export function matchesQuickFilter(prediction: Prediction, filter: QuickFilter):
       return m.goals.over2_5;
     case "winEitherYes":
       return winEitherHalfCode(m) !== null;
+    case "ftDrawYes":
+      return isFullTimeDraw(m);
   }
 }
