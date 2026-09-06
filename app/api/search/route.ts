@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
+import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +12,14 @@ function sanitize(term: string): string {
 export async function GET(req: NextRequest) {
   const raw = req.nextUrl.searchParams.get("q") ?? "";
   const q = sanitize(raw);
-  if (q.length < 1) return NextResponse.json({ predictions: [] });
+  if (q.length < 1) return NextResponse.json({ predictions: [], topPicks: [] });
 
   const supabase = createSupabaseReadClient();
 
-  const { data: matchingLeagues } = await supabase.from("leagues").select("id").ilike("name", `%${q}%`);
+  const { data: matchingLeagues } = await supabase
+    .from("leagues")
+    .select("id")
+    .or(`name.ilike.%${q}%,country.ilike.%${q}%`);
   const leagueIds = (matchingLeagues ?? []).map((l) => l.id);
 
   const orClauses = [`home_team.ilike.%${q}%`, `away_team.ilike.%${q}%`];
@@ -33,7 +37,13 @@ export async function GET(req: NextRequest) {
   const { data: leagues } = await supabase.from("leagues").select("id, name");
   const leagueNameById = new Map((leagues ?? []).map((l) => [l.id, l.name]));
 
+  const qLower = q.toLowerCase();
+  const topPicks = QUICK_FILTER_OPTIONS.filter((option) => option.collectionTitle.toLowerCase().includes(qLower)).map(
+    (option) => ({ slug: option.slug, title: option.collectionTitle }),
+  );
+
   return NextResponse.json({
     predictions: (predictions ?? []).map((p) => ({ ...p, league_name: leagueNameById.get(p.league_id) ?? "" })),
+    topPicks,
   });
 }
