@@ -12,13 +12,63 @@ import { MarketFilterToggle, type MarketFilter } from "@/components/market-filte
 import { StatsSummary } from "@/components/stats-summary";
 import { LeagueSidebar, ALL_LEAGUES } from "@/components/league-sidebar";
 import { AdSlot } from "@/components/ad-slot";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dateKey, dateLabel } from "@/lib/date-key";
+import { isDrawOrOver2_5, isFullTimeDraw, winEitherHalfCode } from "@/lib/hydrate";
 import { cn } from "cn";
 import type { League, Prediction } from "@/lib/supabase/types";
 
 const ALL_DATES = "all";
 type ViewMode = "cards" | "table";
 const CARD_AD_INTERVAL = 9; // roughly every 3 grid rows on the 3-column desktop layout
+
+const QUICK_FILTER_NONE = "none";
+type QuickFilter =
+  | typeof QUICK_FILTER_NONE
+  | "ftDrawYes"
+  | "drawOrOverYes"
+  | "over1_5Yes"
+  | "over2_5Yes"
+  | "cornersO7_5Yes"
+  | "cornersO8_5Yes"
+  | "winEitherHome"
+  | "winEitherAway";
+
+const QUICK_FILTER_OPTIONS: { value: QuickFilter; label: string }[] = [
+  { value: QUICK_FILTER_NONE, label: "Quick filter…" },
+  { value: "ftDrawYes", label: "FT Draw: Yes" },
+  { value: "drawOrOverYes", label: "Draw/O2.5: Yes" },
+  { value: "over1_5Yes", label: "Over 1.5: Yes" },
+  { value: "over2_5Yes", label: "Over 2.5: Yes" },
+  { value: "cornersO7_5Yes", label: "Corners O7.5: Yes" },
+  { value: "cornersO8_5Yes", label: "Corners O8.5: Yes" },
+  { value: "winEitherHome", label: "Win Either Half: Home" },
+  { value: "winEitherAway", label: "Win Either Half: Away" },
+];
+
+function matchesQuickFilter(prediction: Prediction, filter: QuickFilter): boolean {
+  const m = prediction.markets;
+  switch (filter) {
+    case QUICK_FILTER_NONE:
+      return true;
+    case "ftDrawYes":
+      return isFullTimeDraw(m);
+    case "drawOrOverYes":
+      return isDrawOrOver2_5(m);
+    case "over1_5Yes":
+      return m.goals.over1_5;
+    case "over2_5Yes":
+      return m.goals.over2_5;
+    case "cornersO7_5Yes":
+      return m.corners.over7_5;
+    case "cornersO8_5Yes":
+      return m.corners.over8_5;
+    case "winEitherHome":
+      return winEitherHalfCode(m) === "1";
+    case "winEitherAway":
+      return winEitherHalfCode(m) === "2";
+  }
+}
 
 /** Impure by nature (reads the clock) — kept out of the component body so it isn't flagged as a render-purity violation. */
 function todayKey(): string {
@@ -85,6 +135,7 @@ export function PredictionDashboard({
   const isDesktop = useSyncExternalStore(subscribeIsDesktop, getIsDesktopSnapshot, getIsDesktopServerSnapshot);
   const viewMode = viewModeOverride ?? (isDesktop ? "table" : "cards");
   const [searchQuery, setSearchQuery] = useState("");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>(QUICK_FILTER_NONE);
 
   const leagueById = useMemo(() => new Map(leagues.map((l) => [l.id, l])), [leagues]);
 
@@ -105,6 +156,7 @@ export function PredictionDashboard({
     const query = searchQuery.trim().toLowerCase();
     return dateFilteredPredictions.filter((p) => {
       if (activeLeague !== ALL_LEAGUES && p.league_id !== Number(activeLeague)) return false;
+      if (!matchesQuickFilter(p, quickFilter)) return false;
       if (query) {
         const leagueName = leagueById.get(p.league_id)?.name ?? "";
         const haystack = `${p.home_team} ${p.away_team} ${leagueName}`.toLowerCase();
@@ -112,7 +164,7 @@ export function PredictionDashboard({
       }
       return true;
     });
-  }, [dateFilteredPredictions, activeLeague, searchQuery, leagueById]);
+  }, [dateFilteredPredictions, activeLeague, quickFilter, searchQuery, leagueById]);
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -150,26 +202,41 @@ export function PredictionDashboard({
             </Tabs>
           </div>
 
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search teams or leagues…"
-              className="h-8 w-full rounded-md border border-border/60 bg-background pl-8 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
-                className="absolute right-2 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-            <SearchDropdown query={searchQuery} />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select value={quickFilter} onValueChange={(v) => setQuickFilter(v as QuickFilter)}>
+              <SelectTrigger size="sm" className="h-8 w-full sm:w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {QUICK_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search teams or leagues…"
+                className="h-8 w-full rounded-md border border-border/60 bg-background pl-8 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+              <SearchDropdown query={searchQuery} />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

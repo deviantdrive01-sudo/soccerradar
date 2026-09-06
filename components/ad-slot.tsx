@@ -43,6 +43,7 @@ function HouseAd({ className, orientation }: { className?: string; orientation: 
       <a href="https://getordara.com" target="_blank" rel="noopener noreferrer">
         <video
           src="/ads/placeholder-ad.mp4"
+          poster="/ads/placeholder-ad-poster.jpg"
           autoPlay
           muted
           loop
