@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
 import { Search, X } from "lucide-react";
 import { SearchDropdown } from "@/components/search-dropdown";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,7 @@ import type { League, Prediction } from "@/lib/supabase/types";
 
 const ALL_DATES = "all";
 type ViewMode = "cards" | "table";
+const CARD_AD_INTERVAL = 9; // roughly every 3 grid rows on the 3-column desktop layout
 
 /** Impure by nature (reads the clock) — kept out of the component body so it isn't flagged as a render-purity violation. */
 function todayKey(): string {
@@ -237,13 +238,17 @@ export function PredictionDashboard({
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visiblePredictions.map((prediction) => (
-              <MatchCard
-                key={prediction.id}
-                prediction={prediction}
-                leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
-                marketFilter={marketFilter}
-              />
+            {visiblePredictions.map((prediction, index) => (
+              <Fragment key={prediction.id}>
+                <MatchCard
+                  prediction={prediction}
+                  leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
+                  marketFilter={marketFilter}
+                />
+                {(index + 1) % CARD_AD_INTERVAL === 0 && index !== visiblePredictions.length - 1 && (
+                  <AdSlot orientation="horizontal" dismissible className="h-full" />
+                )}
+              </Fragment>
             ))}
           </div>
         )}

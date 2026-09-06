@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,12 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AdSlot } from "@/components/ad-slot";
 import { cn } from "cn";
 import { isDrawOrOver2_5, isFullTimeDraw, isMarketCorrect, MARKET_KEYS, winEitherHalfCode } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 import type { MarketFilter } from "@/components/market-filter";
 
 const CELL = "px-1.5 py-1.5";
+const LEAGUE_GROUP_AD_INTERVAL = 3;
 
 function confidenceClass(confidence: number): string {
   if (confidence >= 70) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
@@ -85,8 +88,9 @@ export function PredictionsTable({
             <TableHead className={cn(CELL, "text-center")}>Conf</TableHead>
           </TableRow>
         </TableHeader>
-        {groups.map((group) => (
-          <TableBody key={group.leagueId}>
+        {groups.map((group, groupIndex) => (
+          <Fragment key={group.leagueId}>
+          <TableBody>
             <TableRow className="hover:bg-transparent">
               <TableCell
                 colSpan={columnCount}
@@ -192,6 +196,16 @@ export function PredictionsTable({
               );
             })}
           </TableBody>
+          {(groupIndex + 1) % LEAGUE_GROUP_AD_INTERVAL === 0 && groupIndex !== groups.length - 1 && (
+            <TableBody>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columnCount} className="p-2">
+                  <AdSlot orientation="horizontal" dismissible />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          )}
+          </Fragment>
         ))}
       </Table>
     </div>
