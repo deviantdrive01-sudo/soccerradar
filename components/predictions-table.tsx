@@ -106,10 +106,15 @@ export function PredictionsTable({
               return (
                 <TableRow key={prediction.id}>
                   <TableCell className={cn(CELL, "font-medium")}>
-                    <Link href={`/match/${prediction.id}`} className="hover:text-primary hover:underline">
-                      {prediction.home_team}
-                      <span className="mx-1 text-muted-foreground font-normal">vs</span>
-                      {prediction.away_team}
+                    <Link
+                      href={`/match/${prediction.id}`}
+                      className="flex max-w-[7.5rem] flex-col leading-tight hover:text-primary hover:underline sm:max-w-none sm:flex-row sm:items-center sm:leading-normal"
+                    >
+                      <span className="truncate sm:overflow-visible sm:whitespace-normal">{prediction.home_team}</span>
+                      <span className="hidden text-muted-foreground font-normal sm:mx-1 sm:inline">vs</span>
+                      <span className="truncate text-muted-foreground sm:overflow-visible sm:whitespace-normal sm:text-foreground">
+                        {prediction.away_team}
+                      </span>
                     </Link>
                   </TableCell>
                   <TableCell className={cn(CELL, "text-center text-muted-foreground")}>

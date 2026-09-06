@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
+import { useAdSettings } from "@/components/ad-settings-provider";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
 const VIEW_COUNT_KEY = "soccerradar-ad-views";
@@ -34,15 +35,42 @@ declare global {
 type AdVariant = "house" | "google";
 type AdOrientation = "vertical" | "horizontal";
 
-function HouseAd({ className, orientation }: { className?: string; orientation: AdOrientation }) {
+function fireAdEvent(type: "impression" | "click") {
+  try {
+    fetch("/api/ad-events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // Best-effort tracking — never let this block or break the ad itself.
+  }
+}
+
+function HouseAd({
+  className,
+  orientation,
+  videoPath,
+  clickUrl,
+}: {
+  className?: string;
+  orientation: AdOrientation;
+  videoPath: string;
+  clickUrl: string;
+}) {
+  useEffect(() => {
+    fireAdEvent("impression");
+  }, []);
+
   return (
     <div className={`overflow-hidden rounded-lg border border-border/60 bg-muted/30 ${className ?? ""}`}>
       <div className="border-b border-border/60 bg-muted/50 px-2 py-1">
         <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Advertisement</span>
       </div>
-      <a href="https://getordara.com" target="_blank" rel="noopener noreferrer">
+      <a href={clickUrl} target="_blank" rel="noopener noreferrer" onClick={() => fireAdEvent("click")}>
         <video
-          src="/ads/placeholder-ad.mp4"
+          src={videoPath}
           poster="/ads/placeholder-ad-poster.jpg"
           autoPlay
           muted
@@ -55,22 +83,28 @@ function HouseAd({ className, orientation }: { className?: string; orientation: 
   );
 }
 
-/** Picked once per browser tab (module-level cache) so useSyncExternalStore's snapshot stays stable across calls. */
-let cachedVariant: AdVariant | null = null;
+/**
+ * Which ad "wins" is a weighted coin flip (house-ad weight from admin settings),
+ * but the flip itself must stay stable per tab and match between server and
+ * client during hydration. So only the random roll (0-1) is memoized via
+ * useSyncExternalStore (server always sees a fixed 0); the actual house/google
+ * decision is a pure derivation from that roll + the settings, computed in render.
+ */
+let cachedRoll: number | null = null;
 
-function subscribe() {
+function subscribeRoll() {
   return () => {};
 }
 
-function getSnapshot(): AdVariant {
-  if (cachedVariant === null) {
-    cachedVariant = Math.random() < 0.5 ? "google" : "house";
+function getRollSnapshot(): number {
+  if (cachedRoll === null) {
+    cachedRoll = Math.random();
   }
-  return cachedVariant;
+  return cachedRoll;
 }
 
-function getServerSnapshot(): AdVariant {
-  return "house";
+function getRollServerSnapshot(): number {
+  return 0;
 }
 
 /**
@@ -97,7 +131,9 @@ export function AdSlot({
   /** Once this many page loads in the current tab session have shown an ad slot, stop showing it. */
   maxViewsPerSession?: number;
 }) {
-  const variant = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const settings = useAdSettings();
+  const roll = useSyncExternalStore(subscribeRoll, getRollSnapshot, getRollServerSnapshot);
+  const variant: AdVariant = settings.googleEnabled && roll * 100 >= settings.houseWeight ? "google" : "house";
   const sessionViews = useSyncExternalStore(
     subscribeSessionViewCount,
     getSessionViewCount,
@@ -138,7 +174,12 @@ export function AdSlot({
 
   const adContent =
     !slotId || variant === "house" ? (
-      <HouseAd className={dismissible ? undefined : className} orientation={orientation} />
+      <HouseAd
+        className={dismissible ? undefined : className}
+        orientation={orientation}
+        videoPath={settings.houseVideoPath}
+        clickUrl={settings.houseClickUrl}
+      />
     ) : (
       <ins
         className={`adsbygoogle block ${dismissible ? "" : (className ?? "")}`}

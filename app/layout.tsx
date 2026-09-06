@@ -4,6 +4,8 @@ import { Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CookieConsent } from "@/components/cookie-consent";
+import { AdSettingsProvider } from "@/components/ad-settings-provider";
+import { createSupabaseReadClient } from "@/lib/supabase/client";
 import "./globals.css";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
@@ -33,7 +35,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const supabase = createSupabaseReadClient();
+  const { data: adSettings } = await supabase.from("ad_settings").select("*").eq("id", 1).single();
+
   return (
     <html
       lang="en"
@@ -48,10 +53,23 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <SiteHeader />
-        {children}
-        <SiteFooter />
-        <CookieConsent />
+        <AdSettingsProvider
+          settings={
+            adSettings
+              ? {
+                  houseWeight: adSettings.house_weight,
+                  googleEnabled: adSettings.google_enabled,
+                  houseVideoPath: adSettings.house_video_path,
+                  houseClickUrl: adSettings.house_click_url,
+                }
+              : null
+          }
+        >
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+          <CookieConsent />
+        </AdSettingsProvider>
       </body>
     </html>
   );

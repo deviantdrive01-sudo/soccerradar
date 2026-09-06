@@ -12,7 +12,15 @@ import { MarketFilterToggle, type MarketFilter } from "@/components/market-filte
 import { StatsSummary } from "@/components/stats-summary";
 import { LeagueSidebar, ALL_LEAGUES } from "@/components/league-sidebar";
 import { AdSlot } from "@/components/ad-slot";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { dateKey, dateLabel } from "@/lib/date-key";
 import { winEitherHalfCode } from "@/lib/hydrate";
 import { cn } from "cn";
@@ -141,6 +149,19 @@ export function PredictionDashboard({
     return counts;
   }, [dateFilteredPredictions]);
 
+  const leagueCountryGroups = useMemo(() => {
+    const byCountry = new Map<string, League[]>();
+    for (const league of leagues) {
+      const existing = byCountry.get(league.country);
+      if (existing) existing.push(league);
+      else byCountry.set(league.country, [league]);
+    }
+    return Array.from(byCountry, ([country, countryLeagues]) => ({
+      country,
+      leagues: [...countryLeagues].sort((a, b) => a.name.localeCompare(b.name)),
+    })).sort((a, b) => a.country.localeCompare(b.country));
+  }, [leagues]);
+
   const visiblePredictions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return dateFilteredPredictions.filter((p) => {
@@ -176,19 +197,24 @@ export function PredictionDashboard({
       <div className="min-w-0 flex-1 space-y-6">
         <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:mx-0 lg:rounded-lg lg:border">
           <div className="lg:hidden">
-            <Tabs value={activeLeague} onValueChange={setActiveLeague}>
-              <ScrollArea className="max-w-[calc(100vw-2rem)]">
-                <TabsList>
-                  <TabsTrigger value={ALL_LEAGUES}>All Leagues</TabsTrigger>
-                  {leagues.map((league) => (
-                    <TabsTrigger key={league.id} value={String(league.id)}>
-                      {league.name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            </Tabs>
+            <Select value={activeLeague} onValueChange={setActiveLeague}>
+              <SelectTrigger size="sm" className="h-9 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_LEAGUES}>All Leagues</SelectItem>
+                {leagueCountryGroups.map(({ country, leagues: countryLeagues }) => (
+                  <SelectGroup key={country}>
+                    <SelectLabel>{country}</SelectLabel>
+                    {countryLeagues.map((league) => (
+                      <SelectItem key={league.id} value={String(league.id)}>
+                        {league.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

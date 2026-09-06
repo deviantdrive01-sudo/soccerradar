@@ -6,6 +6,24 @@ export interface League {
   country: string;
   api_league_id: number;
   is_active: boolean;
+  flashscore_slug: string | null;
+  created_at: string;
+}
+
+export interface AdSettings {
+  id: number;
+  house_weight: number;
+  google_enabled: boolean;
+  house_video_path: string;
+  house_click_url: string;
+  updated_at: string;
+}
+
+export type AdEventType = "impression" | "click";
+
+export interface AdEvent {
+  id: number;
+  event_type: AdEventType;
   created_at: string;
 }
 
@@ -54,6 +72,18 @@ export interface Database {
           }
         >;
         Update: Row<Partial<Omit<Prediction, "id">>>;
+        Relationships: [];
+      };
+      ad_settings: {
+        Row: Row<AdSettings>;
+        Insert: Row<Partial<Omit<AdSettings, "updated_at">>>;
+        Update: Row<Partial<Omit<AdSettings, "id" | "updated_at">>>;
+        Relationships: [];
+      };
+      ad_events: {
+        Row: Row<AdEvent>;
+        Insert: Row<Omit<AdEvent, "id" | "created_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<AdEvent, "id">>>;
         Relationships: [];
       };
     };
