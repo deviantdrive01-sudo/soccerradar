@@ -32,11 +32,19 @@ async function getTodaysPicks(slug: string) {
 export async function generateMetadata({ params }: PageProps<"/top-picks/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const option = quickFilterOptionBySlug(slug);
-  if (!option) return { title: "Top picks not found — SoccerRadar" };
+  if (!option) return { title: "Top picks not found" };
 
-  const title = `Top Predictions Today: ${option.collectionTitle} | SoccerRadar`;
+  const title = `Top Predictions Today: ${option.collectionTitle}`;
   const description = `Today's AI-generated predictions for ${option.collectionTitle} across all covered leagues.`;
-  return { title, description };
+  const url = `${SITE_URL}/top-picks/${slug}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, type: "website" },
+    twitter: { card: "summary", title, description },
+  };
 }
 
 export default async function TopPicksPage({ params }: PageProps<"/top-picks/[slug]">) {

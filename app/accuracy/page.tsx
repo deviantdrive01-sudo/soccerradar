@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { accuracyPct, computeAccuracy, type MarketAccuracy } from "@/lib/accuracy";
 import { LeagueAccuracyTable } from "@/components/league-accuracy-table";
@@ -5,6 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "Prediction Accuracy Track Record",
+  description: "See how accurate SoccerRadar's AI predictions have actually been, broken down by market and league.",
+  alternates: { canonical: "/accuracy" },
+};
 
 function pctClass(pct: number, known: number): string {
   if (known === 0) return "border-border/60 text-muted-foreground";

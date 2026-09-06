@@ -28,16 +28,23 @@ async function getMatchData(id: number): Promise<{ prediction: Prediction; leagu
 export async function generateMetadata({ params }: PageProps<"/match/[id]">): Promise<Metadata> {
   const { id } = await params;
   const numericId = Number(id);
-  if (!Number.isInteger(numericId)) return { title: "Match not found — SoccerRadar" };
+  if (!Number.isInteger(numericId)) return { title: "Match not found" };
 
   const data = await getMatchData(numericId);
-  if (!data) return { title: "Match not found — SoccerRadar" };
+  if (!data) return { title: "Match not found" };
 
   const { prediction, league } = data;
-  const title = `${prediction.home_team} vs ${prediction.away_team} Prediction${league ? ` — ${league.name}` : ""} | SoccerRadar`;
+  const title = `${prediction.home_team} vs ${prediction.away_team} Prediction${league ? ` — ${league.name}` : ""}`;
   const description = prediction.summary || `AI-generated prediction for ${prediction.home_team} vs ${prediction.away_team}.`;
+  const url = `${SITE_URL}/match/${prediction.id}`;
 
-  return { title, description };
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, type: "article" },
+    twitter: { card: "summary", title, description },
+  };
 }
 
 function confidenceClass(confidence: number): string {

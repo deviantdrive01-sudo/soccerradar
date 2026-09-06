@@ -7,9 +7,12 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { AdSettingsProvider } from "@/components/ad-settings-provider";
 import { AccountProvider } from "@/components/account-provider";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
+const SITE_NAME = "SoccerRadar";
+const SITE_DESCRIPTION = "Confidence-scored AI predictions across 16 top global football leagues, updated daily.";
 
 const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
@@ -29,8 +32,34 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SoccerRadar — AI Match Predictions",
-  description: "Confidence-scored predictions across 16 top global football leagues.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — AI Match Predictions`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "football predictions",
+    "soccer predictions",
+    "AI match predictions",
+    "over 2.5 goals prediction",
+    "correct score prediction",
+    "football betting tips",
+  ],
+  robots: { index: true, follow: true },
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — AI Match Predictions`,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary",
+    title: `${SITE_NAME} — AI Match Predictions`,
+    description: SITE_DESCRIPTION,
+  },
   other: {
     "google-adsense-account": ADSENSE_CLIENT_ID,
   },

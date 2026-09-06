@@ -42,14 +42,23 @@ async function getCollectionData(id: number) {
 export async function generateMetadata({ params }: PageProps<"/collections/[id]">): Promise<Metadata> {
   const { id } = await params;
   const numericId = Number(id);
-  if (!Number.isInteger(numericId)) return { title: "Collection not found — SoccerRadar" };
+  if (!Number.isInteger(numericId)) return { title: "Collection not found" };
 
   const data = await getCollectionData(numericId);
-  if (!data) return { title: "Collection not found — SoccerRadar" };
+  if (!data) return { title: "Collection not found" };
+
+  const title = `${data.collection.title} — a bookmark collection by ${data.ownerLabel}`;
+  const description = `${data.predictions.length} prediction(s) picked by ${data.ownerLabel} on SoccerRadar.`;
+  const url = `${SITE_URL}/collections/${numericId}`;
 
   return {
-    title: `${data.collection.title} — a bookmark collection by ${data.ownerLabel} | SoccerRadar`,
-    description: `${data.predictions.length} prediction(s) picked by ${data.ownerLabel} on SoccerRadar.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    // Sparse/empty user-created collections are thin content — keep them off search results.
+    robots: data.predictions.length === 0 ? { index: false, follow: true } : { index: true, follow: true },
+    openGraph: { title, description, url, type: "website" },
+    twitter: { card: "summary", title, description },
   };
 }
 

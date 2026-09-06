@@ -51,14 +51,22 @@ async function getBookingData(id: number) {
 export async function generateMetadata({ params }: PageProps<"/bookings/[id]">): Promise<Metadata> {
   const { id } = await params;
   const numericId = Number(id);
-  if (!Number.isInteger(numericId)) return { title: "Booking not found — SoccerRadar" };
+  if (!Number.isInteger(numericId)) return { title: "Booking not found" };
 
   const data = await getBookingData(numericId);
-  if (!data) return { title: "Booking not found — SoccerRadar" };
+  if (!data) return { title: "Booking not found" };
+
+  const title = `${data.booking.title} — a booking by ${data.ownerLabel}`;
+  const description = `${data.picks.length} pick(s) chosen by ${data.ownerLabel} on SoccerRadar.`;
+  const url = `${SITE_URL}/bookings/${numericId}`;
 
   return {
-    title: `${data.booking.title} — a booking by ${data.ownerLabel} | SoccerRadar`,
-    description: `${data.picks.length} pick(s) chosen by ${data.ownerLabel} on SoccerRadar.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    robots: data.picks.length === 0 ? { index: false, follow: true } : { index: true, follow: true },
+    openGraph: { title, description, url, type: "website" },
+    twitter: { card: "summary", title, description },
   };
 }
 

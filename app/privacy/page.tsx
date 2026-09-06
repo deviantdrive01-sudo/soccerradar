@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — SoccerRadar",
+  title: "Privacy Policy",
   description: "How SoccerRadar handles data, cookies, and advertising, and what our predictions do and don't promise.",
+  alternates: { canonical: "/privacy" },
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
