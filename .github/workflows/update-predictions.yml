@@ -1,0 +1,40 @@
+name: Update predictions (fixture discovery)
+
+on:
+  schedule:
+    # Every 6 hours. Less frequent than results-update (every 2h) since
+    # fixture confirmations don't change nearly as fast as match results do,
+    # and a prediction just needs to exist a day or so before kickoff, not
+    # within minutes of a fixture being confirmed.
+    - cron: "22 */6 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: update-predictions
+  cancel-in-progress: false
+
+jobs:
+  update-predictions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install Playwright (this job only — not part of the app's dependencies)
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Run predictions update
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npx tsx scripts/update-predictions.ts
