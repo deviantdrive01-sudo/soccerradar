@@ -16,7 +16,8 @@ import type { Prediction } from "@/lib/supabase/types";
 import type { MarketFilter } from "@/components/market-filter";
 
 const CELL = "px-1.5 py-1.5";
-const LEAGUE_GROUP_AD_INTERVAL = 3;
+const LEAGUE_GROUP_AD_INTERVAL = 6; // give more scroll room between in-feed ads
+const MAX_TABLE_ADS = 2; // cap total in-feed ads regardless of how many league groups are shown
 
 function confidenceClass(confidence: number): string {
   if (confidence >= 70) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
@@ -196,7 +197,9 @@ export function PredictionsTable({
               );
             })}
           </TableBody>
-          {(groupIndex + 1) % LEAGUE_GROUP_AD_INTERVAL === 0 && groupIndex !== groups.length - 1 && (
+          {(groupIndex + 1) % LEAGUE_GROUP_AD_INTERVAL === 0 &&
+            groupIndex !== groups.length - 1 &&
+            (groupIndex + 1) / LEAGUE_GROUP_AD_INTERVAL <= MAX_TABLE_ADS && (
             <TableBody>
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columnCount} className="p-2">

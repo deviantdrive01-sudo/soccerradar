@@ -20,7 +20,8 @@ import type { League, Prediction } from "@/lib/supabase/types";
 
 const ALL_DATES = "all";
 type ViewMode = "cards" | "table";
-const CARD_AD_INTERVAL = 9; // roughly every 3 grid rows on the 3-column desktop layout
+const CARD_AD_INTERVAL = 20; // roughly every 6-7 grid rows on the 3-column desktop layout
+const MAX_CARD_ADS = 2; // cap total in-feed ads regardless of how long the list gets
 
 const QUICK_FILTER_NONE = "none";
 type QuickFilter =
@@ -300,9 +301,11 @@ export function PredictionDashboard({
                   leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
                   marketFilter={marketFilter}
                 />
-                {(index + 1) % CARD_AD_INTERVAL === 0 && index !== visiblePredictions.length - 1 && (
-                  <AdSlot orientation="horizontal" dismissible className="h-full" />
-                )}
+                {(index + 1) % CARD_AD_INTERVAL === 0 &&
+                  index !== visiblePredictions.length - 1 &&
+                  (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (
+                    <AdSlot orientation="horizontal" dismissible className="h-full" />
+                  )}
               </Fragment>
             ))}
           </div>
