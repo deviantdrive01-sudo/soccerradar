@@ -2,11 +2,17 @@ name: Update match results
 
 on:
   schedule:
-    # 03:12, 09:12, 15:12, 21:12 UTC — matches the cadence the results-update
-    # job has run at manually. GitHub may delay a scheduled run by a few
-    # minutes under load; that's fine here, results aren't time-critical.
-    - cron: "12 3,9,15,21 * * *"
+    # Every 2 hours, on the :12 to avoid the top-of-hour congestion most
+    # scheduled workflows pile onto. GitHub may delay a run by a few minutes
+    # under load; that's fine here, results aren't time-critical.
+    - cron: "12 */2 * * *"
   workflow_dispatch: {}
+
+concurrency:
+  # If a run ever takes long enough to overlap the next scheduled trigger,
+  # queue it instead of scraping Flashscore from two runs in parallel.
+  group: results-update
+  cancel-in-progress: false
 
 jobs:
   update-results:
