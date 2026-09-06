@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import localFont from "next/font/local";
 import { Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
@@ -11,6 +12,7 @@ import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
+const GA_MEASUREMENT_ID = "G-5DW3J6DCD0";
 const SITE_NAME = "SoccerRadar";
 const SITE_DESCRIPTION = "Confidence-scored AI predictions across 16 top global football leagues, updated daily.";
 
@@ -81,6 +83,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           crossOrigin="anonymous"
         />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <Script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');`}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <AdSettingsProvider

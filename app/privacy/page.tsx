@@ -60,6 +60,11 @@ export default function PrivacyPolicyPage() {
             your visits to this and other websites.
           </li>
           <li>
+            <span className="font-medium text-foreground">Analytics:</span> we use Google Analytics to understand
+            how visitors use the site (pages viewed, general location, device type). This data is aggregated and
+            used to improve the site, not to identify you personally.
+          </li>
+          <li>
             <span className="font-medium text-foreground">Preferences:</span> we store a small local flag in your
             browser (not sent to us) to remember your light/dark theme choice and whether you&apos;ve dismissed the
             cookie notice.
@@ -97,6 +102,9 @@ export default function PrivacyPolicyPage() {
         <ul className="list-disc space-y-1 pl-5">
           <li>
             <span className="font-medium text-foreground">Google AdSense</span> — advertising
+          </li>
+          <li>
+            <span className="font-medium text-foreground">Google Analytics</span> — site usage analytics
           </li>
           <li>
             <span className="font-medium text-foreground">Vercel</span> — hosting and infrastructure
