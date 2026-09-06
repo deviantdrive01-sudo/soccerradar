@@ -26,7 +26,7 @@ import { dateKey, dateLabel, todayKey } from "@/lib/date-key";
 import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
-import { BookerAddButton } from "@/components/booker-add-button";
+import { BookingAddButton } from "@/components/booking-add-button";
 import { cn } from "cn";
 import type { League, Prediction } from "@/lib/supabase/types";
 
@@ -258,7 +258,7 @@ export function PredictionDashboard({
             rowAction={(prediction) => (
               <div className="flex items-center justify-center gap-1">
                 <CollectionPickerButton predictionId={prediction.id} />
-                <BookerAddButton predictionId={prediction.id} markets={prediction.markets} />
+                <BookingAddButton predictionId={prediction.id} markets={prediction.markets} />
               </div>
             )}
           />
@@ -270,7 +270,7 @@ export function PredictionDashboard({
                   prediction={prediction}
                   leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
                   marketFilter={marketFilter}
-                  bookerButton={<BookerAddButton predictionId={prediction.id} markets={prediction.markets} />}
+                  bookingButton={<BookingAddButton predictionId={prediction.id} markets={prediction.markets} />}
                 />
                 {(index + 1) % CARD_AD_INTERVAL === 0 &&
                   index !== visiblePredictions.length - 1 &&

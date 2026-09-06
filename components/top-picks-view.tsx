@@ -7,7 +7,7 @@ import { PredictionsTable } from "@/components/predictions-table";
 import { StatsSummary } from "@/components/stats-summary";
 import { ShareButtons } from "@/components/share-buttons";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
-import { BookerPickButton } from "@/components/booker-pick-button";
+import { BookingPickButton } from "@/components/booking-pick-button";
 import { AdSlot } from "@/components/ad-slot";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 import { cn } from "cn";
@@ -30,7 +30,7 @@ export function TopPicksView({
   predictions: Prediction[];
   leagueById: Map<number, { name: string }>;
   marketFilter: MarketFilter;
-  /** The exact market this collection represents — lets a booker pick be added with no extra selection step. */
+  /** The exact market this collection represents — lets a booking pick be added with no extra selection step. */
   marketKey: MarketKey;
   shareUrl: string;
   shareTitle: string;
@@ -93,7 +93,7 @@ export function TopPicksView({
             rowAction={(prediction) => (
               <div className="flex items-center justify-center gap-1">
                 <CollectionPickerButton predictionId={prediction.id} />
-                <BookerPickButton predictionId={prediction.id} marketKey={marketKey} />
+                <BookingPickButton predictionId={prediction.id} marketKey={marketKey} />
               </div>
             )}
           />
@@ -117,7 +117,7 @@ export function TopPicksView({
               prediction={prediction}
               leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
               marketFilter={marketFilter}
-              bookerButton={<BookerPickButton predictionId={prediction.id} marketKey={marketKey} />}
+              bookingButton={<BookingPickButton predictionId={prediction.id} marketKey={marketKey} />}
             />
             {(index + 1) % CARD_AD_INTERVAL === 0 &&
               index !== predictions.length - 1 &&

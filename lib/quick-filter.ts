@@ -25,7 +25,7 @@ export interface QuickFilterOption {
   collectionTitle: string;
   /** Which market-filter columns best represent this pick on a card/table. */
   marketFilter: MarketFilter;
-  /** The exact single market this collection represents — lets a booker pick be added with no extra selection step. */
+  /** The exact single market this collection represents — lets a booking pick be added with no extra selection step. */
   marketKey: MarketKey;
 }
 

@@ -14,7 +14,7 @@ export async function GET() {
       user: null,
       favorites: { countries: [], leagueIds: [], matchIds: [] },
       collections: [],
-      bookers: [],
+      bookings: [],
     });
   }
 
@@ -24,14 +24,14 @@ export async function GET() {
     { data: leagues },
     { data: matches },
     { data: collections },
-    { data: bookers },
+    { data: bookings },
   ] = await Promise.all([
     supabase.from("profiles").select("username, is_admin").eq("id", user.id).single(),
     supabase.from("favorite_countries").select("country").eq("user_id", user.id),
     supabase.from("favorite_leagues").select("league_id").eq("user_id", user.id),
     supabase.from("favorite_matches").select("prediction_id").eq("user_id", user.id),
     supabase.from("bookmark_collections").select("id, title").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("bookers").select("id, title").eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("bookings").select("id, title").eq("user_id", user.id).order("created_at", { ascending: false }),
   ]);
 
   const collectionIds = (collections ?? []).map((c) => c.id);
@@ -47,18 +47,18 @@ export async function GET() {
     else predictionIdsByCollection.set(item.collection_id, [item.prediction_id]);
   }
 
-  const bookerIds = (bookers ?? []).map((b) => b.id);
-  const { data: bookerItems } =
-    bookerIds.length > 0
-      ? await supabase.from("booker_items").select("booker_id, prediction_id, market_key").in("booker_id", bookerIds)
-      : { data: [] as { booker_id: number; prediction_id: number; market_key: string }[] };
+  const bookingIds = (bookings ?? []).map((b) => b.id);
+  const { data: bookingItems } =
+    bookingIds.length > 0
+      ? await supabase.from("booking_items").select("booking_id, prediction_id, market_key").in("booking_id", bookingIds)
+      : { data: [] as { booking_id: number; prediction_id: number; market_key: string }[] };
 
-  const itemsByBooker = new Map<number, { predictionId: number; marketKey: string }[]>();
-  for (const item of bookerItems ?? []) {
+  const itemsByBooking = new Map<number, { predictionId: number; marketKey: string }[]>();
+  for (const item of bookingItems ?? []) {
     const entry = { predictionId: item.prediction_id, marketKey: item.market_key };
-    const existing = itemsByBooker.get(item.booker_id);
+    const existing = itemsByBooking.get(item.booking_id);
     if (existing) existing.push(entry);
-    else itemsByBooker.set(item.booker_id, [entry]);
+    else itemsByBooking.set(item.booking_id, [entry]);
   }
 
   return NextResponse.json({
@@ -78,10 +78,10 @@ export async function GET() {
       title: c.title,
       predictionIds: predictionIdsByCollection.get(c.id) ?? [],
     })),
-    bookers: (bookers ?? []).map((b) => ({
+    bookings: (bookings ?? []).map((b) => ({
       id: b.id,
       title: b.title,
-      items: itemsByBooker.get(b.id) ?? [],
+      items: itemsByBooking.get(b.id) ?? [],
     })),
   });
 }

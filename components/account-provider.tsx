@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useRouter } from "next/navigation";
 import { toggleFavoriteCountry, toggleFavoriteLeague, toggleFavoriteMatch } from "@/app/account/favorites/actions";
 import { createCollection as createCollectionAction, toggleCollectionItem as toggleCollectionItemAction } from "@/app/account/collections/actions";
-import { createBooker as createBookerAction, toggleBookerItem as toggleBookerItemAction } from "@/app/account/bookers/actions";
+import { createBooking as createBookingAction, toggleBookingItem as toggleBookingItemAction } from "@/app/account/bookings/actions";
 import type { MarketKey } from "@/lib/hydrate";
 
 export interface AccountUser {
@@ -20,14 +20,14 @@ export interface AccountCollection {
   predictionIds: Set<number>;
 }
 
-export interface AccountBooker {
+export interface AccountBooking {
   id: number;
   title: string;
-  /** Keyed by `${predictionId}:${marketKey}` for O(1) "is this exact pick already in this booker" checks. */
+  /** Keyed by `${predictionId}:${marketKey}` for O(1) "is this exact pick already in this booking" checks. */
   items: Set<string>;
 }
 
-export function bookerItemKey(predictionId: number, marketKey: MarketKey): string {
+export function bookingItemKey(predictionId: number, marketKey: MarketKey): string {
   return `${predictionId}:${marketKey}`;
 }
 
@@ -38,7 +38,7 @@ interface AccountState {
   favoriteLeagueIds: Set<number>;
   favoriteMatchIds: Set<number>;
   collections: AccountCollection[];
-  bookers: AccountBooker[];
+  bookings: AccountBooking[];
 }
 
 interface AccountContextValue extends AccountState {
@@ -47,8 +47,8 @@ interface AccountContextValue extends AccountState {
   toggleMatch: (predictionId: number) => void;
   toggleCollectionItem: (collectionId: number, predictionId: number) => void;
   createCollection: (title: string) => Promise<number | null>;
-  toggleBookerItem: (bookerId: number, predictionId: number, marketKey: MarketKey) => void;
-  createBooker: (title: string) => Promise<number | null>;
+  toggleBookingItem: (bookingId: number, predictionId: number, marketKey: MarketKey) => void;
+  createBooking: (title: string) => Promise<number | null>;
   refresh: () => void;
 }
 
@@ -59,7 +59,7 @@ const EMPTY_STATE: AccountState = {
   favoriteLeagueIds: new Set(),
   favoriteMatchIds: new Set(),
   collections: [],
-  bookers: [],
+  bookings: [],
 };
 
 const AccountContext = createContext<AccountContextValue>({
@@ -69,8 +69,8 @@ const AccountContext = createContext<AccountContextValue>({
   toggleMatch: () => {},
   toggleCollectionItem: () => {},
   createCollection: async () => null,
-  toggleBookerItem: () => {},
-  createBooker: async () => null,
+  toggleBookingItem: () => {},
+  createBooking: async () => null,
   refresh: () => {},
 });
 
@@ -100,11 +100,11 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
             title: c.title,
             predictionIds: new Set(c.predictionIds),
           })),
-          bookers: (data.bookers ?? []).map(
+          bookings: (data.bookings ?? []).map(
             (b: { id: number; title: string; items: { predictionId: number; marketKey: MarketKey }[] }) => ({
               id: b.id,
               title: b.title,
-              items: new Set(b.items.map((i) => bookerItemKey(i.predictionId, i.marketKey))),
+              items: new Set(b.items.map((i) => bookingItemKey(i.predictionId, i.marketKey))),
             }),
           ),
         }),
@@ -192,33 +192,33 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     [state.user, router],
   );
 
-  const toggleBookerItem = useCallback(
-    (bookerId: number, predictionId: number, marketKey: MarketKey) => {
+  const toggleBookingItem = useCallback(
+    (bookingId: number, predictionId: number, marketKey: MarketKey) => {
       if (!state.user) {
         router.push("/login");
         return;
       }
-      const key = bookerItemKey(predictionId, marketKey);
-      const applyToggle = (bookers: AccountBooker[]) =>
-        bookers.map((b) => (b.id === bookerId ? { ...b, items: withToggled(b.items, key) } : b));
+      const key = bookingItemKey(predictionId, marketKey);
+      const applyToggle = (bookings: AccountBooking[]) =>
+        bookings.map((b) => (b.id === bookingId ? { ...b, items: withToggled(b.items, key) } : b));
 
-      setState((s) => ({ ...s, bookers: applyToggle(s.bookers) }));
-      toggleBookerItemAction(bookerId, predictionId, marketKey).catch(() => {
-        setState((s) => ({ ...s, bookers: applyToggle(s.bookers) }));
+      setState((s) => ({ ...s, bookings: applyToggle(s.bookings) }));
+      toggleBookingItemAction(bookingId, predictionId, marketKey).catch(() => {
+        setState((s) => ({ ...s, bookings: applyToggle(s.bookings) }));
       });
     },
     [state.user, router],
   );
 
-  const createBooker = useCallback(
+  const createBooking = useCallback(
     async (title: string): Promise<number | null> => {
       if (!state.user) {
         router.push("/login");
         return null;
       }
       try {
-        const { id } = await createBookerAction(title);
-        setState((s) => ({ ...s, bookers: [{ id, title: title.trim(), items: new Set() }, ...s.bookers] }));
+        const { id } = await createBookingAction(title);
+        setState((s) => ({ ...s, bookings: [{ id, title: title.trim(), items: new Set() }, ...s.bookings] }));
         return id;
       } catch {
         return null;
@@ -236,8 +236,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         toggleMatch,
         toggleCollectionItem,
         createCollection,
-        toggleBookerItem,
-        createBooker,
+        toggleBookingItem,
+        createBooking,
         refresh,
       }}
     >

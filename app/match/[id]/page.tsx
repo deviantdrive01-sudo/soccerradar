@@ -8,7 +8,7 @@ import { AdSlot } from "@/components/ad-slot";
 import { ShareButtons } from "@/components/share-buttons";
 import { FavoriteButton } from "@/components/favorite-button";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
-import { BookerPickButton } from "@/components/booker-pick-button";
+import { BookingPickButton } from "@/components/booking-pick-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SITE_URL } from "@/lib/site";
@@ -62,7 +62,7 @@ function YesNoBadge({
       <Badge variant="outline" className={value ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}>
         {label} {value ? "✓" : "✗"}
       </Badge>
-      <BookerPickButton predictionId={predictionId} marketKey={marketKey} />
+      <BookingPickButton predictionId={predictionId} marketKey={marketKey} />
     </span>
   );
 }
@@ -156,20 +156,20 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
               <Badge variant="secondary" className="font-medium">
                 1H: {markets.firstHalfOutcome.label}
               </Badge>
-              <BookerPickButton predictionId={prediction.id} marketKey="firstHalfOutcome" />
+              <BookingPickButton predictionId={prediction.id} marketKey="firstHalfOutcome" />
             </span>
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 {markets.highestScoringHalf.label}
               </Badge>
-              <BookerPickButton predictionId={prediction.id} marketKey="highestScoringHalf" />
+              <BookingPickButton predictionId={prediction.id} marketKey="highestScoringHalf" />
             </span>
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 Win Either Half:{" "}
                 {winEitherHalf === null ? "–" : winEitherHalf === "1" ? prediction.home_team : prediction.away_team}
               </Badge>
-              <BookerPickButton predictionId={prediction.id} marketKey="winEitherHalf" />
+              <BookingPickButton predictionId={prediction.id} marketKey="winEitherHalf" />
             </span>
           </div>
         </div>

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { useAccount, bookerItemKey } from "@/components/account-provider";
+import { useAccount, bookingItemKey } from "@/components/account-provider";
 import { cn } from "cn";
 import type { MarketKey } from "@/lib/hydrate";
 
-export function BookerPickButton({
+export function BookingPickButton({
   predictionId,
   marketKey,
   className,
@@ -16,21 +16,21 @@ export function BookerPickButton({
   /** Merged into the trigger button — use for size/position overrides (e.g. overlaying a card corner). */
   className?: string;
 }) {
-  const { user, bookers, toggleBookerItem, createBooker } = useAccount();
+  const { user, bookings, toggleBookingItem, createBooking } = useAccount();
   const [open, setOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const key = bookerItemKey(predictionId, marketKey);
-  const inAnyBooker = bookers.some((b) => b.items.has(key));
+  const key = bookingItemKey(predictionId, marketKey);
+  const inAnyBooking = bookings.some((b) => b.items.has(key));
 
   async function handleCreate() {
     if (!newTitle.trim()) return;
     setCreating(true);
-    const id = await createBooker(newTitle);
+    const id = await createBooking(newTitle);
     setCreating(false);
     setNewTitle("");
-    if (id !== null) toggleBookerItem(id, predictionId, marketKey);
+    if (id !== null) toggleBookingItem(id, predictionId, marketKey);
   }
 
   return (
@@ -38,10 +38,10 @@ export function BookerPickButton({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Add this pick to a booker"
+        aria-label="Add this pick to a booking"
         className={cn("inline-flex size-4 shrink-0 items-center justify-center rounded-full border border-border/60 hover:bg-muted/60", className)}
       >
-        <Plus className={inAnyBooker ? "size-2.5 text-primary" : "size-2.5 text-muted-foreground"} />
+        <Plus className={inAnyBooking ? "size-2.5 text-primary" : "size-2.5 text-muted-foreground"} />
       </button>
 
       {open && (
@@ -49,12 +49,12 @@ export function BookerPickButton({
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-md border border-border/60 bg-popover p-2 shadow-lg">
             {!user ? (
-              <p className="p-2 text-xs text-muted-foreground">Log in to add picks to a booker.</p>
+              <p className="p-2 text-xs text-muted-foreground">Log in to add picks to a booking.</p>
             ) : (
               <>
-                {bookers.length === 0 && <p className="px-1 pb-2 text-xs text-muted-foreground">No bookers yet.</p>}
+                {bookings.length === 0 && <p className="px-1 pb-2 text-xs text-muted-foreground">No bookings yet.</p>}
                 <div className="max-h-40 space-y-0.5 overflow-y-auto">
-                  {bookers.map((b) => (
+                  {bookings.map((b) => (
                     <label
                       key={b.id}
                       className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1.5 text-sm hover:bg-muted"
@@ -62,7 +62,7 @@ export function BookerPickButton({
                       <input
                         type="checkbox"
                         checked={b.items.has(key)}
-                        onChange={() => toggleBookerItem(b.id, predictionId, marketKey)}
+                        onChange={() => toggleBookingItem(b.id, predictionId, marketKey)}
                         className="size-3.5"
                       />
                       <span className="truncate">{b.title}</span>
@@ -73,7 +73,7 @@ export function BookerPickButton({
                   <input
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="New booker"
+                    placeholder="New booking"
                     className="h-7 flex-1 rounded-md border border-border/60 bg-background px-2 text-xs outline-none"
                   />
                   <button

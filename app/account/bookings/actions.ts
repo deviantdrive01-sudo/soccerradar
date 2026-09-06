@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/account/dal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { MarketKey } from "@/lib/hydrate";
 
-export async function createBooker(title: string): Promise<{ id: number }> {
+export async function createBooking(title: string): Promise<{ id: number }> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not signed in");
 
@@ -14,18 +14,18 @@ export async function createBooker(title: string): Promise<{ id: number }> {
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("bookers")
+    .from("bookings")
     .insert({ user_id: user.userId, title: trimmed })
     .select("id")
     .single();
 
-  if (error || !data) throw new Error(error?.message ?? "Could not create booker");
+  if (error || !data) throw new Error(error?.message ?? "Could not create booking");
 
-  revalidatePath("/account/bookers");
+  revalidatePath("/account/bookings");
   return { id: data.id };
 }
 
-export async function renameBooker(id: number, title: string): Promise<void> {
+export async function renameBooking(id: number, title: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not signed in");
 
@@ -33,25 +33,25 @@ export async function renameBooker(id: number, title: string): Promise<void> {
   if (!trimmed) throw new Error("Title is required");
 
   const supabase = await createSupabaseServerClient();
-  await supabase.from("bookers").update({ title: trimmed }).eq("id", id).eq("user_id", user.userId);
+  await supabase.from("bookings").update({ title: trimmed }).eq("id", id).eq("user_id", user.userId);
 
-  revalidatePath("/account/bookers");
-  revalidatePath(`/bookers/${id}`);
+  revalidatePath("/account/bookings");
+  revalidatePath(`/bookings/${id}`);
 }
 
-export async function deleteBooker(id: number): Promise<void> {
+export async function deleteBooking(id: number): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not signed in");
 
   const supabase = await createSupabaseServerClient();
-  await supabase.from("bookers").delete().eq("id", id).eq("user_id", user.userId);
+  await supabase.from("bookings").delete().eq("id", id).eq("user_id", user.userId);
 
-  revalidatePath("/account/bookers");
-  revalidatePath(`/bookers/${id}`);
+  revalidatePath("/account/bookings");
+  revalidatePath(`/bookings/${id}`);
 }
 
-export async function toggleBookerItem(
-  bookerId: number,
+export async function toggleBookingItem(
+  bookingId: number,
   predictionId: number,
   marketKey: MarketKey,
 ): Promise<{ added: boolean }> {
@@ -60,20 +60,20 @@ export async function toggleBookerItem(
 
   const supabase = await createSupabaseServerClient();
   const { data: existing } = await supabase
-    .from("booker_items")
+    .from("booking_items")
     .select("id")
-    .eq("booker_id", bookerId)
+    .eq("booking_id", bookingId)
     .eq("prediction_id", predictionId)
     .eq("market_key", marketKey)
     .maybeSingle();
 
   if (existing) {
-    await supabase.from("booker_items").delete().eq("id", existing.id);
-    revalidatePath(`/bookers/${bookerId}`);
+    await supabase.from("booking_items").delete().eq("id", existing.id);
+    revalidatePath(`/bookings/${bookingId}`);
     return { added: false };
   }
 
-  await supabase.from("booker_items").insert({ booker_id: bookerId, prediction_id: predictionId, market_key: marketKey });
-  revalidatePath(`/bookers/${bookerId}`);
+  await supabase.from("booking_items").insert({ booking_id: bookingId, prediction_id: predictionId, market_key: marketKey });
+  revalidatePath(`/bookings/${bookingId}`);
   return { added: true };
 }

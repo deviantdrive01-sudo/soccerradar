@@ -6,18 +6,18 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, X } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
 import { ShareButtons } from "@/components/share-buttons";
-import { renameBooker, deleteBooker, toggleBookerItem } from "@/app/account/bookers/actions";
+import { renameBooking, deleteBooking, toggleBookingItem } from "@/app/account/bookings/actions";
 import { marketPredictionLabel, MARKET_LABELS } from "@/lib/hydrate";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
-export interface BookerPick {
+export interface BookingPick {
   prediction: Prediction;
   marketKey: MarketKey;
 }
 
-export function BookerManage({
-  bookerId,
+export function BookingManage({
+  bookingId,
   ownerId,
   ownerLabel,
   initialTitle,
@@ -25,11 +25,11 @@ export function BookerManage({
   leagueById,
   shareUrl,
 }: {
-  bookerId: number;
+  bookingId: number;
   ownerId: string;
   ownerLabel: string;
   initialTitle: string;
-  picks: BookerPick[];
+  picks: BookingPick[];
   leagueById: Map<number, { name: string }>;
   shareUrl: string;
 }) {
@@ -45,21 +45,21 @@ export function BookerManage({
   async function handleRemove(predictionId: number, marketKey: MarketKey) {
     setItems((prev) => prev.filter((p) => !(p.prediction.id === predictionId && p.marketKey === marketKey)));
     try {
-      await toggleBookerItem(bookerId, predictionId, marketKey);
+      await toggleBookingItem(bookingId, predictionId, marketKey);
     } catch {
       // Best effort — a page refresh will reconcile if this failed silently.
     }
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this booker? This can't be undone.")) return;
-    await deleteBooker(bookerId);
-    router.push("/account/bookers");
+    if (!confirm("Delete this booking? This can't be undone.")) return;
+    await deleteBooking(bookingId);
+    router.push("/account/bookings");
   }
 
   async function handleRename() {
     if (!titleDraft.trim()) return;
-    await renameBooker(bookerId, titleDraft);
+    await renameBooking(bookingId, titleDraft);
     setTitle(titleDraft.trim());
     setRenaming(false);
   }
@@ -67,9 +67,9 @@ export function BookerManage({
   return (
     <div className="space-y-4">
       {isOwner ? (
-        <Link href="/account/bookers" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+        <Link href="/account/bookings" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" />
-          My Bookers
+          My Bookings
         </Link>
       ) : (
         <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
@@ -132,13 +132,13 @@ export function BookerManage({
             </>
           )}
           <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1">
-            <ShareButtons url={shareUrl} title={`${title} — a SoccerRadar booker by ${ownerLabel}`} />
+            <ShareButtons url={shareUrl} title={`${title} — a SoccerRadar booking by ${ownerLabel}`} />
           </div>
         </div>
       </div>
 
       {items.length === 0 ? (
-        <div className="py-16 text-center text-sm text-muted-foreground">No picks in this booker.</div>
+        <div className="py-16 text-center text-sm text-muted-foreground">No picks in this booking.</div>
       ) : (
         <div className="divide-y divide-border/60 rounded-md border border-border/60">
           {items.map(({ prediction, marketKey }) => (

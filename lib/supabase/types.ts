@@ -70,7 +70,7 @@ export interface BookmarkCollectionItem {
   created_at: string;
 }
 
-export interface Booker {
+export interface Booking {
   id: number;
   user_id: string;
   title: string;
@@ -78,9 +78,9 @@ export interface Booker {
   updated_at: string;
 }
 
-export interface BookerItem {
+export interface BookingItem {
   id: number;
-  booker_id: number;
+  booking_id: number;
   prediction_id: number;
   market_key: MarketKey;
   created_at: string;
@@ -181,16 +181,16 @@ export interface Database {
         Update: Row<Partial<Omit<BookmarkCollectionItem, "id">>>;
         Relationships: [];
       };
-      bookers: {
-        Row: Row<Booker>;
-        Insert: Row<Omit<Booker, "id" | "created_at" | "updated_at"> & { id?: number }>;
-        Update: Row<Partial<Omit<Booker, "id" | "created_at">>>;
+      bookings: {
+        Row: Row<Booking>;
+        Insert: Row<Omit<Booking, "id" | "created_at" | "updated_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<Booking, "id" | "created_at">>>;
         Relationships: [];
       };
-      booker_items: {
-        Row: Row<BookerItem>;
-        Insert: Row<Omit<BookerItem, "id" | "created_at"> & { id?: number }>;
-        Update: Row<Partial<Omit<BookerItem, "id">>>;
+      booking_items: {
+        Row: Row<BookingItem>;
+        Insert: Row<Omit<BookingItem, "id" | "created_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<BookingItem, "id">>>;
         Relationships: [];
       };
     };

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, Ticket } from "lucide-react";
-import { useAccount, bookerItemKey } from "@/components/account-provider";
+import { useAccount, bookingItemKey } from "@/components/account-provider";
 import { MARKET_KEYS, MARKET_LABELS, marketPredictionLabel } from "@/lib/hydrate";
 import { cn } from "cn";
 import type { MarketKey, HydratedMarkets } from "@/lib/hydrate";
@@ -10,12 +10,12 @@ import type { MarketKey, HydratedMarkets } from "@/lib/hydrate";
 /**
  * For contexts where the relevant market isn't already fixed by the page
  * (the homepage's cards/table, where every market is visible at once) —
- * adds a "pick a market first" step before the usual booker list/create,
+ * adds a "pick a market first" step before the usual booking list/create,
  * matching how the user described the feature: pick a market, then add it.
- * See components/booker-pick-button.tsx for the single-market version used
+ * See components/booking-pick-button.tsx for the single-market version used
  * on the match detail page and Top Picks, where the market is already known.
  */
-export function BookerAddButton({
+export function BookingAddButton({
   predictionId,
   markets,
   className,
@@ -24,13 +24,13 @@ export function BookerAddButton({
   markets: HydratedMarkets;
   className?: string;
 }) {
-  const { user, bookers, toggleBookerItem, createBooker } = useAccount();
+  const { user, bookings, toggleBookingItem, createBooking } = useAccount();
   const [open, setOpen] = useState(false);
   const [selectedMarketKey, setSelectedMarketKey] = useState<MarketKey | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const inAnyBooker = MARKET_KEYS.some((key) => bookers.some((b) => b.items.has(bookerItemKey(predictionId, key))));
+  const inAnyBooking = MARKET_KEYS.some((key) => bookings.some((b) => b.items.has(bookingItemKey(predictionId, key))));
 
   function handleClose() {
     setOpen(false);
@@ -41,10 +41,10 @@ export function BookerAddButton({
   async function handleCreate() {
     if (!newTitle.trim() || !selectedMarketKey) return;
     setCreating(true);
-    const id = await createBooker(newTitle);
+    const id = await createBooking(newTitle);
     setCreating(false);
     setNewTitle("");
-    if (id !== null) toggleBookerItem(id, predictionId, selectedMarketKey);
+    if (id !== null) toggleBookingItem(id, predictionId, selectedMarketKey);
   }
 
   return (
@@ -52,13 +52,13 @@ export function BookerAddButton({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Add a pick from this match to a booker"
+        aria-label="Add a pick from this match to a booking"
         className={cn(
           "inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-border/60 hover:bg-muted/60",
           className,
         )}
       >
-        <Ticket className={inAnyBooker ? "size-3.5 text-primary" : "size-3.5 text-muted-foreground"} />
+        <Ticket className={inAnyBooking ? "size-3.5 text-primary" : "size-3.5 text-muted-foreground"} />
       </button>
 
       {open && (
@@ -66,7 +66,7 @@ export function BookerAddButton({
           <div className="fixed inset-0 z-10" onClick={handleClose} />
           <div className="absolute left-0 top-full z-20 mt-1 w-64 rounded-md border border-border/60 bg-popover p-2 shadow-lg">
             {!user ? (
-              <p className="p-2 text-xs text-muted-foreground">Log in to add picks to a booker.</p>
+              <p className="p-2 text-xs text-muted-foreground">Log in to add picks to a booking.</p>
             ) : selectedMarketKey === null ? (
               <>
                 <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">Pick a market</p>
@@ -94,17 +94,17 @@ export function BookerAddButton({
                   <ChevronLeft className="size-3.5" />
                   {MARKET_LABELS[selectedMarketKey]}: {marketPredictionLabel(markets, selectedMarketKey)}
                 </button>
-                {bookers.length === 0 && <p className="px-1 pb-2 text-xs text-muted-foreground">No bookers yet.</p>}
+                {bookings.length === 0 && <p className="px-1 pb-2 text-xs text-muted-foreground">No bookings yet.</p>}
                 <div className="max-h-40 space-y-0.5 overflow-y-auto">
-                  {bookers.map((b) => (
+                  {bookings.map((b) => (
                     <label
                       key={b.id}
                       className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1.5 text-sm hover:bg-muted"
                     >
                       <input
                         type="checkbox"
-                        checked={b.items.has(bookerItemKey(predictionId, selectedMarketKey))}
-                        onChange={() => toggleBookerItem(b.id, predictionId, selectedMarketKey)}
+                        checked={b.items.has(bookingItemKey(predictionId, selectedMarketKey))}
+                        onChange={() => toggleBookingItem(b.id, predictionId, selectedMarketKey)}
                         className="size-3.5"
                       />
                       <span className="truncate">{b.title}</span>
@@ -115,7 +115,7 @@ export function BookerAddButton({
                   <input
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="New booker"
+                    placeholder="New booking"
                     className="h-7 flex-1 rounded-md border border-border/60 bg-background px-2 text-xs outline-none"
                   />
                   <button

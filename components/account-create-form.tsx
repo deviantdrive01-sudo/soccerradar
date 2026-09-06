@@ -9,7 +9,7 @@ const FIELD = "h-9 flex-1 rounded-md border border-border/60 bg-background px-3 
 /**
  * A plain <form action={serverAction}> only revalidates this page's own
  * server data — it never tells AccountProvider (which holds its own
- * client-fetched copy for CollectionPickerButton/BookerPickButton etc.
+ * client-fetched copy for CollectionPickerButton/BookingPickButton etc.
  * everywhere else) that anything changed. Going through this component
  * instead calls the action directly, then refreshes both.
  */
