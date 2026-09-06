@@ -77,15 +77,20 @@ export function TopPicksView({
   if (viewMode === "table") {
     return (
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1 space-y-4">
+          {toolbar}
+          <PredictionsTable
+            predictions={predictions}
+            leagueById={leagueById}
+            marketFilter={marketFilter}
+            showInFeedAds={false}
+          />
+        </div>
         <aside className="hidden lg:block lg:w-64 lg:shrink-0">
           <div className="sticky top-4">
             <AdSlot orientation="vertical" />
           </div>
         </aside>
-        <div className="min-w-0 flex-1 space-y-4">
-          {toolbar}
-          <PredictionsTable predictions={predictions} leagueById={leagueById} marketFilter={marketFilter} />
-        </div>
       </div>
     );
   }

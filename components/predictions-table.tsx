@@ -37,10 +37,13 @@ export function PredictionsTable({
   predictions,
   leagueById,
   marketFilter,
+  showInFeedAds = true,
 }: {
   predictions: Prediction[];
   leagueById: Map<number, { name: string }>;
   marketFilter: MarketFilter;
+  /** Disable when the page already has its own ad placement (e.g. a sidebar), to avoid doubling up. */
+  showInFeedAds?: boolean;
 }) {
   const showFtDraw = marketFilter === "all" || marketFilter === "ftDraw";
   const showHighestHalf = marketFilter === "all" || marketFilter === "highestHalf";
@@ -202,7 +205,8 @@ export function PredictionsTable({
               );
             })}
           </TableBody>
-          {(groupIndex + 1) % LEAGUE_GROUP_AD_INTERVAL === 0 &&
+          {showInFeedAds &&
+            (groupIndex + 1) % LEAGUE_GROUP_AD_INTERVAL === 0 &&
             groupIndex !== groups.length - 1 &&
             (groupIndex + 1) / LEAGUE_GROUP_AD_INTERVAL <= MAX_TABLE_ADS && (
             <TableBody>
