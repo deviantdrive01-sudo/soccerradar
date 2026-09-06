@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { accuracyPct, type LeagueAccuracy } from "@/lib/accuracy";
@@ -26,9 +27,9 @@ function MatchRow({ prediction }: { prediction: Prediction }) {
   return (
     <div className="space-y-1.5 border-t border-border/40 px-4 py-3 first:border-t-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-medium">
+        <Link href={`/match/${prediction.id}`} className="text-sm font-medium hover:text-primary hover:underline">
           {prediction.home_team} <span className="font-normal text-muted-foreground">vs</span> {prediction.away_team}
-        </div>
+        </Link>
         <div className="flex items-center gap-2 text-xs">
           <span className="font-medium text-foreground">
             {actual.raw.finalScore.home}–{actual.raw.finalScore.away}

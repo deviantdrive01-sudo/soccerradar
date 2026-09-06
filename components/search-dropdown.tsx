@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { Prediction } from "@/lib/supabase/types";
 
 type SearchResult = Prediction & { league_name: string };
@@ -48,8 +49,9 @@ export function SearchDropdown({ query }: { query: string }) {
         <div className="p-3 text-sm text-muted-foreground">No matches for &ldquo;{trimmed}&rdquo;.</div>
       ) : (
         results.map((r) => (
-          <div
+          <Link
             key={r.id}
+            href={`/match/${r.id}`}
             className="flex items-center justify-between gap-2 border-b border-border/40 px-3 py-2 text-sm last:border-0 hover:bg-muted/50"
           >
             <div className="min-w-0">
@@ -67,7 +69,7 @@ export function SearchDropdown({ query }: { query: string }) {
               </div>
             </div>
             <span className="shrink-0 text-xs font-medium text-muted-foreground">{r.confidence}%</span>
-          </div>
+          </Link>
         ))
       )}
     </div>

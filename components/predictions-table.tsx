@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -100,9 +101,11 @@ export function PredictionsTable({
               return (
                 <TableRow key={prediction.id}>
                   <TableCell className={cn(CELL, "font-medium")}>
-                    {prediction.home_team}
-                    <span className="mx-1 text-muted-foreground font-normal">vs</span>
-                    {prediction.away_team}
+                    <Link href={`/match/${prediction.id}`} className="hover:text-primary hover:underline">
+                      {prediction.home_team}
+                      <span className="mx-1 text-muted-foreground font-normal">vs</span>
+                      {prediction.away_team}
+                    </Link>
                   </TableCell>
                   <TableCell className={cn(CELL, "text-center text-muted-foreground")}>
                     {kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -115,11 +116,14 @@ export function MatchCard({
 
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0 text-lg font-semibold leading-tight">
+          <Link
+            href={`/match/${prediction.id}`}
+            className="min-w-0 text-lg font-semibold leading-tight hover:text-primary hover:underline"
+          >
             {prediction.home_team}
             <span className="mx-2 text-muted-foreground font-medium">vs</span>
             {prediction.away_team}
-          </div>
+          </Link>
           <Badge variant="outline" className={cn("shrink-0", confidenceClass(prediction.confidence))}>
             {prediction.confidence}% conf
           </Badge>
