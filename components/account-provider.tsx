@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useRouter } from "next/navigation";
 import { toggleFavoriteCountry, toggleFavoriteLeague, toggleFavoriteMatch } from "@/app/account/favorites/actions";
 import { createCollection as createCollectionAction, toggleCollectionItem as toggleCollectionItemAction } from "@/app/account/collections/actions";
+import { createBooker as createBookerAction, toggleBookerItem as toggleBookerItemAction } from "@/app/account/bookers/actions";
+import type { MarketKey } from "@/lib/hydrate";
 
 export interface AccountUser {
   userId: string;
@@ -18,6 +20,17 @@ export interface AccountCollection {
   predictionIds: Set<number>;
 }
 
+export interface AccountBooker {
+  id: number;
+  title: string;
+  /** Keyed by `${predictionId}:${marketKey}` for O(1) "is this exact pick already in this booker" checks. */
+  items: Set<string>;
+}
+
+export function bookerItemKey(predictionId: number, marketKey: MarketKey): string {
+  return `${predictionId}:${marketKey}`;
+}
+
 interface AccountState {
   loading: boolean;
   user: AccountUser | null;
@@ -25,6 +38,7 @@ interface AccountState {
   favoriteLeagueIds: Set<number>;
   favoriteMatchIds: Set<number>;
   collections: AccountCollection[];
+  bookers: AccountBooker[];
 }
 
 interface AccountContextValue extends AccountState {
@@ -33,6 +47,8 @@ interface AccountContextValue extends AccountState {
   toggleMatch: (predictionId: number) => void;
   toggleCollectionItem: (collectionId: number, predictionId: number) => void;
   createCollection: (title: string) => Promise<number | null>;
+  toggleBookerItem: (bookerId: number, predictionId: number, marketKey: MarketKey) => void;
+  createBooker: (title: string) => Promise<number | null>;
   refresh: () => void;
 }
 
@@ -43,6 +59,7 @@ const EMPTY_STATE: AccountState = {
   favoriteLeagueIds: new Set(),
   favoriteMatchIds: new Set(),
   collections: [],
+  bookers: [],
 };
 
 const AccountContext = createContext<AccountContextValue>({
@@ -52,6 +69,8 @@ const AccountContext = createContext<AccountContextValue>({
   toggleMatch: () => {},
   toggleCollectionItem: () => {},
   createCollection: async () => null,
+  toggleBookerItem: () => {},
+  createBooker: async () => null,
   refresh: () => {},
 });
 
@@ -81,6 +100,13 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
             title: c.title,
             predictionIds: new Set(c.predictionIds),
           })),
+          bookers: (data.bookers ?? []).map(
+            (b: { id: number; title: string; items: { predictionId: number; marketKey: MarketKey }[] }) => ({
+              id: b.id,
+              title: b.title,
+              items: new Set(b.items.map((i) => bookerItemKey(i.predictionId, i.marketKey))),
+            }),
+          ),
         }),
       )
       .catch(() => setState((s) => ({ ...s, loading: false })));
@@ -166,9 +192,54 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     [state.user, router],
   );
 
+  const toggleBookerItem = useCallback(
+    (bookerId: number, predictionId: number, marketKey: MarketKey) => {
+      if (!state.user) {
+        router.push("/login");
+        return;
+      }
+      const key = bookerItemKey(predictionId, marketKey);
+      const applyToggle = (bookers: AccountBooker[]) =>
+        bookers.map((b) => (b.id === bookerId ? { ...b, items: withToggled(b.items, key) } : b));
+
+      setState((s) => ({ ...s, bookers: applyToggle(s.bookers) }));
+      toggleBookerItemAction(bookerId, predictionId, marketKey).catch(() => {
+        setState((s) => ({ ...s, bookers: applyToggle(s.bookers) }));
+      });
+    },
+    [state.user, router],
+  );
+
+  const createBooker = useCallback(
+    async (title: string): Promise<number | null> => {
+      if (!state.user) {
+        router.push("/login");
+        return null;
+      }
+      try {
+        const { id } = await createBookerAction(title);
+        setState((s) => ({ ...s, bookers: [{ id, title: title.trim(), items: new Set() }, ...s.bookers] }));
+        return id;
+      } catch {
+        return null;
+      }
+    },
+    [state.user, router],
+  );
+
   return (
     <AccountContext.Provider
-      value={{ ...state, toggleCountry, toggleLeague, toggleMatch, toggleCollectionItem, createCollection, refresh }}
+      value={{
+        ...state,
+        toggleCountry,
+        toggleLeague,
+        toggleMatch,
+        toggleCollectionItem,
+        createCollection,
+        toggleBookerItem,
+        createBooker,
+        refresh,
+      }}
     >
       {children}
     </AccountContext.Provider>

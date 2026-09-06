@@ -1,4 +1,4 @@
-import type { ActualResult, HydratedMarkets } from "@/lib/hydrate";
+import type { ActualResult, HydratedMarkets, MarketKey } from "@/lib/hydrate";
 
 export interface League {
   id: number;
@@ -67,6 +67,22 @@ export interface BookmarkCollectionItem {
   id: number;
   collection_id: number;
   prediction_id: number;
+  created_at: string;
+}
+
+export interface Booker {
+  id: number;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookerItem {
+  id: number;
+  booker_id: number;
+  prediction_id: number;
+  market_key: MarketKey;
   created_at: string;
 }
 
@@ -163,6 +179,18 @@ export interface Database {
         Row: Row<BookmarkCollectionItem>;
         Insert: Row<Omit<BookmarkCollectionItem, "id" | "created_at"> & { id?: number }>;
         Update: Row<Partial<Omit<BookmarkCollectionItem, "id">>>;
+        Relationships: [];
+      };
+      bookers: {
+        Row: Row<Booker>;
+        Insert: Row<Omit<Booker, "id" | "created_at" | "updated_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<Booker, "id" | "created_at">>>;
+        Relationships: [];
+      };
+      booker_items: {
+        Row: Row<BookerItem>;
+        Insert: Row<Omit<BookerItem, "id" | "created_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<BookerItem, "id">>>;
         Relationships: [];
       };
     };

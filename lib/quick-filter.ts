@@ -1,5 +1,6 @@
 import { isDrawOrOver2_5, isFullTimeDraw, winEitherHalfCode } from "@/lib/hydrate";
 import type { MarketFilter } from "@/components/market-filter";
+import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
 export const QUICK_FILTER_NONE = "none";
@@ -24,6 +25,8 @@ export interface QuickFilterOption {
   collectionTitle: string;
   /** Which market-filter columns best represent this pick on a card/table. */
   marketFilter: MarketFilter;
+  /** The exact single market this collection represents — lets a booker pick be added with no extra selection step. */
+  marketKey: MarketKey;
 }
 
 export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
@@ -33,6 +36,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     slug: "corners-over-7-5",
     collectionTitle: "Corners Over 7.5",
     marketFilter: "corners",
+    marketKey: "over7_5",
   },
   {
     value: "halfDrawYes",
@@ -40,6 +44,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     slug: "half-draw",
     collectionTitle: "Half Time",
     marketFilter: "ftDraw",
+    marketKey: "firstHalfOutcome",
   },
   {
     value: "over1_5Yes",
@@ -47,6 +52,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     slug: "over-1-5",
     collectionTitle: "Over 1.5 Goals",
     marketFilter: "goals",
+    marketKey: "over1_5",
   },
   {
     value: "over2_5Yes",
@@ -54,6 +60,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     slug: "over-2-5",
     collectionTitle: "Over 2.5 Goals",
     marketFilter: "goals",
+    marketKey: "over2_5",
   },
   {
     value: "winEitherYes",
@@ -61,6 +68,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     slug: "win-either-half",
     collectionTitle: "Win Either Half",
     marketFilter: "winEitherHalf",
+    marketKey: "winEitherHalf",
   },
   {
     value: "ftDrawYes",
@@ -68,6 +76,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     slug: "ft-draw",
     collectionTitle: "FT Draw",
     marketFilter: "ftDraw",
+    marketKey: "fullTimeDraw",
   },
   {
     value: "drawOrOverYes",
@@ -75,6 +84,7 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     slug: "draw-or-over-2-5",
     collectionTitle: "Draw or Over 2.5",
     marketFilter: "drawOrOver",
+    marketKey: "drawOrOver2_5",
   },
 ];
 

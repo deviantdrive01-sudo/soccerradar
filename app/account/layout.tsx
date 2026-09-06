@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Heart, Bookmark, User } from "lucide-react";
+import { LayoutDashboard, Heart, Bookmark, Ticket, User } from "lucide-react";
 import { cn } from "cn";
 
 const NAV_ITEMS = [
   { href: "/account", label: "Overview", icon: LayoutDashboard },
   { href: "/account/favorites", label: "Favorites", icon: Heart },
   { href: "/account/collections", label: "Collections", icon: Bookmark },
+  { href: "/account/bookers", label: "Bookers", icon: Ticket },
   { href: "/account/profile", label: "Profile", icon: User },
 ];
 

@@ -6,10 +6,13 @@ import { MatchCard } from "@/components/match-card";
 import { PredictionsTable } from "@/components/predictions-table";
 import { StatsSummary } from "@/components/stats-summary";
 import { ShareButtons } from "@/components/share-buttons";
+import { CollectionPickerButton } from "@/components/collection-picker-button";
+import { BookerPickButton } from "@/components/booker-pick-button";
 import { AdSlot } from "@/components/ad-slot";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 import { cn } from "cn";
 import type { MarketFilter } from "@/components/market-filter";
+import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
 type ViewMode = "cards" | "table";
@@ -20,12 +23,15 @@ export function TopPicksView({
   predictions,
   leagueById,
   marketFilter,
+  marketKey,
   shareUrl,
   shareTitle,
 }: {
   predictions: Prediction[];
   leagueById: Map<number, { name: string }>;
   marketFilter: MarketFilter;
+  /** The exact market this collection represents — lets a booker pick be added with no extra selection step. */
+  marketKey: MarketKey;
   shareUrl: string;
   shareTitle: string;
 }) {
@@ -84,6 +90,12 @@ export function TopPicksView({
             leagueById={leagueById}
             marketFilter={marketFilter}
             showInFeedAds={false}
+            rowAction={(prediction) => (
+              <div className="flex items-center justify-center gap-1">
+                <CollectionPickerButton predictionId={prediction.id} />
+                <BookerPickButton predictionId={prediction.id} marketKey={marketKey} />
+              </div>
+            )}
           />
         </div>
         <aside className="hidden lg:block lg:w-64 lg:shrink-0">
@@ -101,11 +113,20 @@ export function TopPicksView({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {predictions.map((prediction, index) => (
           <Fragment key={prediction.id}>
-            <MatchCard
-              prediction={prediction}
-              leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
-              marketFilter={marketFilter}
-            />
+            <div className="relative">
+              <MatchCard
+                prediction={prediction}
+                leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
+                marketFilter={marketFilter}
+              />
+              <div className="absolute bottom-2 right-2 z-10">
+                <BookerPickButton
+                  predictionId={prediction.id}
+                  marketKey={marketKey}
+                  className="size-6 bg-background/90 shadow-sm backdrop-blur"
+                />
+              </div>
+            </div>
             {(index + 1) % CARD_AD_INTERVAL === 0 &&
               index !== predictions.length - 1 &&
               (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (

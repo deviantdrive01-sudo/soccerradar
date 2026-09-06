@@ -61,6 +61,7 @@ export default async function TopPicksPage({ params }: PageProps<"/top-picks/[sl
         predictions={picks}
         leagueById={leagueById}
         marketFilter={option.marketFilter}
+        marketKey={option.marketKey}
         shareUrl={`${SITE_URL}/top-picks/${option.slug}`}
         shareTitle={`Top Predictions Today: ${option.collectionTitle} — SoccerRadar`}
       />

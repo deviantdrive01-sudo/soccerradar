@@ -10,6 +10,7 @@ const MENU_ITEMS = [
   { href: "/account", label: "Overview" },
   { href: "/account/favorites", label: "My Favorites" },
   { href: "/account/collections", label: "My Collections" },
+  { href: "/account/bookers", label: "My Bookers" },
   { href: "/account/profile", label: "Profile Settings" },
 ];
 

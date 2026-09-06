@@ -8,9 +8,11 @@ import { AdSlot } from "@/components/ad-slot";
 import { ShareButtons } from "@/components/share-buttons";
 import { FavoriteButton } from "@/components/favorite-button";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
+import { BookerPickButton } from "@/components/booker-pick-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SITE_URL } from "@/lib/site";
+import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction, League } from "@/lib/supabase/types";
 
 export const revalidate = 300;
@@ -44,11 +46,24 @@ function confidenceClass(confidence: number): string {
   return "bg-red-500/15 text-red-400 border-red-500/30";
 }
 
-function YesNoBadge({ label, value }: { label: string; value: boolean }) {
+function YesNoBadge({
+  label,
+  value,
+  predictionId,
+  marketKey,
+}: {
+  label: string;
+  value: boolean;
+  predictionId: number;
+  marketKey: MarketKey;
+}) {
   return (
-    <Badge variant="outline" className={value ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}>
-      {label} {value ? "✓" : "✗"}
-    </Badge>
+    <span className="inline-flex items-center gap-1">
+      <Badge variant="outline" className={value ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}>
+        {label} {value ? "✓" : "✗"}
+      </Badge>
+      <BookerPickButton predictionId={predictionId} marketKey={marketKey} />
+    </span>
   );
 }
 
@@ -136,35 +151,54 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Outcome</div>
           <div className="flex flex-wrap gap-1.5">
-            <YesNoBadge label="FT Draw" value={isFullTimeDraw(markets)} />
-            <Badge variant="secondary" className="font-medium">
-              1H: {markets.firstHalfOutcome.label}
-            </Badge>
-            <Badge variant="secondary" className="font-medium">
-              {markets.highestScoringHalf.label}
-            </Badge>
-            <Badge variant="secondary" className="font-medium">
-              Win Either Half:{" "}
-              {winEitherHalf === null ? "–" : winEitherHalf === "1" ? prediction.home_team : prediction.away_team}
-            </Badge>
+            <YesNoBadge label="FT Draw" value={isFullTimeDraw(markets)} predictionId={prediction.id} marketKey="fullTimeDraw" />
+            <span className="inline-flex items-center gap-1">
+              <Badge variant="secondary" className="font-medium">
+                1H: {markets.firstHalfOutcome.label}
+              </Badge>
+              <BookerPickButton predictionId={prediction.id} marketKey="firstHalfOutcome" />
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Badge variant="secondary" className="font-medium">
+                {markets.highestScoringHalf.label}
+              </Badge>
+              <BookerPickButton predictionId={prediction.id} marketKey="highestScoringHalf" />
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Badge variant="secondary" className="font-medium">
+                Win Either Half:{" "}
+                {winEitherHalf === null ? "–" : winEitherHalf === "1" ? prediction.home_team : prediction.away_team}
+              </Badge>
+              <BookerPickButton predictionId={prediction.id} marketKey="winEitherHalf" />
+            </span>
           </div>
         </div>
 
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Goals</div>
           <div className="flex flex-wrap gap-1.5">
-            <YesNoBadge label="O1.5" value={markets.goals.over1_5} />
-            <YesNoBadge label="O2.5" value={markets.goals.over2_5} />
-            <YesNoBadge label="Draw/O2.5" value={isDrawOrOver2_5(markets)} />
+            <YesNoBadge label="O1.5" value={markets.goals.over1_5} predictionId={prediction.id} marketKey="over1_5" />
+            <YesNoBadge label="O2.5" value={markets.goals.over2_5} predictionId={prediction.id} marketKey="over2_5" />
+            <YesNoBadge
+              label="Draw/O2.5"
+              value={isDrawOrOver2_5(markets)}
+              predictionId={prediction.id}
+              marketKey="drawOrOver2_5"
+            />
           </div>
         </div>
 
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Corners</div>
           <div className="flex flex-wrap gap-1.5">
-            <YesNoBadge label="O7.5" value={markets.corners.over7_5} />
-            <YesNoBadge label="O8.5" value={markets.corners.over8_5} />
-            <YesNoBadge label="1H O3.5" value={markets.corners.firstHalfOver3_5} />
+            <YesNoBadge label="O7.5" value={markets.corners.over7_5} predictionId={prediction.id} marketKey="over7_5" />
+            <YesNoBadge label="O8.5" value={markets.corners.over8_5} predictionId={prediction.id} marketKey="over8_5" />
+            <YesNoBadge
+              label="1H O3.5"
+              value={markets.corners.firstHalfOver3_5}
+              predictionId={prediction.id}
+              marketKey="firstHalfOver3_5"
+            />
           </div>
         </div>
 
