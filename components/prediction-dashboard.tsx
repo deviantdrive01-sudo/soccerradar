@@ -14,7 +14,7 @@ import { LeagueSidebar, ALL_LEAGUES } from "@/components/league-sidebar";
 import { AdSlot } from "@/components/ad-slot";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dateKey, dateLabel } from "@/lib/date-key";
-import { isDrawOrOver2_5, isFullTimeDraw, winEitherHalfCode } from "@/lib/hydrate";
+import { winEitherHalfCode } from "@/lib/hydrate";
 import { cn } from "cn";
 import type { League, Prediction } from "@/lib/supabase/types";
 
@@ -25,25 +25,19 @@ const CARD_AD_INTERVAL = 9; // roughly every 3 grid rows on the 3-column desktop
 const QUICK_FILTER_NONE = "none";
 type QuickFilter =
   | typeof QUICK_FILTER_NONE
-  | "ftDrawYes"
-  | "drawOrOverYes"
+  | "cornersO7_5Yes"
+  | "halfDrawYes"
   | "over1_5Yes"
   | "over2_5Yes"
-  | "cornersO7_5Yes"
-  | "cornersO8_5Yes"
-  | "winEitherHome"
-  | "winEitherAway";
+  | "winEitherYes";
 
 const QUICK_FILTER_OPTIONS: { value: QuickFilter; label: string }[] = [
   { value: QUICK_FILTER_NONE, label: "Quick filter…" },
-  { value: "ftDrawYes", label: "FT Draw: Yes" },
-  { value: "drawOrOverYes", label: "Draw/O2.5: Yes" },
+  { value: "cornersO7_5Yes", label: "Corners O7.5: Yes" },
+  { value: "halfDrawYes", label: "Half Draw: Yes" },
   { value: "over1_5Yes", label: "Over 1.5: Yes" },
   { value: "over2_5Yes", label: "Over 2.5: Yes" },
-  { value: "cornersO7_5Yes", label: "Corners O7.5: Yes" },
-  { value: "cornersO8_5Yes", label: "Corners O8.5: Yes" },
-  { value: "winEitherHome", label: "Win Either Half: Home" },
-  { value: "winEitherAway", label: "Win Either Half: Away" },
+  { value: "winEitherYes", label: "Win Either Half: Yes" },
 ];
 
 function matchesQuickFilter(prediction: Prediction, filter: QuickFilter): boolean {
@@ -51,22 +45,16 @@ function matchesQuickFilter(prediction: Prediction, filter: QuickFilter): boolea
   switch (filter) {
     case QUICK_FILTER_NONE:
       return true;
-    case "ftDrawYes":
-      return isFullTimeDraw(m);
-    case "drawOrOverYes":
-      return isDrawOrOver2_5(m);
+    case "cornersO7_5Yes":
+      return m.corners.over7_5;
+    case "halfDrawYes":
+      return m.firstHalfOutcome.code === "X";
     case "over1_5Yes":
       return m.goals.over1_5;
     case "over2_5Yes":
       return m.goals.over2_5;
-    case "cornersO7_5Yes":
-      return m.corners.over7_5;
-    case "cornersO8_5Yes":
-      return m.corners.over8_5;
-    case "winEitherHome":
-      return winEitherHalfCode(m) === "1";
-    case "winEitherAway":
-      return winEitherHalfCode(m) === "2";
+    case "winEitherYes":
+      return winEitherHalfCode(m) !== null;
   }
 }
 
