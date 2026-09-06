@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { BookingManage, type BookingPick } from "@/components/booking-manage";
 import { SITE_URL } from "@/lib/site";
+import { buildShareSlug, parseIdFromParam } from "@/lib/share-slug";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
@@ -42,6 +43,7 @@ async function getBookingData(id: number) {
 
   return {
     booking,
+    ownerUsername: owner?.username ?? null,
     ownerLabel: owner?.username ?? "a SoccerRadar user",
     picks,
     leagueById,
@@ -50,15 +52,15 @@ async function getBookingData(id: number) {
 
 export async function generateMetadata({ params }: PageProps<"/bookings/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const numericId = Number(id);
-  if (!Number.isInteger(numericId)) return { title: "Booking not found" };
+  const numericId = parseIdFromParam(id);
+  if (numericId === null) return { title: "Booking not found" };
 
   const data = await getBookingData(numericId);
   if (!data) return { title: "Booking not found" };
 
   const title = `${data.booking.title} — a booking by ${data.ownerLabel}`;
   const description = `${data.picks.length} pick(s) chosen by ${data.ownerLabel} on SoccerRadar.`;
-  const url = `${SITE_URL}/bookings/${numericId}`;
+  const url = `${SITE_URL}/bookings/${buildShareSlug(numericId, data.ownerUsername)}`;
 
   return {
     title,
@@ -72,12 +74,12 @@ export async function generateMetadata({ params }: PageProps<"/bookings/[id]">):
 
 export default async function BookingPage({ params }: PageProps<"/bookings/[id]">) {
   const { id } = await params;
-  const numericId = Number(id);
-  if (!Number.isInteger(numericId)) notFound();
+  const numericId = parseIdFromParam(id);
+  if (numericId === null) notFound();
 
   const data = await getBookingData(numericId);
   if (!data) notFound();
-  const { booking, ownerLabel, picks, leagueById } = data;
+  const { booking, ownerUsername, ownerLabel, picks, leagueById } = data;
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
@@ -88,7 +90,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[id]"
         initialTitle={booking.title}
         picks={picks}
         leagueById={leagueById}
-        shareUrl={`${SITE_URL}/bookings/${booking.id}`}
+        shareUrl={`${SITE_URL}/bookings/${buildShareSlug(booking.id, ownerUsername)}`}
       />
     </main>
   );

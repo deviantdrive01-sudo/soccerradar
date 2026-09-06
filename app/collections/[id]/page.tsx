@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { CollectionManage } from "@/components/collection-manage";
 import { SITE_URL } from "@/lib/site";
+import { buildShareSlug, parseIdFromParam } from "@/lib/share-slug";
 import type { Prediction } from "@/lib/supabase/types";
 
 export const revalidate = 300;
@@ -33,6 +34,7 @@ async function getCollectionData(id: number) {
 
   return {
     collection,
+    ownerUsername: owner?.username ?? null,
     ownerLabel: owner?.username ?? "a SoccerRadar user",
     predictions: predictions ?? [],
     leagueById,
@@ -41,15 +43,15 @@ async function getCollectionData(id: number) {
 
 export async function generateMetadata({ params }: PageProps<"/collections/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const numericId = Number(id);
-  if (!Number.isInteger(numericId)) return { title: "Collection not found" };
+  const numericId = parseIdFromParam(id);
+  if (numericId === null) return { title: "Collection not found" };
 
   const data = await getCollectionData(numericId);
   if (!data) return { title: "Collection not found" };
 
   const title = `${data.collection.title} — a bookmark collection by ${data.ownerLabel}`;
   const description = `${data.predictions.length} prediction(s) picked by ${data.ownerLabel} on SoccerRadar.`;
-  const url = `${SITE_URL}/collections/${numericId}`;
+  const url = `${SITE_URL}/collections/${buildShareSlug(numericId, data.ownerUsername)}`;
 
   return {
     title,
@@ -64,12 +66,12 @@ export async function generateMetadata({ params }: PageProps<"/collections/[id]"
 
 export default async function CollectionPage({ params }: PageProps<"/collections/[id]">) {
   const { id } = await params;
-  const numericId = Number(id);
-  if (!Number.isInteger(numericId)) notFound();
+  const numericId = parseIdFromParam(id);
+  if (numericId === null) notFound();
 
   const data = await getCollectionData(numericId);
   if (!data) notFound();
-  const { collection, ownerLabel, predictions, leagueById } = data;
+  const { collection, ownerUsername, ownerLabel, predictions, leagueById } = data;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6">
@@ -80,7 +82,7 @@ export default async function CollectionPage({ params }: PageProps<"/collections
         initialTitle={collection.title}
         predictions={predictions}
         leagueById={leagueById}
-        shareUrl={`${SITE_URL}/collections/${collection.id}`}
+        shareUrl={`${SITE_URL}/collections/${buildShareSlug(collection.id, ownerUsername)}`}
       />
     </main>
   );
