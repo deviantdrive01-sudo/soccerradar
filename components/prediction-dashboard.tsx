@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useMemo, useState } from "react";
+import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { SearchDropdown } from "@/components/search-dropdown";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,8 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { dateKey, dateLabel } from "@/lib/date-key";
-import { winEitherHalfCode } from "@/lib/hydrate";
+import { dateKey, dateLabel, todayKey } from "@/lib/date-key";
+import { QUICK_FILTER_NONE, QUICK_FILTER_OPTIONS, matchesQuickFilter, type QuickFilter } from "@/lib/quick-filter";
+import { useIsDesktop } from "@/lib/use-is-desktop";
 import { cn } from "cn";
 import type { League, Prediction } from "@/lib/supabase/types";
 
@@ -30,47 +32,6 @@ const ALL_DATES = "all";
 type ViewMode = "cards" | "table";
 const CARD_AD_INTERVAL = 20; // roughly every 6-7 grid rows on the 3-column desktop layout
 const MAX_CARD_ADS = 2; // cap total in-feed ads regardless of how long the list gets
-
-const QUICK_FILTER_NONE = "none";
-type QuickFilter =
-  | typeof QUICK_FILTER_NONE
-  | "cornersO7_5Yes"
-  | "halfDrawYes"
-  | "over1_5Yes"
-  | "over2_5Yes"
-  | "winEitherYes";
-
-const QUICK_FILTER_OPTIONS: { value: QuickFilter; label: string }[] = [
-  { value: QUICK_FILTER_NONE, label: "Quick filter…" },
-  { value: "cornersO7_5Yes", label: "Corners O7.5: Yes" },
-  { value: "halfDrawYes", label: "Half Draw: Yes" },
-  { value: "over1_5Yes", label: "Over 1.5: Yes" },
-  { value: "over2_5Yes", label: "Over 2.5: Yes" },
-  { value: "winEitherYes", label: "Win Either Half: Yes" },
-];
-
-function matchesQuickFilter(prediction: Prediction, filter: QuickFilter): boolean {
-  const m = prediction.markets;
-  switch (filter) {
-    case QUICK_FILTER_NONE:
-      return true;
-    case "cornersO7_5Yes":
-      return m.corners.over7_5;
-    case "halfDrawYes":
-      return m.firstHalfOutcome.code === "X";
-    case "over1_5Yes":
-      return m.goals.over1_5;
-    case "over2_5Yes":
-      return m.goals.over2_5;
-    case "winEitherYes":
-      return winEitherHalfCode(m) !== null;
-  }
-}
-
-/** Impure by nature (reads the clock) — kept out of the component body so it isn't flagged as a render-purity violation. */
-function todayKey(): string {
-  return dateKey(new Date().toISOString());
-}
 
 /**
  * With full history now kept in the dataset (not just a recent window), the
@@ -83,22 +44,6 @@ function defaultActiveDate(availableDates: { key: string }[]): string {
   const today = todayKey();
   const todayOrLater = availableDates.find((d) => d.key >= today);
   return todayOrLater?.key ?? availableDates[availableDates.length - 1].key;
-}
-
-const DESKTOP_QUERY = "(min-width: 1024px)"; // matches Tailwind's `lg` breakpoint used elsewhere in this component
-
-function subscribeIsDesktop(callback: () => void) {
-  const mql = window.matchMedia(DESKTOP_QUERY);
-  mql.addEventListener("change", callback);
-  return () => mql.removeEventListener("change", callback);
-}
-
-function getIsDesktopSnapshot(): boolean {
-  return window.matchMedia(DESKTOP_QUERY).matches;
-}
-
-function getIsDesktopServerSnapshot(): boolean {
-  return false;
 }
 
 export function PredictionDashboard({
@@ -129,10 +74,11 @@ export function PredictionDashboard({
   // to Cards (no horizontal scrolling) on mobile and Table on desktop, but once
   // someone picks a view explicitly, keep it regardless of screen size.
   const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const isDesktop = useSyncExternalStore(subscribeIsDesktop, getIsDesktopSnapshot, getIsDesktopServerSnapshot);
+  const isDesktop = useIsDesktop();
   const viewMode = viewModeOverride ?? (isDesktop ? "table" : "cards");
   const [searchQuery, setSearchQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(QUICK_FILTER_NONE);
+  const activeQuickFilterOption = QUICK_FILTER_OPTIONS.find((o) => o.value === quickFilter);
 
   const leagueById = useMemo(() => new Map(leagues.map((l) => [l.id, l])), [leagues]);
 
@@ -223,6 +169,7 @@ export function PredictionDashboard({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={QUICK_FILTER_NONE}>Quick filter…</SelectItem>
                 {QUICK_FILTER_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -230,6 +177,15 @@ export function PredictionDashboard({
                 ))}
               </SelectContent>
             </Select>
+
+            {activeQuickFilterOption && (
+              <Link
+                href={`/top-picks/${activeQuickFilterOption.slug}`}
+                className="inline-flex h-8 shrink-0 items-center rounded-md border border-primary/40 bg-primary/10 px-3 text-xs font-medium text-primary hover:bg-primary/15"
+              >
+                View &amp; share this list →
+              </Link>
+            )}
 
             <div className="relative w-full sm:max-w-xs">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

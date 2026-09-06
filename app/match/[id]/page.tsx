@@ -5,8 +5,10 @@ import { ArrowLeft } from "lucide-react";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { AdSlot } from "@/components/ad-slot";
+import { ShareButtons } from "@/components/share-buttons";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
+import { SITE_URL } from "@/lib/site";
 import type { Prediction, League } from "@/lib/supabase/types";
 
 export const revalidate = 300;
@@ -92,6 +94,11 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
             {prediction.confidence}% confidence
           </Badge>
         </div>
+
+        <ShareButtons
+          url={`${SITE_URL}/match/${prediction.id}`}
+          title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}
+        />
 
         {settled && actual && (
           <div className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-3">

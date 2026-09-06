@@ -11,3 +11,8 @@ export function dateKey(iso: string): string {
 export function dateLabel(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
+
+/** Impure by nature (reads the clock) — call at the top of a request/render, not inside a memoized/pure derivation. */
+export function todayKey(): string {
+  return dateKey(new Date().toISOString());
+}
