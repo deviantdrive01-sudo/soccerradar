@@ -156,7 +156,11 @@ export function CollectionManage({
           </div>
 
           <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1">
-            <ShareButtons url={shareUrl} title={`${title} — a SoccerRadar bookmark collection by ${ownerLabel}`} />
+            <ShareButtons
+              url={shareUrl}
+              title={`${title} — a SoccerRadar bookmark collection by ${ownerLabel}`}
+              imageUrl={`${shareUrl}/opengraph-image`}
+            />
           </div>
         </div>
       </div>

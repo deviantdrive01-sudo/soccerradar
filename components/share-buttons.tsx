@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Link2 } from "lucide-react";
+import { Check, Download, Link2 } from "lucide-react";
 
 function openShareWindow(url: string) {
   window.open(url, "_blank", "noopener,noreferrer,width=600,height=500");
@@ -33,7 +33,7 @@ export function TelegramIcon(props: React.SVGProps<SVGSVGElement>) {
 
 const ICON_BUTTON = "inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 hover:bg-muted/60";
 
-export function ShareButtons({ url, title }: { url: string; title: string }) {
+export function ShareButtons({ url, title, imageUrl }: { url: string; title: string; imageUrl?: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopyLink() {
@@ -73,6 +73,11 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
       <button type="button" onClick={handleCopyLink} aria-label={copied ? "Link copied" : "Copy link"} className={ICON_BUTTON}>
         {copied ? <Check className="size-3.5 text-emerald-500" /> : <Link2 className="size-3.5" />}
       </button>
+      {imageUrl && (
+        <a href={imageUrl} download aria-label="Download image" className={ICON_BUTTON}>
+          <Download className="size-3.5" />
+        </a>
+      )}
     </div>
   );
 }
