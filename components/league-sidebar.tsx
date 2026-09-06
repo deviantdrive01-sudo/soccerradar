@@ -25,15 +25,15 @@ function CountryRow({
         isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground/80 hover:bg-muted",
       )}
     >
+      <FavoriteButton target={{ type: "country", country }} className="ml-2 shrink-0" />
       <button
         type="button"
         onClick={onClick}
-        className="flex min-w-0 flex-1 items-center justify-between px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wide"
+        className="flex min-w-0 flex-1 items-center justify-between py-2.5 pl-1 pr-3 text-[10px] font-semibold uppercase tracking-wide"
       >
         <span>{country}</span>
         <span className={cn("mr-1", isActive ? "text-primary-foreground/80" : "text-muted-foreground/80")}>{count}</span>
       </button>
-      <FavoriteButton target={{ type: "country", country }} className="mr-2" />
     </div>
   );
 }
@@ -56,13 +56,13 @@ function LeagueRow({
         isActive ? "bg-primary font-semibold text-primary-foreground" : "text-foreground/90 hover:bg-muted",
       )}
     >
-      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center justify-between py-2 pl-5 pr-3 text-sm">
+      <FavoriteButton target={{ type: "league", leagueId: league.id }} className="ml-5 shrink-0" />
+      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center justify-between py-2 pl-1 pr-3 text-sm">
         <span className="truncate">{league.name}</span>
         <span className={cn("ml-2 shrink-0 text-xs font-medium", isActive ? "text-primary-foreground/80" : "text-muted-foreground")}>
           {count}
         </span>
       </button>
-      <FavoriteButton target={{ type: "league", leagueId: league.id }} className="mr-2" />
     </div>
   );
 }
