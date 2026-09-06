@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { User } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
 import { logout } from "@/app/account/actions";
 
+const MENU_ITEMS = [
+  { href: "/account", label: "Overview" },
+  { href: "/account/favorites", label: "My Favorites" },
+  { href: "/account/collections", label: "My Collections" },
+  { href: "/account/profile", label: "Profile Settings" },
+];
+
 export function HeaderAccount() {
   const { loading, user } = useAccount();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   if (loading) {
     return <div className="h-8 w-16 shrink-0" />;
@@ -34,34 +39,29 @@ export function HeaderAccount() {
   }
 
   return (
-    <div className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setMenuOpen((v) => !v)}
+    <div className="group relative shrink-0">
+      <Link
+        href="/account"
         className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
       >
         <User className="size-4" />
-        {user.username ?? "Account"}
-      </button>
-      {menuOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-md border border-border/60 bg-popover py-1 shadow-lg">
-            <Link
-              href="/account/favorites"
-              className="block px-3 py-2 text-sm hover:bg-muted"
-              onClick={() => setMenuOpen(false)}
-            >
-              My Favorites
+        {user.username ?? "My Account"}
+      </Link>
+
+      <div className="invisible absolute right-0 top-full z-20 w-44 pt-1 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">
+        <div className="rounded-md border border-border/60 bg-popover py-1 shadow-lg">
+          {MENU_ITEMS.map((item) => (
+            <Link key={item.href} href={item.href} className="block px-3 py-2 text-sm hover:bg-muted">
+              {item.label}
             </Link>
-            <form action={logout}>
-              <button type="submit" className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
-                Log out
-              </button>
-            </form>
-          </div>
-        </>
-      )}
+          ))}
+          <form action={logout}>
+            <button type="submit" className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
+              Log out
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

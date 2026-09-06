@@ -32,6 +32,7 @@ interface AccountContextValue extends AccountState {
   toggleMatch: (predictionId: number) => void;
   toggleCollectionItem: (collectionId: number, predictionId: number) => void;
   createCollection: (title: string) => Promise<number | null>;
+  refresh: () => void;
 }
 
 const EMPTY_STATE: AccountState = {
@@ -50,6 +51,7 @@ const AccountContext = createContext<AccountContextValue>({
   toggleMatch: () => {},
   toggleCollectionItem: () => {},
   createCollection: async () => null,
+  refresh: () => {},
 });
 
 function withToggled<T>(set: Set<T>, value: T): Set<T> {
@@ -165,7 +167,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AccountContext.Provider
-      value={{ ...state, toggleCountry, toggleLeague, toggleMatch, toggleCollectionItem, createCollection }}
+      value={{ ...state, toggleCountry, toggleLeague, toggleMatch, toggleCollectionItem, createCollection, refresh }}
     >
       {children}
     </AccountContext.Provider>
