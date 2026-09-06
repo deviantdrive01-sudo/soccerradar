@@ -25,7 +25,7 @@ function CountryRow({
         isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground/80 hover:bg-muted",
       )}
     >
-      <FavoriteButton target={{ type: "country", country }} className="ml-2 shrink-0" />
+      <FavoriteButton target={{ type: "country", country }} className="ml-2 shrink-0" data-tour="favorite-button" />
       <button
         type="button"
         onClick={onClick}
@@ -129,7 +129,10 @@ export function LeagueSidebar({
   const hasFavorites = favoriteCountryRows.length > 0 || favoriteLeagueRows.length > 0;
 
   return (
-    <nav className="sticky top-4 flex max-h-[calc(100vh-2rem)] flex-col overflow-y-auto rounded-lg border border-border/60 bg-card/40">
+    <nav
+      data-tour="league-sidebar"
+      className="sticky top-4 flex max-h-[calc(100vh-2rem)] flex-col overflow-y-auto rounded-lg border border-border/60 bg-card/40"
+    >
       <button
         type="button"
         onClick={() => onChange(ALL_LEAGUES)}

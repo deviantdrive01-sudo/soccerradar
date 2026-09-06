@@ -22,7 +22,7 @@ export function CollectionPickerButton({ predictionId }: { predictionId: number 
   }
 
   return (
-    <div className="relative">
+    <div className="relative" data-tour="collection-button">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

@@ -48,7 +48,7 @@ export function BookingAddButton({
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block" data-tour="booking-button">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

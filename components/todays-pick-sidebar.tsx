@@ -5,7 +5,7 @@ import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
 /** Sidebar entry point to the shareable /top-picks/[slug] collections — see components/top-picks-view.tsx. */
 export function TodaysPickSidebar() {
   return (
-    <nav className="overflow-hidden rounded-lg border border-border/60 bg-card/40">
+    <nav data-tour="todays-pick" className="overflow-hidden rounded-lg border border-border/60 bg-card/40">
       <div className="bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground">Todays Pick</div>
       <div className="divide-y divide-border/60">
         {QUICK_FILTER_OPTIONS.map((option) => (

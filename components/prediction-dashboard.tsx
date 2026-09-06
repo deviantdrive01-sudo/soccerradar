@@ -149,7 +149,7 @@ export function PredictionDashboard({
 
       <div className="min-w-0 flex-1 space-y-6">
         <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:mx-0 lg:rounded-lg lg:border">
-          <div className="lg:hidden">
+          <div className="lg:hidden" data-tour="league-sidebar">
             <Select value={activeLeague} onValueChange={setActiveLeagueOverride}>
               <SelectTrigger size="sm" className="h-9 w-full">
                 <SelectValue />
@@ -171,7 +171,7 @@ export function PredictionDashboard({
             </Select>
           </div>
 
-          <div className="lg:hidden">
+          <div className="lg:hidden" data-tour="todays-pick">
             <ScrollArea className="max-w-[calc(100vw-2rem)]">
               <div className="flex items-center gap-1.5 pb-1">
                 <span className="shrink-0 text-xs font-semibold text-muted-foreground">Todays Pick:</span>
@@ -207,7 +207,7 @@ export function PredictionDashboard({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2" data-tour="view-toggle">
             <div className="inline-flex rounded-md border border-border/60 p-0.5">
               <Button
                 type="button"
@@ -243,41 +243,43 @@ export function PredictionDashboard({
 
         <StatsSummary predictions={visiblePredictions} />
 
-        {visiblePredictions.length === 0 ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">
-            No predictions match this search/selection yet.
-          </div>
-        ) : viewMode === "table" ? (
-          <PredictionsTable
-            predictions={visiblePredictions}
-            leagueById={leagueById}
-            marketFilter={marketFilter}
-            rowAction={(prediction) => (
-              <div className="flex items-center justify-center gap-1">
-                <CollectionPickerButton predictionId={prediction.id} />
-                <BookingAddButton predictionId={prediction.id} markets={prediction.markets} />
-              </div>
-            )}
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visiblePredictions.map((prediction, index) => (
-              <Fragment key={prediction.id}>
-                <MatchCard
-                  prediction={prediction}
-                  leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
-                  marketFilter={marketFilter}
-                  bookingButton={<BookingAddButton predictionId={prediction.id} markets={prediction.markets} />}
-                />
-                {(index + 1) % CARD_AD_INTERVAL === 0 &&
-                  index !== visiblePredictions.length - 1 &&
-                  (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (
-                    <AdSlot orientation="horizontal" dismissible className="h-full" />
-                  )}
-              </Fragment>
-            ))}
-          </div>
-        )}
+        <div data-tour="match-list">
+          {visiblePredictions.length === 0 ? (
+            <div className="py-16 text-center text-sm text-muted-foreground">
+              No predictions match this search/selection yet.
+            </div>
+          ) : viewMode === "table" ? (
+            <PredictionsTable
+              predictions={visiblePredictions}
+              leagueById={leagueById}
+              marketFilter={marketFilter}
+              rowAction={(prediction) => (
+                <div className="flex items-center justify-center gap-1">
+                  <CollectionPickerButton predictionId={prediction.id} />
+                  <BookingAddButton predictionId={prediction.id} markets={prediction.markets} />
+                </div>
+              )}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {visiblePredictions.map((prediction, index) => (
+                <Fragment key={prediction.id}>
+                  <MatchCard
+                    prediction={prediction}
+                    leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
+                    marketFilter={marketFilter}
+                    bookingButton={<BookingAddButton predictionId={prediction.id} markets={prediction.markets} />}
+                  />
+                  {(index + 1) % CARD_AD_INTERVAL === 0 &&
+                    index !== visiblePredictions.length - 1 &&
+                    (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (
+                      <AdSlot orientation="horizontal" dismissible className="h-full" />
+                    )}
+                </Fragment>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

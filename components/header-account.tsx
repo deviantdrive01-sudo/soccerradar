@@ -30,16 +30,16 @@ export function HeaderAccount() {
 
   if (!user) {
     return (
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1" data-tour="account">
         <Link
           href="/login"
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:px-3"
         >
           Log in
         </Link>
         <Link
           href="/signup"
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="rounded-md bg-primary px-2 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:px-3"
         >
           Sign up
         </Link>
@@ -48,13 +48,14 @@ export function HeaderAccount() {
   }
 
   return (
-    <div className="group relative shrink-0">
+    <div className="group relative shrink-0" data-tour="account">
       <Link
         href="/account"
-        className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        aria-label={user.username ?? "My Account"}
+        className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:px-3"
       >
         <User className="size-4" />
-        {user.username ?? "My Account"}
+        <span className="hidden sm:inline">{user.username ?? "My Account"}</span>
       </Link>
 
       <div className="invisible absolute right-0 top-full z-20 w-44 pt-1 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">

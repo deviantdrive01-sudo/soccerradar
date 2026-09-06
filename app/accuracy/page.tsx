@@ -67,6 +67,9 @@ export default async function AccuracyPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Track Record</h1>
         <p className="text-sm text-muted-foreground">
+          Every prediction we publish, checked against what actually happened — no cherry-picking, nothing held back.
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
           {overall.totalSettled} settled match{overall.totalSettled === 1 ? "" : "es"}
           {overall.totalSettled > 0 && ` · ${overallPctValue}% overall accuracy`}
         </p>

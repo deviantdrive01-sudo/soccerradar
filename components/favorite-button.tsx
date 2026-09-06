@@ -9,7 +9,11 @@ type FavoriteTarget =
   | { type: "league"; leagueId: number }
   | { type: "match"; predictionId: number };
 
-export function FavoriteButton({ target, className }: { target: FavoriteTarget; className?: string }) {
+export function FavoriteButton({
+  target,
+  className,
+  ...rest
+}: { target: FavoriteTarget; className?: string } & React.ComponentProps<"button">) {
   const { favoriteCountries, favoriteLeagueIds, favoriteMatchIds, toggleCountry, toggleLeague, toggleMatch } =
     useAccount();
 
@@ -30,6 +34,7 @@ export function FavoriteButton({ target, className }: { target: FavoriteTarget; 
 
   return (
     <button
+      {...rest}
       type="button"
       onClick={handleClick}
       aria-label={favorited ? "Remove favorite" : "Add favorite"}

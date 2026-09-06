@@ -8,13 +8,13 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { AdSettingsProvider } from "@/components/ad-settings-provider";
 import { AccountProvider } from "@/components/account-provider";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
 const GA_MEASUREMENT_ID = "G-5DW3J6DCD0";
 const SITE_NAME = "SoccerRadar";
-const SITE_DESCRIPTION = "Confidence-scored AI predictions across 16 top global football leagues, updated daily.";
+const SITE_DESCRIPTION = `${SITE_TAGLINE} AI-generated football predictions across 16 top global leagues, backed by a public, verifiable track record. No cherry-picking, nothing held back.`;
 
 const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 

@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { PredictionDashboard } from "@/components/prediction-dashboard";
+import { ProductTour } from "@/components/product-tour";
+import { SITE_TAGLINE } from "@/lib/site";
 
 export const revalidate = 300;
 
@@ -39,10 +42,15 @@ export default async function Home() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6">
       <p className="text-sm text-muted-foreground">
-        AI-generated predictions across {leagueCount} top global leagues, updated daily.
+        {SITE_TAGLINE} AI-generated predictions across {leagueCount} top global leagues, updated daily —{" "}
+        <Link href="/accuracy" className="font-medium text-foreground underline underline-offset-2 hover:no-underline">
+          see our full track record
+        </Link>
+        .
       </p>
 
       <PredictionDashboard leagues={leagues ?? []} predictions={predictions ?? []} />
+      <ProductTour />
     </main>
   );
 }

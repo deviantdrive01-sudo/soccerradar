@@ -8,7 +8,7 @@ export function HeaderSearch() {
   const [query, setQuery] = useState("");
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" data-tour="search">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <input
         type="text"
