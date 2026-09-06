@@ -2,8 +2,6 @@
 
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
-import { SearchDropdown } from "@/components/search-dropdown";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -76,7 +74,6 @@ export function PredictionDashboard({
   const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
   const isDesktop = useIsDesktop();
   const viewMode = viewModeOverride ?? (isDesktop ? "table" : "cards");
-  const [searchQuery, setSearchQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(QUICK_FILTER_NONE);
   const activeQuickFilterOption = QUICK_FILTER_OPTIONS.find((o) => o.value === quickFilter);
 
@@ -109,18 +106,12 @@ export function PredictionDashboard({
   }, [leagues]);
 
   const visiblePredictions = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
     return dateFilteredPredictions.filter((p) => {
       if (activeLeague !== ALL_LEAGUES && p.league_id !== Number(activeLeague)) return false;
       if (!matchesQuickFilter(p, quickFilter)) return false;
-      if (query) {
-        const leagueName = leagueById.get(p.league_id)?.name ?? "";
-        const haystack = `${p.home_team} ${p.away_team} ${leagueName}`.toLowerCase();
-        if (!haystack.includes(query)) return false;
-      }
       return true;
     });
-  }, [dateFilteredPredictions, activeLeague, quickFilter, searchQuery, leagueById]);
+  }, [dateFilteredPredictions, activeLeague, quickFilter]);
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -186,28 +177,6 @@ export function PredictionDashboard({
                 View &amp; share this list →
               </Link>
             )}
-
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search teams or leagues…"
-                className="h-8 w-full rounded-md border border-border/60 bg-background pl-8 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  aria-label="Clear search"
-                  className="absolute right-2 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-              <SearchDropdown query={searchQuery} />
-            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
