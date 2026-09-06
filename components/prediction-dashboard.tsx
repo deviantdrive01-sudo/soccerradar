@@ -12,25 +12,12 @@ import { MarketFilterToggle, type MarketFilter } from "@/components/market-filte
 import { StatsSummary } from "@/components/stats-summary";
 import { LeagueSidebar, ALL_LEAGUES } from "@/components/league-sidebar";
 import { AdSlot } from "@/components/ad-slot";
+import { dateKey, dateLabel } from "@/lib/date-key";
 import { cn } from "cn";
 import type { League, Prediction } from "@/lib/supabase/types";
 
 const ALL_DATES = "all";
 type ViewMode = "cards" | "table";
-
-/**
- * Calendar-day key in UTC, not the viewer's local time zone — this page is
- * statically prerendered, so a per-viewer time zone would make the server's
- * grouping disagree with the client's on hydration (React error #418).
- */
-function dateKey(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-}
-
-function dateLabel(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
-}
 
 /** Impure by nature (reads the clock) — kept out of the component body so it isn't flagged as a render-purity violation. */
 function todayKey(): string {

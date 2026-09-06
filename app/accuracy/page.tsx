@@ -1,9 +1,8 @@
 import { createSupabaseReadClient } from "@/lib/supabase/client";
-import { accuracyPct, computeAccuracy, computeAccuracyByLeague, type MarketAccuracy } from "@/lib/accuracy";
+import { accuracyPct, computeAccuracy, type MarketAccuracy } from "@/lib/accuracy";
 import { LeagueAccuracyTable } from "@/components/league-accuracy-table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Prediction } from "@/lib/supabase/types";
 
 export const revalidate = 300;
 
@@ -54,16 +53,7 @@ export default async function AccuracyPage() {
 
   const leagueById = new Map((leagues ?? []).map((l) => [l.id, l]));
   const overall = computeAccuracy(predictions ?? []);
-  const byLeague = computeAccuracyByLeague(predictions ?? [], leagueById);
   const overallPctValue = accuracyPct(overall.overallCorrect, overall.overallKnown);
-
-  const settledByLeague = new Map<number, Prediction[]>();
-  for (const p of predictions ?? []) {
-    if (!p.actual_result) continue;
-    const existing = settledByLeague.get(p.league_id);
-    if (existing) existing.push(p);
-    else settledByLeague.set(p.league_id, [p]);
-  }
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6">
@@ -92,8 +82,10 @@ export default async function AccuracyPage() {
 
           <section className="space-y-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">By league</h2>
-            <p className="text-xs text-muted-foreground">Click a league to see the individual matches and how each prediction landed.</p>
-            <LeagueAccuracyTable byLeague={byLeague} settledByLeague={settledByLeague} />
+            <p className="text-xs text-muted-foreground">
+              Click a league to see the individual matches and how each prediction landed — filter by date to narrow it down.
+            </p>
+            <LeagueAccuracyTable predictions={predictions ?? []} leagueById={leagueById} />
           </section>
         </>
       )}
