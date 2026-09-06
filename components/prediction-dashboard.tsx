@@ -26,6 +26,7 @@ import { dateKey, dateLabel, todayKey } from "@/lib/date-key";
 import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
+import { BookerAddButton } from "@/components/booker-add-button";
 import { cn } from "cn";
 import type { League, Prediction } from "@/lib/supabase/types";
 
@@ -254,17 +255,31 @@ export function PredictionDashboard({
             predictions={visiblePredictions}
             leagueById={leagueById}
             marketFilter={marketFilter}
-            rowAction={(prediction) => <CollectionPickerButton predictionId={prediction.id} />}
+            rowAction={(prediction) => (
+              <div className="flex items-center justify-center gap-1">
+                <CollectionPickerButton predictionId={prediction.id} />
+                <BookerAddButton predictionId={prediction.id} markets={prediction.markets} />
+              </div>
+            )}
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visiblePredictions.map((prediction, index) => (
               <Fragment key={prediction.id}>
-                <MatchCard
-                  prediction={prediction}
-                  leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
-                  marketFilter={marketFilter}
-                />
+                <div className="relative">
+                  <MatchCard
+                    prediction={prediction}
+                    leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
+                    marketFilter={marketFilter}
+                  />
+                  <div className="absolute bottom-2 right-2 z-10">
+                    <BookerAddButton
+                      predictionId={prediction.id}
+                      markets={prediction.markets}
+                      className="bg-background/90 shadow-sm backdrop-blur"
+                    />
+                  </div>
+                </div>
                 {(index + 1) % CARD_AD_INTERVAL === 0 &&
                   index !== visiblePredictions.length - 1 &&
                   (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (
