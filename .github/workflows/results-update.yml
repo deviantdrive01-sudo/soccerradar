@@ -1,0 +1,34 @@
+name: Update match results
+
+on:
+  schedule:
+    # 03:12, 09:12, 15:12, 21:12 UTC — matches the cadence the results-update
+    # job has run at manually. GitHub may delay a scheduled run by a few
+    # minutes under load; that's fine here, results aren't time-critical.
+    - cron: "12 3,9,15,21 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  update-results:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install Playwright (this job only — not part of the app's dependencies)
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Run results update
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/update-results.ts
