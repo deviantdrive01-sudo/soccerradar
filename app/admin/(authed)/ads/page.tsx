@@ -1,5 +1,6 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { updateAdSettings } from "./actions";
+import { AdminAdUploadForm } from "@/components/admin-ad-upload-form";
 
 const FIELD = "h-9 w-full rounded-md border border-border/60 bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
@@ -75,18 +76,24 @@ export default async function AdminAdsPage() {
 
         <div className="space-y-1.5">
           <label htmlFor="house_video_path" className="text-sm font-medium">
-            House ad video URL
+            House ad image/video URL
           </label>
           <input
+            key={settings.house_video_path}
             id="house_video_path"
             name="house_video_path"
             defaultValue={settings.house_video_path}
             className={FIELD}
           />
           <p className="text-xs text-muted-foreground">
-            Any publicly reachable MP4 URL — point this at your own hosted file to swap the ad without a
-            redeploy.
+            Any publicly reachable image or MP4 URL, or upload a file below — point this at your own hosted file
+            to swap the ad without a redeploy.
           </p>
+        </div>
+
+        <div className="space-y-1.5 border-t border-border/60 pt-4">
+          <p className="text-sm font-medium">Or upload a file</p>
+          <AdminAdUploadForm />
         </div>
 
         <div className="space-y-1.5">

@@ -48,6 +48,13 @@ function fireAdEvent(type: "impression" | "click") {
   }
 }
 
+const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"];
+
+function isImagePath(path: string): boolean {
+  const clean = path.split("?")[0].toLowerCase();
+  return IMAGE_EXTENSIONS.some((ext) => clean.endsWith(ext));
+}
+
 function HouseAd({
   className,
   orientation,
@@ -63,21 +70,29 @@ function HouseAd({
     fireAdEvent("impression");
   }, []);
 
+  const mediaClassName =
+    orientation === "vertical" ? "aspect-9/16 w-full object-cover" : "aspect-video w-full object-cover";
+
   return (
     <div className={`overflow-hidden rounded-lg border border-border/60 bg-muted/30 ${className ?? ""}`}>
       <div className="border-b border-border/60 bg-muted/50 px-2 py-1">
         <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Advertisement</span>
       </div>
       <a href={clickUrl} target="_blank" rel="noopener noreferrer" onClick={() => fireAdEvent("click")}>
-        <video
-          src={videoPath}
-          poster="/ads/placeholder-ad-poster.jpg"
-          autoPlay
-          muted
-          loop
-          playsInline
-          className={orientation === "vertical" ? "aspect-9/16 w-full object-cover" : "aspect-video w-full object-cover"}
-        />
+        {isImagePath(videoPath) ? (
+          // eslint-disable-next-line @next/next/no-img-element -- external, admin-controlled URL; not worth the Image optimizer round-trip
+          <img src={videoPath} alt="Advertisement" className={mediaClassName} />
+        ) : (
+          <video
+            src={videoPath}
+            poster="/ads/placeholder-ad-poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className={mediaClassName}
+          />
+        )}
       </a>
     </div>
   );
