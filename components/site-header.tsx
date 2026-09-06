@@ -3,6 +3,9 @@ import { BarChart3, Goal } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderSearch } from "@/components/header-search";
 import { HeaderAccount } from "@/components/header-account";
+import { TelegramIcon } from "@/components/share-buttons";
+
+const TELEGRAM_URL = "https://t.me/socceradar";
 
 export function SiteHeader() {
   return (
@@ -29,6 +32,15 @@ export function SiteHeader() {
             <BarChart3 className="size-4" />
             <span className="hidden sm:inline">Track Record</span>
           </Link>
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Join our Telegram community"
+            className="flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <TelegramIcon className="size-4" />
+          </a>
           <ThemeToggle />
           <HeaderAccount />
         </div>
