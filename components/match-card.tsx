@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
+import { CollectionPickerButton } from "@/components/collection-picker-button";
 import type { Prediction } from "@/lib/supabase/types";
 import type { MarketFilter } from "@/components/market-filter";
 import { ChevronDown } from "lucide-react";
@@ -116,14 +117,17 @@ export function MatchCard({
 
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <Link
-            href={`/match/${prediction.id}`}
-            className="min-w-0 text-lg font-semibold leading-tight hover:text-primary hover:underline"
-          >
-            {prediction.home_team}
-            <span className="mx-2 text-muted-foreground font-medium">vs</span>
-            {prediction.away_team}
-          </Link>
+          <div className="flex min-w-0 items-start gap-2">
+            <CollectionPickerButton predictionId={prediction.id} />
+            <Link
+              href={`/match/${prediction.id}`}
+              className="min-w-0 text-lg font-semibold leading-tight hover:text-primary hover:underline"
+            >
+              {prediction.home_team}
+              <span className="mx-2 text-muted-foreground font-medium">vs</span>
+              {prediction.away_team}
+            </Link>
+          </div>
           <Badge variant="outline" className={cn("shrink-0", confidenceClass(prediction.confidence))}>
             {prediction.confidence}% conf
           </Badge>

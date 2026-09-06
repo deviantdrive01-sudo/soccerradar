@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { cn } from "cn";
 import { FavoriteButton } from "@/components/favorite-button";
+import { useAccount } from "@/components/account-provider";
 import { ALL_LEAGUES, countryFilterValue } from "@/lib/country-filter";
 import type { League } from "@/lib/supabase/types";
 
@@ -21,6 +22,7 @@ export function LeagueSidebar({
   onChange: (value: string) => void;
   footer?: React.ReactNode;
 }) {
+  const { favoriteCountries, favoriteLeagueIds } = useAccount();
   const visibleLeagues = leagues.filter((l) => (counts.get(l.id) ?? 0) > 0);
 
   const countryGroups = useMemo(() => {
@@ -32,9 +34,15 @@ export function LeagueSidebar({
     }
     return Array.from(byCountry, ([country, countryLeagues]) => ({
       country,
-      leagues: [...countryLeagues].sort((a, b) => a.name.localeCompare(b.name)),
-    })).sort((a, b) => a.country.localeCompare(b.country));
-  }, [visibleLeagues]);
+      leagues: [...countryLeagues].sort((a, b) => {
+        const favDiff = Number(favoriteLeagueIds.has(b.id)) - Number(favoriteLeagueIds.has(a.id));
+        return favDiff !== 0 ? favDiff : a.name.localeCompare(b.name);
+      }),
+    })).sort((a, b) => {
+      const favDiff = Number(favoriteCountries.has(b.country)) - Number(favoriteCountries.has(a.country));
+      return favDiff !== 0 ? favDiff : a.country.localeCompare(b.country);
+    });
+  }, [visibleLeagues, favoriteCountries, favoriteLeagueIds]);
 
   return (
     <nav className="sticky top-4 flex max-h-[calc(100vh-2rem)] flex-col overflow-y-auto rounded-lg border border-border/60 bg-card/40">

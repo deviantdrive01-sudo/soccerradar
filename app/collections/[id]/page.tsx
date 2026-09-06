@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { CollectionManage } from "@/components/collection-manage";
@@ -66,11 +64,6 @@ export default async function CollectionPage({ params }: PageProps<"/collections
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" />
-        All predictions
-      </Link>
-
       <CollectionManage
         collectionId={collection.id}
         ownerId={collection.user_id}

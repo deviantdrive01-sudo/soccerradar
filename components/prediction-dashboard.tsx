@@ -25,6 +25,7 @@ import {
 import { dateKey, dateLabel, todayKey } from "@/lib/date-key";
 import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
 import { useIsDesktop } from "@/lib/use-is-desktop";
+import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { cn } from "cn";
 import type { League, Prediction } from "@/lib/supabase/types";
 
@@ -253,6 +254,7 @@ export function PredictionDashboard({
             predictions={visiblePredictions}
             leagueById={leagueById}
             marketFilter={marketFilter}
+            rowAction={(prediction) => <CollectionPickerButton predictionId={prediction.id} />}
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

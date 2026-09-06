@@ -38,12 +38,15 @@ export function PredictionsTable({
   leagueById,
   marketFilter,
   showInFeedAds = true,
+  rowAction,
 }: {
   predictions: Prediction[];
   leagueById: Map<number, { name: string }>;
   marketFilter: MarketFilter;
   /** Disable when the page already has its own ad placement (e.g. a sidebar), to avoid doubling up. */
   showInFeedAds?: boolean;
+  /** Optional trailing column per row — e.g. a "Save to collection" or "Remove" control. */
+  rowAction?: (prediction: Prediction) => React.ReactNode;
 }) {
   const showFtDraw = marketFilter === "all" || marketFilter === "ftDraw";
   const showHighestHalf = marketFilter === "all" || marketFilter === "highestHalf";
@@ -63,7 +66,8 @@ export function PredictionsTable({
     (showDrawOrOver ? 1 : 0) +
     (showGoals ? 2 : 0) +
     (showCorners ? 3 : 0) +
-    1; // Confidence
+    1 + // Confidence
+    (rowAction ? 1 : 0);
 
   const groups: { leagueId: number; leagueName: string; rows: Prediction[] }[] = [];
   for (const [leagueId, league] of leagueById) {
@@ -76,6 +80,7 @@ export function PredictionsTable({
       <Table className="text-xs">
         <TableHeader>
           <TableRow>
+            {rowAction && <TableHead className={CELL} />}
             <TableHead className={CELL}>Match</TableHead>
             <TableHead className={cn(CELL, "text-center")}>Kickoff</TableHead>
             {showResult && <TableHead className={CELL}>Result</TableHead>}
@@ -108,6 +113,7 @@ export function PredictionsTable({
               const winEitherHalf = winEitherHalfCode(prediction.markets);
               return (
                 <TableRow key={prediction.id}>
+                  {rowAction && <TableCell className={cn(CELL, "text-center")}>{rowAction(prediction)}</TableCell>}
                   <TableCell className={cn(CELL, "font-medium")}>
                     <Link
                       href={`/match/${prediction.id}`}

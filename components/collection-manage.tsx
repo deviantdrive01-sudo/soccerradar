@@ -1,13 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
+import { useIsDesktop } from "@/lib/use-is-desktop";
+import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/components/match-card";
+import { PredictionsTable } from "@/components/predictions-table";
 import { ShareButtons } from "@/components/share-buttons";
 import { renameCollection, deleteCollection, toggleCollectionItem } from "@/app/account/collections/actions";
+import { cn } from "cn";
 import type { Prediction } from "@/lib/supabase/types";
+
+type ViewMode = "cards" | "table";
 
 export function CollectionManage({
   collectionId,
@@ -29,6 +36,10 @@ export function CollectionManage({
   const { user } = useAccount();
   const router = useRouter();
   const isOwner = user?.userId === ownerId;
+
+  const isDesktop = useIsDesktop();
+  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
+  const viewMode = viewModeOverride ?? (isDesktop ? "table" : "cards");
 
   const [items, setItems] = useState(predictions);
   const [title, setTitle] = useState(initialTitle);
@@ -59,6 +70,18 @@ export function CollectionManage({
 
   return (
     <div className="space-y-4">
+      {isOwner ? (
+        <Link href="/account/collections" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" />
+          My Collections
+        </Link>
+      ) : (
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" />
+          All predictions
+        </Link>
+      )}
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {renaming ? (
@@ -93,7 +116,7 @@ export function CollectionManage({
           <p className="text-sm text-muted-foreground">by {ownerLabel}</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isOwner && !renaming && (
             <>
               <button
@@ -112,6 +135,28 @@ export function CollectionManage({
               </button>
             </>
           )}
+
+          <div className="inline-flex rounded-md border border-border/60 p-0.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setViewModeOverride("cards")}
+              className={cn("h-7 px-3", viewMode === "cards" && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
+            >
+              Cards
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setViewModeOverride("table")}
+              className={cn("h-7 px-3", viewMode === "table" && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}
+            >
+              Table
+            </Button>
+          </div>
+
           <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1">
             <ShareButtons url={shareUrl} title={`${title} — a SoccerRadar bookmark collection by ${ownerLabel}`} />
           </div>
@@ -120,6 +165,27 @@ export function CollectionManage({
 
       {items.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground">No matches in this collection.</div>
+      ) : viewMode === "table" ? (
+        <PredictionsTable
+          predictions={items}
+          leagueById={leagueById}
+          marketFilter="all"
+          showInFeedAds={false}
+          rowAction={
+            isOwner
+              ? (prediction) => (
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(prediction.id)}
+                    aria-label="Remove from collection"
+                    className="inline-flex size-6 items-center justify-center rounded-full border border-border/60 hover:bg-muted"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )
+              : undefined
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((prediction) => (

@@ -27,10 +27,9 @@ export function CollectionPickerButton({ predictionId }: { predictionId: number 
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Save to a collection"
-        className="inline-flex h-7 items-center gap-1 rounded-md border border-border/60 px-2.5 text-xs font-medium hover:bg-muted/60"
+        className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-border/60 hover:bg-muted/60"
       >
         <Bookmark className={inAnyCollection ? "size-3.5 fill-primary text-primary" : "size-3.5"} />
-        Save
       </button>
 
       {open && (
