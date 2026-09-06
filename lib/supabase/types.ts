@@ -27,10 +27,12 @@ export interface AdEvent {
   created_at: string;
 }
 
+export type ProfileRole = "user" | "admin" | "super_admin";
+
 export interface Profile {
   id: string;
   username: string | null;
-  is_admin: boolean;
+  role: ProfileRole;
   created_at: string;
 }
 

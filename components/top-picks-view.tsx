@@ -9,7 +9,6 @@ import { ShareButtons } from "@/components/share-buttons";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingPickButton } from "@/components/booking-pick-button";
 import { AdSlot } from "@/components/ad-slot";
-import { useIsDesktop } from "@/lib/use-is-desktop";
 import { cn } from "cn";
 import type { MarketFilter } from "@/components/market-filter";
 import type { MarketKey } from "@/lib/hydrate";
@@ -35,9 +34,8 @@ export function TopPicksView({
   shareUrl: string;
   shareTitle: string;
 }) {
-  const isDesktop = useIsDesktop();
   const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const viewMode = viewModeOverride ?? (isDesktop ? "table" : "cards");
+  const viewMode = viewModeOverride ?? "table";
 
   const toolbar = (
     <div className="flex flex-wrap items-center justify-between gap-3">

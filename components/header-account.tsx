@@ -64,7 +64,7 @@ export function HeaderAccount() {
               {item.label}
             </Link>
           ))}
-          {user.isAdmin && (
+          {user.role !== "user" && (
             <>
               <div className="my-1 border-t border-border/60" />
               <Link href="/admin" className="block px-3 py-2 text-sm font-medium text-primary hover:bg-muted">

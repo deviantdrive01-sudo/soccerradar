@@ -1,9 +1,16 @@
 import { verifySession } from "@/lib/admin/dal";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { toggleUserBan, toggleUserAdmin } from "./actions";
+import { toggleUserBan, updateUserRole } from "./actions";
 import { AdminDeleteUserButton } from "@/components/admin-delete-user-button";
+import type { ProfileRole } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
+
+const ROLE_LABELS: Record<ProfileRole, string> = {
+  user: "User",
+  admin: "Admin",
+  super_admin: "Super Admin",
+};
 
 function countByUser(rows: { user_id: string }[] | null, into: Map<string, number>) {
   for (const row of rows ?? []) into.set(row.user_id, (into.get(row.user_id) ?? 0) + 1);
@@ -11,11 +18,12 @@ function countByUser(rows: { user_id: string }[] | null, into: Map<string, numbe
 
 export default async function AdminUsersPage() {
   const session = await verifySession();
+  const isSuperAdmin = session.role === "super_admin";
   const supabase = createAdminSupabaseClient();
 
   const [{ data: userList }, { data: profiles }] = await Promise.all([
     supabase.auth.admin.listUsers({ perPage: 1000 }),
-    supabase.from("profiles").select("id, username, is_admin"),
+    supabase.from("profiles").select("id, username, role"),
   ]);
 
   const users = userList?.users ?? [];
@@ -49,11 +57,12 @@ export default async function AdminUsersPage() {
         <h1 className="text-2xl font-bold tracking-tight">Users</h1>
         <p className="text-sm text-muted-foreground">
           {users.length} registered account{users.length === 1 ? "" : "s"}.
+          {!isSuperAdmin && " You can disable/enable regular user accounts; only a super admin can change roles or delete accounts."}
         </p>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border/60">
-        <table className="w-full min-w-[820px] text-sm">
+        <table className="w-full min-w-[880px] text-sm">
           <thead>
             <tr className="border-b border-border/60 text-left text-muted-foreground">
               <th className="p-2 font-medium">User</th>
@@ -68,8 +77,11 @@ export default async function AdminUsersPage() {
           <tbody>
             {sortedUsers.map((u) => {
               const profile = profileById.get(u.id);
+              const role: ProfileRole = profile?.role ?? "user";
               const isBanned = !!u.banned_until && new Date(u.banned_until) > new Date();
               const isSelf = u.id === session.userId;
+              // A plain admin can only act on regular users, never another admin/super_admin.
+              const canManage = isSuperAdmin || role === "user";
 
               return (
                 <tr key={u.id} className="border-b border-border/60 last:border-0">
@@ -85,9 +97,15 @@ export default async function AdminUsersPage() {
                   <td className="p-2 text-center">{bookingCountByUser.get(u.id) ?? 0}</td>
                   <td className="p-2">
                     <div className="flex items-center justify-center gap-1">
-                      {profile?.is_admin && (
-                        <span className="rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
-                          Admin
+                      {role !== "user" && (
+                        <span
+                          className={
+                            role === "super_admin"
+                              ? "rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] font-medium text-amber-500"
+                              : "rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary"
+                          }
+                        >
+                          {ROLE_LABELS[role]}
                         </span>
                       )}
                       {isBanned && (
@@ -100,6 +118,8 @@ export default async function AdminUsersPage() {
                   <td className="p-2">
                     {isSelf ? (
                       <div className="text-right text-xs text-muted-foreground">You</div>
+                    ) : !canManage ? (
+                      <div className="text-right text-xs text-muted-foreground">—</div>
                     ) : (
                       <div className="flex items-center justify-end gap-1.5">
                         <form action={toggleUserBan}>
@@ -112,17 +132,29 @@ export default async function AdminUsersPage() {
                             {isBanned ? "Enable" : "Disable"}
                           </button>
                         </form>
-                        <form action={toggleUserAdmin}>
-                          <input type="hidden" name="userId" value={u.id} />
-                          <input type="hidden" name="currentlyAdmin" value={String(!!profile?.is_admin)} />
-                          <button
-                            type="submit"
-                            className="h-7 rounded-md border border-border/60 px-2 text-xs font-medium hover:bg-muted/60"
-                          >
-                            {profile?.is_admin ? "Revoke admin" : "Make admin"}
-                          </button>
-                        </form>
-                        <AdminDeleteUserButton userId={u.id} label={profile?.username ?? u.email ?? "this user"} />
+                        {isSuperAdmin && (
+                          <>
+                            <form action={updateUserRole} className="flex items-center gap-1">
+                              <input type="hidden" name="userId" value={u.id} />
+                              <select
+                                name="role"
+                                defaultValue={role}
+                                className="h-7 rounded-md border border-border/60 bg-background px-1.5 text-xs"
+                              >
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                              </select>
+                              <button
+                                type="submit"
+                                className="h-7 rounded-md border border-border/60 px-2 text-xs font-medium hover:bg-muted/60"
+                              >
+                                Save
+                              </button>
+                            </form>
+                            <AdminDeleteUserButton userId={u.id} label={profile?.username ?? u.email ?? "this user"} />
+                          </>
+                        )}
                       </div>
                     )}
                   </td>

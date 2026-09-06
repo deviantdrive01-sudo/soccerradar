@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, X } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
-import { useIsDesktop } from "@/lib/use-is-desktop";
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/components/match-card";
 import { PredictionsTable } from "@/components/predictions-table";
@@ -37,9 +36,8 @@ export function CollectionManage({
   const router = useRouter();
   const isOwner = user?.userId === ownerId;
 
-  const isDesktop = useIsDesktop();
   const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const viewMode = viewModeOverride ?? (isDesktop ? "table" : "cards");
+  const viewMode = viewModeOverride ?? "table";
 
   const [items, setItems] = useState(predictions);
   const [title, setTitle] = useState(initialTitle);

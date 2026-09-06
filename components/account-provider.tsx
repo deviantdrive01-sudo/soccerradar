@@ -6,12 +6,13 @@ import { toggleFavoriteCountry, toggleFavoriteLeague, toggleFavoriteMatch } from
 import { createCollection as createCollectionAction, toggleCollectionItem as toggleCollectionItemAction } from "@/app/account/collections/actions";
 import { createBooking as createBookingAction, toggleBookingItem as toggleBookingItemAction } from "@/app/account/bookings/actions";
 import type { MarketKey } from "@/lib/hydrate";
+import type { ProfileRole } from "@/lib/supabase/types";
 
 export interface AccountUser {
   userId: string;
   email: string | null;
   username: string | null;
-  isAdmin: boolean;
+  role: ProfileRole;
 }
 
 export interface AccountCollection {

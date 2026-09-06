@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/select";
 import { dateKey, dateLabel, todayKey } from "@/lib/date-key";
 import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
-import { useIsDesktop } from "@/lib/use-is-desktop";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingAddButton } from "@/components/booking-add-button";
 import { cn } from "cn";
@@ -87,12 +86,10 @@ export function PredictionDashboard({
   const activeLeague = activeLeagueOverride ?? urlLeague ?? ALL_LEAGUES;
   const [activeDate, setActiveDate] = useState<string>(() => defaultActiveDate(availableDates));
   const [marketFilter, setMarketFilter] = useState<MarketFilter>("all");
-  // Table's dense multi-column layout needs room a phone doesn't have — default
-  // to Cards (no horizontal scrolling) on mobile and Table on desktop, but once
-  // someone picks a view explicitly, keep it regardless of screen size.
+  // Table is the default everywhere now; once someone picks a view
+  // explicitly, keep it regardless of screen size.
   const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const isDesktop = useIsDesktop();
-  const viewMode = viewModeOverride ?? (isDesktop ? "table" : "cards");
+  const viewMode = viewModeOverride ?? "table";
 
   const leagueById = useMemo(() => new Map(leagues.map((l) => [l.id, l])), [leagues]);
 
