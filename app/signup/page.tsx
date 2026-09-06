@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 import { signup, type AuthState } from "@/app/account/actions";
+import { useAccount } from "@/components/account-provider";
 
 const initialState: AuthState = {};
 
@@ -10,6 +13,15 @@ const FIELD = "h-9 w-full rounded-md border border-border/60 bg-background px-3 
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signup, initialState);
+  const { refresh } = useAccount();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.success) {
+      refresh();
+      router.push("/");
+    }
+  }, [state?.success, refresh, router]);
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-4 py-16">

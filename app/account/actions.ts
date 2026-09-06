@@ -1,10 +1,10 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export interface AuthState {
   error?: string;
+  success?: boolean;
 }
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
@@ -24,7 +24,7 @@ export async function login(_prevState: AuthState | undefined, formData: FormDat
     return { error: "Invalid email or password." };
   }
 
-  redirect("/");
+  return { success: true };
 }
 
 export async function signup(_prevState: AuthState | undefined, formData: FormData): Promise<AuthState> {
@@ -59,11 +59,10 @@ export async function signup(_prevState: AuthState | undefined, formData: FormDa
     return { error: error.message.includes("already registered") ? "That email is already registered." : "Could not create your account." };
   }
 
-  redirect("/");
+  return { success: true };
 }
 
-export async function logout() {
+export async function logout(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/");
 }

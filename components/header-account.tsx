@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { User } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
 import { logout } from "@/app/account/actions";
@@ -13,7 +14,14 @@ const MENU_ITEMS = [
 ];
 
 export function HeaderAccount() {
-  const { loading, user } = useAccount();
+  const { loading, user, refresh } = useAccount();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await logout();
+    refresh();
+    router.push("/");
+  }
 
   if (loading) {
     return <div className="h-8 w-16 shrink-0" />;
@@ -63,11 +71,9 @@ export function HeaderAccount() {
               </Link>
             </>
           )}
-          <form action={logout}>
-            <button type="submit" className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
-              Log out
-            </button>
-          </form>
+          <button type="button" onClick={handleLogout} className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
+            Log out
+          </button>
         </div>
       </div>
     </div>
