@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       for (const fixture of fixtures) {
         const stats = await fetchFixtureStats(fixture);
         fixtureContexts.push({
-          matchId: fixture.fixture.id,
+          matchId: String(fixture.fixture.id),
           homeTeam: fixture.teams.home.name,
           awayTeam: fixture.teams.away.name,
           leagueName: league.name,

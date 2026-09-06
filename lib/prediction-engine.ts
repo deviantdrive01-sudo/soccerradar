@@ -5,7 +5,21 @@ import {
   isCompactPrediction,
   type HydratedPrediction,
 } from "@/lib/hydrate";
-import type { FixtureStatsContext } from "@/lib/api-football";
+
+/**
+ * Recent-form / head-to-head stats bundle passed to Claude as analysis
+ * context. Fields are `unknown` because the shape depends on the source
+ * feeding it — currently either lib/api-football.ts (basic H2H fixture
+ * results + last-5 team fixtures, no corner data) or the Flashscore-based
+ * scripts/update-predictions.ts pipeline (same idea, but headToHead entries
+ * include real per-match corner counts scraped from each h2h fixture's own
+ * Stats tab).
+ */
+export interface FixtureStatsContext {
+  headToHead: unknown;
+  homeTeamForm: unknown;
+  awayTeamForm: unknown;
+}
 
 /**
  * Token-optimized prediction service.
@@ -23,12 +37,11 @@ const DEFAULT_MODEL = "claude-sonnet-5";
 const BATCH_SIZE = 8; // fixtures per Claude call — keeps prompts small & cacheable
 
 export interface FixtureContext {
-  matchId: number;
+  matchId: string;
   homeTeam: string;
   awayTeam: string;
   leagueName: string;
   kickoff: string; // ISO date
-  /** Recent-form / head-to-head / stats context fetched from API-Football. */
   stats: FixtureStatsContext;
 }
 
@@ -37,7 +50,7 @@ const SYSTEM_PROMPT = `You are a football (soccer) prediction analyst for Soccer
 For each fixture provided, analyze the supplied stats (recent form, head-to-head, home/away splits) and predict the following markets. Respond ONLY with a compact JSON array — no prose, no markdown fences, no explanation outside the JSON.
 
 Each array element must have EXACTLY these keys:
-- "id": the match_id (integer), copied from the input
+- "id": the match_id (string), copied from the input exactly as given
 - "o": full-time outcome, one of "1" (home win) | "X" (draw) | "2" (away win)
 - "ht": first-half-only outcome (goals scored in the 1st half only), same coding as "o"
 - "h2": second-half-only outcome (goals scored in the 2nd half only), same coding as "o" — predict this independently, don't just infer it from "o" and "ht", since a team can win the match overall while losing the second-half goal battle outright
@@ -47,10 +60,11 @@ Each array element must have EXACTLY these keys:
 - "conf": integer confidence score 1-100 for this prediction set
 - "sum": one short sentence (max ~25 words) of tactical reasoning
 
-Corner-market methodology: weigh head-to-head history for these two specific teams at least as heavily as current form. Look at the corner counts from their last 3 meetings (headToHead in the input) specifically:
-- If that history consistently shows high corner counts between these two teams, treat it as a strong signal corners will be high again this time — head-to-head tendencies between specific opponents tend to repeat (tactical matchups, playing styles) more than random chance would suggest.
-- If at least 2 of the last 3 meetings had low corner counts, treat that as a red flag against the over lines, even if current form looks corner-heavy.
-- Head-to-head history should inform the prediction, not override it outright — still weigh current form, and fall back to current form and team style when head-to-head data is sparse, absent, or fewer than 3 matches are available.
+Corner-market methodology: weigh head-to-head history for these two specific teams at least as heavily as current form. Each entry in headToHead may include a "corners" field with the real total corner count from that specific past meeting (home + away, scraped from that match's own stats) — when present, use these actual numbers rather than estimating from form:
+- If the available corners figures consistently run high between these two teams, treat it as a strong signal corners will be high again this time — head-to-head tendencies between specific opponents tend to repeat (tactical matchups, playing styles) more than random chance would suggest.
+- If at least 2 of the available meetings had low corner counts, treat that as a red flag against the over lines, even if current form looks corner-heavy.
+- Some headToHead entries may have "corners": null (not available for that match) — ignore those entries for the corner read specifically, and base it only on entries where real corner data is present.
+- Head-to-head history should inform the prediction, not override it outright — still weigh current form, and fall back to current form and team style when head-to-head data is sparse, absent, or no entries have corner data available.
 
 Output strictly valid JSON: an array of objects with exactly those keys, no additional keys, no trailing commentary.`;
 

@@ -13,7 +13,7 @@ export type ScoringHalfCode = "1st" | "2nd" | "Equal";
 
 /** Exact shape Claude must return, per match, in the compact response. */
 export interface CompactPrediction {
-  id: number; // match_id, echoed back by the model for reconciliation
+  id: string; // match_id, echoed back by the model for reconciliation
   o: OutcomeCode;
   ht: OutcomeCode;
   h2: OutcomeCode; // second-half-only outcome (goals scored in the 2nd half only)
@@ -42,7 +42,7 @@ export interface HydratedMarkets {
 }
 
 export interface HydratedPrediction {
-  matchId: number;
+  matchId: string;
   markets: HydratedMarkets;
   confidence: number;
   summary: string;
@@ -362,7 +362,7 @@ export function isCompactPrediction(value: unknown): value is CompactPrediction 
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return (
-    typeof v.id === "number" &&
+    typeof v.id === "string" &&
     (v.o === "1" || v.o === "X" || v.o === "2") &&
     (v.ht === "1" || v.ht === "X" || v.ht === "2") &&
     (v.h2 === "1" || v.h2 === "X" || v.h2 === "2") &&

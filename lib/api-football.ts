@@ -1,4 +1,5 @@
 import "server-only";
+import type { FixtureStatsContext } from "@/lib/prediction-engine";
 
 const API_FOOTBALL_BASE_URL = "https://v3.football.api-sports.io";
 
@@ -44,12 +45,6 @@ export async function fetchWeeklyFixtures(
     from,
     to,
   });
-}
-
-export interface FixtureStatsContext {
-  headToHead: unknown;
-  homeTeamForm: unknown;
-  awayTeamForm: unknown;
 }
 
 /** Compact stats bundle for a single fixture, used as Claude's analysis context. */

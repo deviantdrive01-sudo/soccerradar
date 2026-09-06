@@ -91,7 +91,7 @@ export interface BookingItem {
 export interface Prediction {
   id: number;
   league_id: number;
-  match_id: number;
+  match_id: string;
   home_team: string;
   away_team: string;
   match_date: string;
