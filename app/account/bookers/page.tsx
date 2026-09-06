@@ -3,22 +3,10 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/account/dal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createBooker, deleteBooker } from "./actions";
+import { AccountCreateForm } from "@/components/account-create-form";
+import { AccountDeleteButton } from "@/components/account-delete-button";
 
 export const dynamic = "force-dynamic";
-
-const FIELD = "h-9 flex-1 rounded-md border border-border/60 bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
-
-async function createBookerAction(formData: FormData) {
-  "use server";
-  const title = String(formData.get("title") ?? "");
-  if (title.trim()) await createBooker(title);
-}
-
-async function deleteBookerAction(formData: FormData) {
-  "use server";
-  const id = Number(formData.get("id"));
-  if (Number.isFinite(id)) await deleteBooker(id);
-}
 
 export default async function BookersPage() {
   const user = await getCurrentUser();
@@ -52,15 +40,7 @@ export default async function BookersPage() {
         </p>
       </div>
 
-      <form action={createBookerAction} className="flex items-center gap-2">
-        <input name="title" placeholder="New booker name" required className={FIELD} />
-        <button
-          type="submit"
-          className="h-9 shrink-0 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Create
-        </button>
-      </form>
+      <AccountCreateForm action={createBooker} placeholder="New booker name" />
 
       {(bookers ?? []).length === 0 ? (
         <p className="text-sm text-muted-foreground">No bookers yet — create one above.</p>
@@ -74,15 +54,7 @@ export default async function BookersPage() {
                   {itemCountByBooker.get(b.id) ?? 0} pick{itemCountByBooker.get(b.id) === 1 ? "" : "s"}
                 </div>
               </Link>
-              <form action={deleteBookerAction}>
-                <input type="hidden" name="id" value={b.id} />
-                <button
-                  type="submit"
-                  className="h-8 shrink-0 rounded-md border border-border/60 px-2.5 text-xs font-medium hover:bg-muted/60"
-                >
-                  Delete
-                </button>
-              </form>
+              <AccountDeleteButton action={deleteBooker} id={b.id} />
             </div>
           ))}
         </div>

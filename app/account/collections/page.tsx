@@ -3,22 +3,10 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/account/dal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createCollection, deleteCollection } from "./actions";
+import { AccountCreateForm } from "@/components/account-create-form";
+import { AccountDeleteButton } from "@/components/account-delete-button";
 
 export const dynamic = "force-dynamic";
-
-const FIELD = "h-9 flex-1 rounded-md border border-border/60 bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
-
-async function createCollectionAction(formData: FormData) {
-  "use server";
-  const title = String(formData.get("title") ?? "");
-  if (title.trim()) await createCollection(title);
-}
-
-async function deleteCollectionAction(formData: FormData) {
-  "use server";
-  const id = Number(formData.get("id"));
-  if (Number.isFinite(id)) await deleteCollection(id);
-}
 
 export default async function CollectionsPage() {
   const user = await getCurrentUser();
@@ -49,15 +37,7 @@ export default async function CollectionsPage() {
         <p className="text-sm text-muted-foreground">Named groups of predictions you can share with a link.</p>
       </div>
 
-      <form action={createCollectionAction} className="flex items-center gap-2">
-        <input name="title" placeholder="New collection name" required className={FIELD} />
-        <button
-          type="submit"
-          className="h-9 shrink-0 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Create
-        </button>
-      </form>
+      <AccountCreateForm action={createCollection} placeholder="New collection name" />
 
       {(collections ?? []).length === 0 ? (
         <p className="text-sm text-muted-foreground">No collections yet — create one above.</p>
@@ -71,15 +51,7 @@ export default async function CollectionsPage() {
                   {itemCountByCollection.get(c.id) ?? 0} match{itemCountByCollection.get(c.id) === 1 ? "" : "es"}
                 </div>
               </Link>
-              <form action={deleteCollectionAction}>
-                <input type="hidden" name="id" value={c.id} />
-                <button
-                  type="submit"
-                  className="h-8 shrink-0 rounded-md border border-border/60 px-2.5 text-xs font-medium hover:bg-muted/60"
-                >
-                  Delete
-                </button>
-              </form>
+              <AccountDeleteButton action={deleteCollection} id={c.id} />
             </div>
           ))}
         </div>
