@@ -37,9 +37,10 @@ export function SiteHeader() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Join our Telegram community"
-            className="flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
           >
             <TelegramIcon className="size-4" />
+            <span className="hidden sm:inline">Join our Community</span>
           </a>
           <ThemeToggle />
           <HeaderAccount />
