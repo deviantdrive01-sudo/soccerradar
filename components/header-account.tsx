@@ -55,6 +55,14 @@ export function HeaderAccount() {
               {item.label}
             </Link>
           ))}
+          {user.isAdmin && (
+            <>
+              <div className="my-1 border-t border-border/60" />
+              <Link href="/admin" className="block px-3 py-2 text-sm font-medium text-primary hover:bg-muted">
+                Admin Dashboard
+              </Link>
+            </>
+          )}
           <form action={logout}>
             <button type="submit" className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
               Log out

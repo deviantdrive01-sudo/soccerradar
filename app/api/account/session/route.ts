@@ -19,7 +19,7 @@ export async function GET() {
 
   const [{ data: profile }, { data: countries }, { data: leagues }, { data: matches }, { data: collections }] =
     await Promise.all([
-      supabase.from("profiles").select("username").eq("id", user.id).single(),
+      supabase.from("profiles").select("username, is_admin").eq("id", user.id).single(),
       supabase.from("favorite_countries").select("country").eq("user_id", user.id),
       supabase.from("favorite_leagues").select("league_id").eq("user_id", user.id),
       supabase.from("favorite_matches").select("prediction_id").eq("user_id", user.id),
@@ -40,7 +40,12 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    user: { userId: user.id, email: user.email ?? null, username: profile?.username ?? null },
+    user: {
+      userId: user.id,
+      email: user.email ?? null,
+      username: profile?.username ?? null,
+      isAdmin: profile?.is_admin ?? false,
+    },
     favorites: {
       countries: (countries ?? []).map((c) => c.country),
       leagueIds: (leagues ?? []).map((l) => l.league_id),

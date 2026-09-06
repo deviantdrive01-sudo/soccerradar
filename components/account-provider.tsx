@@ -9,6 +9,7 @@ export interface AccountUser {
   userId: string;
   email: string | null;
   username: string | null;
+  isAdmin: boolean;
 }
 
 export interface AccountCollection {
