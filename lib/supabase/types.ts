@@ -55,6 +55,21 @@ export interface FavoriteMatch {
   created_at: string;
 }
 
+export interface BookmarkCollection {
+  id: number;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookmarkCollectionItem {
+  id: number;
+  collection_id: number;
+  prediction_id: number;
+  created_at: string;
+}
+
 export interface Prediction {
   id: number;
   league_id: number;
@@ -136,6 +151,18 @@ export interface Database {
         Row: Row<FavoriteMatch>;
         Insert: Row<Omit<FavoriteMatch, "id" | "created_at"> & { id?: number }>;
         Update: Row<Partial<Omit<FavoriteMatch, "id">>>;
+        Relationships: [];
+      };
+      bookmark_collections: {
+        Row: Row<BookmarkCollection>;
+        Insert: Row<Omit<BookmarkCollection, "id" | "created_at" | "updated_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<BookmarkCollection, "id" | "created_at">>>;
+        Relationships: [];
+      };
+      bookmark_collection_items: {
+        Row: Row<BookmarkCollectionItem>;
+        Insert: Row<Omit<BookmarkCollectionItem, "id" | "created_at"> & { id?: number }>;
+        Update: Row<Partial<Omit<BookmarkCollectionItem, "id">>>;
         Relationships: [];
       };
     };

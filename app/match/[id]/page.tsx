@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AdSlot } from "@/components/ad-slot";
 import { ShareButtons } from "@/components/share-buttons";
 import { FavoriteButton } from "@/components/favorite-button";
+import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SITE_URL } from "@/lib/site";
@@ -80,6 +81,7 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
             target={{ type: "match", predictionId: prediction.id }}
             className="rounded-md border border-border/60"
           />
+          <CollectionPickerButton predictionId={prediction.id} />
           <ShareButtons
             url={`${SITE_URL}/match/${prediction.id}`}
             title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}

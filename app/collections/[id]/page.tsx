@@ -1,0 +1,85 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { notFound } from "next/navigation";
+import { createSupabaseReadClient } from "@/lib/supabase/client";
+import { CollectionManage } from "@/components/collection-manage";
+import { SITE_URL } from "@/lib/site";
+import type { Prediction } from "@/lib/supabase/types";
+
+export const revalidate = 300;
+
+async function getCollectionData(id: number) {
+  const supabase = createSupabaseReadClient();
+
+  const { data: collection } = await supabase
+    .from("bookmark_collections")
+    .select("id, user_id, title")
+    .eq("id", id)
+    .maybeSingle();
+  if (!collection) return null;
+
+  const [{ data: owner }, { data: items }, { data: leagues }] = await Promise.all([
+    supabase.from("profiles").select("username").eq("id", collection.user_id).maybeSingle(),
+    supabase.from("bookmark_collection_items").select("prediction_id").eq("collection_id", id),
+    supabase.from("leagues").select("id, name"),
+  ]);
+
+  const predictionIds = (items ?? []).map((i) => i.prediction_id);
+  const { data: predictions } =
+    predictionIds.length > 0
+      ? await supabase.from("predictions").select("*").in("id", predictionIds).order("match_date", { ascending: true })
+      : { data: [] as Prediction[] };
+
+  const leagueById = new Map((leagues ?? []).map((l) => [l.id, l]));
+
+  return {
+    collection,
+    ownerLabel: owner?.username ?? "a SoccerRadar user",
+    predictions: predictions ?? [],
+    leagueById,
+  };
+}
+
+export async function generateMetadata({ params }: PageProps<"/collections/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId)) return { title: "Collection not found — SoccerRadar" };
+
+  const data = await getCollectionData(numericId);
+  if (!data) return { title: "Collection not found — SoccerRadar" };
+
+  return {
+    title: `${data.collection.title} — a bookmark collection by ${data.ownerLabel} | SoccerRadar`,
+    description: `${data.predictions.length} prediction(s) picked by ${data.ownerLabel} on SoccerRadar.`,
+  };
+}
+
+export default async function CollectionPage({ params }: PageProps<"/collections/[id]">) {
+  const { id } = await params;
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId)) notFound();
+
+  const data = await getCollectionData(numericId);
+  if (!data) notFound();
+  const { collection, ownerLabel, predictions, leagueById } = data;
+
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6">
+      <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-4" />
+        All predictions
+      </Link>
+
+      <CollectionManage
+        collectionId={collection.id}
+        ownerId={collection.user_id}
+        ownerLabel={ownerLabel}
+        initialTitle={collection.title}
+        predictions={predictions}
+        leagueById={leagueById}
+        shareUrl={`${SITE_URL}/collections/${collection.id}`}
+      />
+    </main>
+  );
+}
