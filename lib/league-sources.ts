@@ -39,13 +39,13 @@ export const LEAGUE_SOURCES: LeagueSource[] = [
   { leagueId: 7, leagueName: "Eredivisie", slug: "netherlands/eredivisie" },
   { leagueId: 8, leagueName: "Pro League", slug: "belgium/jupiler-pro-league" },
   { leagueId: 9, leagueName: "Super Lig", slug: "turkey/super-lig" },
-  // 10 Scottish Premiership — slug not yet verified
+  { leagueId: 10, leagueName: "Scottish Premiership", slug: "scotland/premiership" },
   { leagueId: 11, leagueName: "2. Bundesliga", slug: "germany/2-bundesliga" },
   { leagueId: 12, leagueName: "Superliga (Denmark)", slug: "denmark/superliga" },
-  // 13 Saudi Pro League — slug not yet verified
+  { leagueId: 13, leagueName: "Saudi Pro League", slug: "saudi-arabia/saudi-professional-league" },
   { leagueId: 14, leagueName: "MLS", slug: "usa/mls" },
-  // 15 Super League (Switzerland, top flight) — slug not yet verified
-  // 16 Superliga (Romania) — slug not yet verified
+  { leagueId: 15, leagueName: "Super League (Switzerland)", slug: "switzerland/super-league" },
+  { leagueId: 16, leagueName: "Superliga (Romania)", slug: "romania/superliga" },
   { leagueId: 17, leagueName: "Brasileirão Série A", slug: "brazil/serie-a-betano" },
   { leagueId: 18, leagueName: "Liga Profesional Argentina", slug: "argentina/liga-profesional" },
   { leagueId: 19, leagueName: "Primera Nacional", slug: "argentina/primera-nacional" },
