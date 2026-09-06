@@ -113,20 +113,12 @@ export function TopPicksView({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {predictions.map((prediction, index) => (
           <Fragment key={prediction.id}>
-            <div className="relative">
-              <MatchCard
-                prediction={prediction}
-                leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
-                marketFilter={marketFilter}
-              />
-              <div className="absolute bottom-2 right-2 z-10">
-                <BookerPickButton
-                  predictionId={prediction.id}
-                  marketKey={marketKey}
-                  className="size-6 bg-background/90 shadow-sm backdrop-blur"
-                />
-              </div>
-            </div>
+            <MatchCard
+              prediction={prediction}
+              leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
+              marketFilter={marketFilter}
+              bookerButton={<BookerPickButton predictionId={prediction.id} marketKey={marketKey} />}
+            />
             {(index + 1) % CARD_AD_INTERVAL === 0 &&
               index !== predictions.length - 1 &&
               (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (

@@ -88,10 +88,13 @@ export function MatchCard({
   prediction,
   leagueName,
   marketFilter,
+  bookerButton,
 }: {
   prediction: Prediction;
   leagueName: string;
   marketFilter: MarketFilter;
+  /** Optional — callers decide which booker control fits (fixed-market vs pick-a-market), placed beside the collection button. */
+  bookerButton?: React.ReactNode;
 }) {
   const kickoff = new Date(prediction.match_date);
   const showFtDraw = marketFilter === "all" || marketFilter === "ftDraw";
@@ -119,6 +122,7 @@ export function MatchCard({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-2">
             <CollectionPickerButton predictionId={prediction.id} />
+            {bookerButton}
             <Link
               href={`/match/${prediction.id}`}
               className="min-w-0 text-lg font-semibold leading-tight hover:text-primary hover:underline"
