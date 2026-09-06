@@ -5,6 +5,19 @@ import { cn } from "cn";
 import type { League } from "@/lib/supabase/types";
 
 export const ALL_LEAGUES = "all";
+const COUNTRY_PREFIX = "country:";
+
+export function countryFilterValue(country: string): string {
+  return `${COUNTRY_PREFIX}${country}`;
+}
+
+export function isCountryFilterValue(value: string): boolean {
+  return value.startsWith(COUNTRY_PREFIX);
+}
+
+export function countryFromFilterValue(value: string): string {
+  return value.slice(COUNTRY_PREFIX.length);
+}
 
 export function LeagueSidebar({
   leagues,
@@ -57,11 +70,25 @@ export function LeagueSidebar({
         </span>
       </button>
       <div className="border-t border-border/60">
-        {countryGroups.map(({ country, leagues: countryLeagues }) => (
+        {countryGroups.map(({ country, leagues: countryLeagues }) => {
+          const countryValue = countryFilterValue(country);
+          const isCountryActive = activeLeague === countryValue;
+          const countryCount = countryLeagues.reduce((sum, l) => sum + (counts.get(l.id) ?? 0), 0);
+          return (
           <div key={country}>
-            <div className="px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80">
-              {country}
-            </div>
+            <button
+              type="button"
+              onClick={() => onChange(countryValue)}
+              className={cn(
+                "flex w-full items-center justify-between px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+                isCountryActive ? "bg-primary text-primary-foreground" : "text-muted-foreground/80 hover:bg-muted",
+              )}
+            >
+              <span>{country}</span>
+              <span className={cn(isCountryActive ? "text-primary-foreground/80" : "text-muted-foreground/80")}>
+                {countryCount}
+              </span>
+            </button>
             {countryLeagues.map((league) => {
               const isActive = activeLeague === String(league.id);
               return (
@@ -87,7 +114,8 @@ export function LeagueSidebar({
               );
             })}
           </div>
-        ))}
+          );
+        })}
         {visibleLeagues.length === 0 && (
           <div className="px-3 py-4 text-center text-xs text-muted-foreground">No matches for this date.</div>
         )}

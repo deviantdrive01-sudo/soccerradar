@@ -9,7 +9,7 @@ import { MatchCard } from "@/components/match-card";
 import { PredictionsTable } from "@/components/predictions-table";
 import { MarketFilterToggle, type MarketFilter } from "@/components/market-filter";
 import { StatsSummary } from "@/components/stats-summary";
-import { LeagueSidebar, ALL_LEAGUES } from "@/components/league-sidebar";
+import { LeagueSidebar, ALL_LEAGUES, countryFilterValue, countryFromFilterValue, isCountryFilterValue } from "@/components/league-sidebar";
 import { TodaysPickSidebar } from "@/components/todays-pick-sidebar";
 import { AdSlot } from "@/components/ad-slot";
 import {
@@ -105,11 +105,13 @@ export function PredictionDashboard({
   }, [leagues]);
 
   const visiblePredictions = useMemo(() => {
-    return dateFilteredPredictions.filter((p) => {
-      if (activeLeague !== ALL_LEAGUES && p.league_id !== Number(activeLeague)) return false;
-      return true;
-    });
-  }, [dateFilteredPredictions, activeLeague]);
+    if (activeLeague === ALL_LEAGUES) return dateFilteredPredictions;
+    if (isCountryFilterValue(activeLeague)) {
+      const country = countryFromFilterValue(activeLeague);
+      return dateFilteredPredictions.filter((p) => leagueById.get(p.league_id)?.country === country);
+    }
+    return dateFilteredPredictions.filter((p) => p.league_id === Number(activeLeague));
+  }, [dateFilteredPredictions, activeLeague, leagueById]);
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -142,6 +144,7 @@ export function PredictionDashboard({
                 {leagueCountryGroups.map(({ country, leagues: countryLeagues }) => (
                   <SelectGroup key={country}>
                     <SelectLabel>{country}</SelectLabel>
+                    <SelectItem value={countryFilterValue(country)}>All of {country}</SelectItem>
                     {countryLeagues.map((league) => (
                       <SelectItem key={league.id} value={String(league.id)}>
                         {league.name}
