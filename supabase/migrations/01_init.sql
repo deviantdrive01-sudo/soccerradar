@@ -83,3 +83,29 @@ on conflict (api_league_id) do update
   set name = excluded.name,
       country = excluded.country,
       is_active = excluded.is_active;
+
+-- Seed: additional leagues. api_league_id values 900001+ are synthetic
+-- placeholders (no real API-Football mapping yet) — fixtures for these are
+-- researched/entered manually, same as everything else in this app.
+insert into leagues (name, country, api_league_id, is_active) values
+  ('Primera B',              'Argentina',    900001, true),
+  ('Primera C',              'Argentina',    900002, true),
+  ('J1 League',              'Japan',        900003, true),
+  ('Challenger Pro League',  'Belgium',      900004, true),
+  ('Brasileiro Série C',     'Brazil',       900005, true),
+  ('Brasileiro Série D',     'Brazil',       900006, true),
+  ('Gaúcho Série A2',        'Brazil',       900007, true),
+  ('Carioca Série B1',       'Brazil',       900008, true),
+  ('Carioca Série B2',       'Brazil',       900009, true),
+  ('HNL',                    'Croatia',      900010, true),
+  ('Prva NL',                'Croatia',      900011, true),
+  ('Eliteserien',            'Norway',       900012, true),
+  ('Ekstraklasa',            'Poland',       900013, true),
+  ('Ettan',                  'Sweden',       900014, true),
+  ('Damallsvenskan',         'Sweden',       900015, true),
+  ('Allsvenskan',            'Sweden',       900016, true),
+  ('Challenge League',       'Switzerland',  900017, true)
+on conflict (api_league_id) do update
+  set name = excluded.name,
+      country = excluded.country,
+      is_active = excluded.is_active;
