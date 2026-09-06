@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { TopPicksView } from "@/components/top-picks-view";
-import { AdSlot } from "@/components/ad-slot";
 import { todayKey, dateKey } from "@/lib/date-key";
 import { matchesQuickFilter, quickFilterOptionBySlug } from "@/lib/quick-filter";
 import { SITE_URL } from "@/lib/site";
@@ -65,8 +64,6 @@ export default async function TopPicksPage({ params }: PageProps<"/top-picks/[sl
         shareUrl={`${SITE_URL}/top-picks/${option.slug}`}
         shareTitle={`Top Predictions Today: ${option.collectionTitle} — SoccerRadar`}
       />
-
-      <AdSlot orientation="horizontal" />
     </main>
   );
 }
