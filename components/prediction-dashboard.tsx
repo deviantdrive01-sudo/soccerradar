@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -48,19 +49,6 @@ function defaultActiveDate(availableDates: { key: string }[]): string {
   return todayOrLater?.key ?? availableDates[availableDates.length - 1].key;
 }
 
-/** Lets a favorited-country/league link (e.g. from /account/favorites) land on the filtered view. */
-function subscribeUrlLeague() {
-  return () => {};
-}
-
-function getUrlLeagueSnapshot(): string | null {
-  return new URLSearchParams(window.location.search).get("league");
-}
-
-function getUrlLeagueServerSnapshot(): string | null {
-  return null;
-}
-
 export function PredictionDashboard({
   leagues,
   predictions,
@@ -82,15 +70,38 @@ export function PredictionDashboard({
     return Array.from(seen, ([key, label]) => ({ key, label }));
   }, [sortedPredictions]);
 
-  const urlLeague = useSyncExternalStore(subscribeUrlLeague, getUrlLeagueSnapshot, getUrlLeagueServerSnapshot);
-  const [activeLeagueOverride, setActiveLeagueOverride] = useState<string | null>(null);
-  const activeLeague = activeLeagueOverride ?? urlLeague ?? ALL_LEAGUES;
-  const [activeDate, setActiveDate] = useState<string>(() => defaultActiveDate(availableDates));
-  const [marketFilter, setMarketFilter] = useState<MarketFilter>("all");
+  // Filter/view state lives in the URL (not local useState) so browser back
+  // navigation from a match/booking/collection page restores exactly what
+  // was selected, instead of resetting to defaults on remount.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const activeLeague = searchParams.get("league") ?? ALL_LEAGUES;
+  const activeDate = searchParams.get("date") ?? defaultActiveDate(availableDates);
+  const marketFilter = (searchParams.get("market") as MarketFilter | null) ?? "all";
   // Table is the default everywhere now; once someone picks a view
   // explicitly, keep it regardless of screen size.
-  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const viewMode = viewModeOverride ?? "table";
+  const viewMode = (searchParams.get("view") as ViewMode | null) ?? "table";
+
+  const updateParam = useCallback(
+    (key: string, value: string, defaultValue: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value === defaultValue) params.delete(key);
+      else params.set(key, value);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, router, pathname],
+  );
+
+  const setActiveLeagueOverride = useCallback((v: string) => updateParam("league", v, ALL_LEAGUES), [updateParam]);
+  const setActiveDate = useCallback(
+    (v: string) => updateParam("date", v, defaultActiveDate(availableDates)),
+    [updateParam, availableDates],
+  );
+  const setMarketFilter = useCallback((v: MarketFilter) => updateParam("market", v, "all"), [updateParam]);
+  const setViewModeOverride = useCallback((v: ViewMode) => updateParam("view", v, "table"), [updateParam]);
 
   const leagueById = useMemo(() => new Map(leagues.map((l) => [l.id, l])), [leagues]);
 

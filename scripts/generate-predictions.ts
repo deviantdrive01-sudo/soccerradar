@@ -62,6 +62,19 @@ async function scrapeH2hSections(page: Page, matchId: string): Promise<H2hSectio
   const url = `https://www.flashscore.com/match/football/${matchId}/#/h2h/overall`;
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
+
+  // A stale/invalid match_id (e.g. left over from the old API-Football
+  // pipeline, which used numeric fixture ids that don't correspond to real
+  // Flashscore match pages) loads Flashscore's own error page rather than
+  // failing the navigation — must be treated as a scrape failure, not
+  // silently recorded as "confirmed zero head-to-head meetings".
+  const pageErrored = await page.evaluate(() =>
+    document.body.innerText.includes("requested page can't be displayed"),
+  );
+  if (pageErrored) {
+    throw new Error(`Invalid match page for match_id (Flashscore: "page can't be displayed")`);
+  }
+
   try {
     await page.getByText("H2H", { exact: true }).first().click({ timeout: 5000 });
     await page.waitForTimeout(2000);

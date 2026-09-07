@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { PredictionDashboard } from "@/components/prediction-dashboard";
 import { ProductTour } from "@/components/product-tour";
@@ -49,7 +50,9 @@ export default async function Home() {
         .
       </p>
 
-      <PredictionDashboard leagues={leagues ?? []} predictions={predictions ?? []} />
+      <Suspense fallback={<div className="h-96" />}>
+        <PredictionDashboard leagues={leagues ?? []} predictions={predictions ?? []} />
+      </Suspense>
       <ProductTour />
     </main>
   );
