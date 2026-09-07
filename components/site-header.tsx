@@ -26,17 +26,31 @@ export function SiteHeader() {
         </div>
 
         <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:order-4">
-          <MobileNavDrawer />
+          {/* Icon-only on mobile so the CTA is visible without opening the
+              menu drawer; full pill with label from sm+. Both pulse with the
+              same ring so the button reads as "alive" and gets noticed. */}
           <a
             href={TELEGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Join our Telegram community"
-            className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex sm:px-3"
+            className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 sm:hidden"
           >
-            <TelegramIcon className="size-4" />
-            <span className="hidden sm:inline">Join our Community</span>
+            <span className="absolute inset-0 animate-[ping_1.8s_cubic-bezier(0,0,0.2,1)_infinite] rounded-full bg-primary/30 motion-reduce:hidden" />
+            <TelegramIcon className="relative size-4" />
           </a>
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Join our Telegram community"
+            className="relative hidden items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20 sm:flex"
+          >
+            <span className="absolute inset-0 animate-[ping_1.8s_cubic-bezier(0,0,0.2,1)_infinite] rounded-full bg-primary/30 motion-reduce:hidden" />
+            <TelegramIcon className="relative size-4" />
+            <span className="relative">Join our Community</span>
+          </a>
+          <MobileNavDrawer />
           <ThemeToggle />
           <HeaderAccount />
         </div>
