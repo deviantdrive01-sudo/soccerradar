@@ -102,7 +102,15 @@ export function PredictionDashboard({
     [updateParam, availableDates],
   );
   const setMarketFilter = useCallback((v: MarketFilter) => updateParam("market", v, "all"), [updateParam]);
-  const setViewModeOverride = useCallback((v: ViewMode) => updateParam("view", v, "table"), [updateParam]);
+  // The "default" to compare against has to track the responsive default
+  // (cards on mobile, table on desktop) — otherwise picking the view that
+  // happens to match the hardcoded default clears the URL param instead of
+  // setting it, and `viewMode` falls straight back to the responsive default,
+  // making that choice silently un-clickable on mobile.
+  const setViewModeOverride = useCallback(
+    (v: ViewMode) => updateParam("view", v, isMobile ? "cards" : "table"),
+    [updateParam, isMobile],
+  );
 
   const { favoriteLeagueIds } = useAccount();
 
