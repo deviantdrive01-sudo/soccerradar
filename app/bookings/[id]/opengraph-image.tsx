@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { parseIdFromParam } from "@/lib/share-slug";
-import { ShareImageTemplate, SHARE_IMAGE_SIZE, type ShareImageItem } from "@/lib/share-image";
+import { ShareImageTemplate, SHARE_IMAGE_SIZE, SHARE_IMAGE_OPTIONS, resolveAvatarDataUri, type ShareImageItem } from "@/lib/share-image";
 import { MARKET_LABELS, marketPredictionLabel } from "@/lib/hydrate";
 import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
@@ -18,6 +18,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const supabase = createSupabaseReadClient();
   let title = "Booking";
   let ownerLabel = "a SoccerRadar user";
+  let avatarUrl: string | null = null;
   let items: ShareImageItem[] = [];
 
   if (numericId !== null) {
@@ -26,11 +27,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     if (booking) {
       title = booking.title;
       const [{ data: owner }, { data: bookingItems }, { data: leagues }] = await Promise.all([
-        supabase.from("profiles").select("username").eq("id", booking.user_id).maybeSingle(),
+        supabase.from("profiles").select("username, avatar_url").eq("id", booking.user_id).maybeSingle(),
         supabase.from("booking_items").select("prediction_id, market_key").eq("booking_id", numericId),
         supabase.from("leagues").select("id, name"),
       ]);
       ownerLabel = owner?.username ?? ownerLabel;
+      avatarUrl = await resolveAvatarDataUri(owner?.avatar_url);
 
       const predictionIds = [...new Set((bookingItems ?? []).map((i) => i.prediction_id))];
       const { data: predictions } =
@@ -57,5 +59,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     }
   }
 
-  return new ImageResponse(<ShareImageTemplate title={title} ownerLabel={ownerLabel} items={items} />, size);
+  return new ImageResponse(
+    <ShareImageTemplate title={title} ownerLabel={ownerLabel} avatarUrl={avatarUrl} items={items} />,
+    SHARE_IMAGE_OPTIONS,
+  );
 }

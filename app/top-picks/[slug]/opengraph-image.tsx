@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
-import { ShareImageTemplate, SHARE_IMAGE_SIZE, type ShareImageItem } from "@/lib/share-image";
+import { ShareImageTemplate, SHARE_IMAGE_SIZE, SHARE_IMAGE_OPTIONS, type ShareImageItem } from "@/lib/share-image";
 import { MARKET_LABELS, marketPredictionLabel } from "@/lib/hydrate";
 import { todayKey, dateKey } from "@/lib/date-key";
 import { matchesQuickFilter, quickFilterOptionBySlug } from "@/lib/quick-filter";
@@ -40,5 +40,5 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       .filter((i): i is ShareImageItem => i !== null);
   }
 
-  return new ImageResponse(<ShareImageTemplate title={title} ownerLabel="SoccerRadar" items={items} />, size);
+  return new ImageResponse(<ShareImageTemplate title={title} ownerLabel="SoccerRadar" items={items} />, SHARE_IMAGE_OPTIONS);
 }

@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { parseIdFromParam } from "@/lib/share-slug";
-import { ShareImageTemplate, SHARE_IMAGE_SIZE, type ShareImageItem } from "@/lib/share-image";
+import { ShareImageTemplate, SHARE_IMAGE_SIZE, SHARE_IMAGE_OPTIONS, resolveAvatarDataUri, type ShareImageItem } from "@/lib/share-image";
 import { isPredicted } from "@/lib/supabase/types";
 import type { Prediction } from "@/lib/supabase/types";
 
@@ -16,6 +16,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const supabase = createSupabaseReadClient();
   let title = "Collection";
   let ownerLabel = "a SoccerRadar user";
+  let avatarUrl: string | null = null;
   let items: ShareImageItem[] = [];
 
   if (numericId !== null) {
@@ -28,11 +29,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     if (collection) {
       title = collection.title;
       const [{ data: owner }, { data: collectionItems }, { data: leagues }] = await Promise.all([
-        supabase.from("profiles").select("username").eq("id", collection.user_id).maybeSingle(),
+        supabase.from("profiles").select("username, avatar_url").eq("id", collection.user_id).maybeSingle(),
         supabase.from("bookmark_collection_items").select("prediction_id").eq("collection_id", numericId),
         supabase.from("leagues").select("id, name"),
       ]);
       ownerLabel = owner?.username ?? ownerLabel;
+      avatarUrl = await resolveAvatarDataUri(owner?.avatar_url);
 
       const predictionIds = (collectionItems ?? []).map((i) => i.prediction_id);
       const { data: predictions } =
@@ -53,5 +55,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     }
   }
 
-  return new ImageResponse(<ShareImageTemplate title={title} ownerLabel={ownerLabel} items={items} />, size);
+  return new ImageResponse(
+    <ShareImageTemplate title={title} ownerLabel={ownerLabel} avatarUrl={avatarUrl} items={items} />,
+    SHARE_IMAGE_OPTIONS,
+  );
 }
