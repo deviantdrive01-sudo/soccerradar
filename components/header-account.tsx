@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAccount } from "@/components/account-provider";
@@ -17,8 +18,10 @@ const MENU_ITEMS = [
 export function HeaderAccount() {
   const { loading, user, refresh } = useAccount();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   async function handleLogout() {
+    setOpen(false);
     await logout();
     refresh();
     router.push("/");
@@ -48,31 +51,50 @@ export function HeaderAccount() {
   }
 
   return (
-    <div className="group relative shrink-0" data-tour="account">
-      <Link href="/account" aria-label={user.username ?? "My Account"} className="flex items-center rounded-full">
+    <div className="relative shrink-0" data-tour="account">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={user.username ?? "My Account"}
+        className="flex items-center rounded-full"
+      >
         <Avatar avatarUrl={user.avatarUrl} username={user.username} />
-      </Link>
+      </button>
 
-      <div className="invisible absolute right-0 top-full z-20 w-44 pt-1 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">
-        <div className="rounded-md border border-border/60 bg-popover py-1 shadow-lg">
-          {MENU_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className="block px-3 py-2 text-sm hover:bg-muted">
-              {item.label}
-            </Link>
-          ))}
-          {user.role !== "user" && (
-            <>
-              <div className="my-1 border-t border-border/60" />
-              <Link href="/admin" className="block px-3 py-2 text-sm font-medium text-primary hover:bg-muted">
-                Admin Dashboard
-              </Link>
-            </>
-          )}
-          <button type="button" onClick={handleLogout} className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
-            Log out
-          </button>
-        </div>
-      </div>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-20 w-44 pt-1">
+            <div className="rounded-md border border-border/60 bg-popover py-1 shadow-lg">
+              {MENU_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="block px-3 py-2 text-sm hover:bg-muted"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              {user.role !== "user" && (
+                <>
+                  <div className="my-1 border-t border-border/60" />
+                  <Link
+                    href="/admin"
+                    onClick={() => setOpen(false)}
+                    className="block px-3 py-2 text-sm font-medium text-primary hover:bg-muted"
+                  >
+                    Admin Dashboard
+                  </Link>
+                </>
+              )}
+              <button type="button" onClick={handleLogout} className="block w-full px-3 py-2 text-left text-sm hover:bg-muted">
+                Log out
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
