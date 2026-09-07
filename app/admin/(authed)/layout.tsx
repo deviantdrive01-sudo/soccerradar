@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/leagues", label: "Leagues" },
   { href: "/admin/ads", label: "Ads" },
+  { href: "/admin/banner", label: "Banner" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/bookings", label: "Bookings" },
 ];

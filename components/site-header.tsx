@@ -35,7 +35,7 @@ export function SiteHeader() {
             aria-label="Join our Telegram community"
             className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 sm:hidden"
           >
-            <span className="absolute inset-0 animate-[ping_1.8s_cubic-bezier(0,0,0.2,1)_infinite] rounded-full bg-primary/30 motion-reduce:hidden" />
+            <span className="pointer-events-none absolute inset-0 animate-[ping_1.8s_cubic-bezier(0,0,0.2,1)_infinite] rounded-full bg-primary/30 motion-reduce:hidden" />
             <TelegramIcon className="relative size-4" />
           </a>
           <a
@@ -45,7 +45,7 @@ export function SiteHeader() {
             aria-label="Join our Telegram community"
             className="relative hidden items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20 sm:flex"
           >
-            <span className="absolute inset-0 animate-[ping_1.8s_cubic-bezier(0,0,0.2,1)_infinite] rounded-full bg-primary/30 motion-reduce:hidden" />
+            <span className="pointer-events-none absolute inset-0 animate-[ping_1.8s_cubic-bezier(0,0,0.2,1)_infinite] rounded-full bg-primary/30 motion-reduce:hidden" />
             <TelegramIcon className="relative size-4" />
             <span className="relative">Join our Community</span>
           </a>

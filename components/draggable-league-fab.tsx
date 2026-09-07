@@ -123,8 +123,9 @@ export function DraggableLeagueFab({ hasActiveFilter, onOpen }: { hasActiveFilte
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       style={{ left: pos.x, top: pos.y, width: SIZE, height: SIZE, touchAction: "none" }}
-      className="fixed z-20 rounded-full shadow-lg shadow-black/20 lg:hidden"
+      className="fixed z-20 rounded-full lg:hidden"
     >
+      <span className="pointer-events-none absolute inset-0 -z-10 animate-pulse rounded-full bg-primary opacity-60 blur-lg motion-reduce:animate-none" />
       <AllLeaguesBadge className="size-14" />
       {hasActiveFilter && (
         <span className="absolute right-0 top-0 size-3.5 rounded-full border-2 border-background bg-red-500" />

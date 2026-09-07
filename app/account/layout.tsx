@@ -1,66 +1,38 @@
-"use client";
+import { createSupabaseReadClient } from "@/lib/supabase/client";
+import { AccountMobileNav, AccountSidebarNav } from "@/components/account-nav";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Heart, Bookmark, Ticket, User } from "lucide-react";
-import { cn } from "cn";
-
-const NAV_ITEMS = [
-  { href: "/account", label: "Overview", icon: LayoutDashboard },
-  { href: "/account/favorites", label: "Favorites", icon: Heart },
-  { href: "/account/collections", label: "Collections", icon: Bookmark },
-  { href: "/account/bookings", label: "Bookings", icon: Ticket },
-  { href: "/account/profile", label: "Profile", icon: User },
-];
-
-export default function AccountLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+export default async function AccountLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createSupabaseReadClient();
+  const { data: settings } = await supabase
+    .from("site_settings")
+    .select("profile_banner_mobile_url, profile_banner_desktop_url")
+    .eq("id", 1)
+    .maybeSingle();
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start">
-      <div className="lg:hidden">
-        <div className="flex gap-1 overflow-x-auto rounded-md border border-border/60 p-1">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium",
-                  isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-                )}
-              >
-                <item.icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6">
+      {settings?.profile_banner_mobile_url && (
+        // eslint-disable-next-line @next/next/no-img-element -- admin-uploaded asset via a public storage URL, not a local/optimizable import
+        <img
+          src={settings.profile_banner_mobile_url}
+          alt=""
+          className="w-full rounded-xl sm:hidden"
+        />
+      )}
+      {settings?.profile_banner_desktop_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={settings.profile_banner_desktop_url}
+          alt=""
+          className="hidden w-full rounded-xl sm:block"
+        />
+      )}
+
+      <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:items-start">
+        <AccountMobileNav />
+        <AccountSidebarNav />
+        <div className="min-w-0 flex-1">{children}</div>
       </div>
-
-      <aside className="hidden lg:block lg:w-56 lg:shrink-0">
-        <nav className="sticky top-4 space-y-1 rounded-lg border border-border/60 bg-card/40 p-2">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isActive ? "bg-primary text-primary-foreground" : "text-foreground/90 hover:bg-muted",
-                )}
-              >
-                <item.icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
-
-      <div className="min-w-0 flex-1">{children}</div>
     </main>
   );
 }

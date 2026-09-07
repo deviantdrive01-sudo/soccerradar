@@ -19,6 +19,13 @@ export interface AdSettings {
   updated_at: string;
 }
 
+export interface SiteSettings {
+  id: number;
+  profile_banner_mobile_url: string | null;
+  profile_banner_desktop_url: string | null;
+  updated_at: string;
+}
+
 export type AdEventType = "impression" | "click";
 
 export interface AdEvent {
@@ -182,6 +189,12 @@ export interface Database {
         Row: Row<AdEvent>;
         Insert: Row<Omit<AdEvent, "id" | "created_at"> & { id?: number }>;
         Update: Row<Partial<Omit<AdEvent, "id">>>;
+        Relationships: [];
+      };
+      site_settings: {
+        Row: Row<SiteSettings>;
+        Insert: Row<Partial<Omit<SiteSettings, "updated_at">>>;
+        Update: Row<Partial<Omit<SiteSettings, "id" | "updated_at">>>;
         Relationships: [];
       };
       profiles: {
