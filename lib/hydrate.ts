@@ -11,6 +11,29 @@
 export type OutcomeCode = "1" | "X" | "2";
 export type ScoringHalfCode = "1st" | "2nd" | "Equal";
 
+/**
+ * Independent confidence (1-100) per underlying primitive Claude predicts —
+ * lets a user see e.g. "88% on corners, 55% on first-half outcome" for the
+ * same match instead of one blanket number covering everything. Combo
+ * markets (fullTimeDraw, winEitherHalf, drawOrOver2_5, doubleChance) don't
+ * get their own entry here — see marketConfidence() below, which derives
+ * theirs from whichever of these actually determines the combo's value, the
+ * same way their predicted value is derived rather than asked of Claude
+ * directly.
+ */
+export interface MarketConfidences {
+  o: number;
+  ht: number;
+  h2: number;
+  sh: number;
+  g1: number;
+  g2: number;
+  c1: number;
+  c3: number;
+  csh: number;
+  csa: number;
+}
+
 /** Exact shape Claude must return, per match, in the compact response. */
 export interface CompactPrediction {
   id: string; // match_id, echoed back by the model for reconciliation
@@ -20,7 +43,9 @@ export interface CompactPrediction {
   sh: ScoringHalfCode;
   g: [0 | 1, 0 | 1]; // [over_1_5, over_2_5]
   c: [0 | 1, 0 | 1, 0 | 1]; // [over_7_5, over_8_5, ht_over_3_5]
-  conf: number; // 1-100
+  cs: [0 | 1, 0 | 1]; // [home_clean_sheet, away_clean_sheet]
+  mc: MarketConfidences;
+  conf: number; // 1-100, overall confidence across the whole prediction set
   sum: string;
 }
 
@@ -39,6 +64,13 @@ export interface HydratedMarkets {
     over8_5: boolean;
     firstHalfOver3_5: boolean;
   };
+  /** Optional: absent on predictions generated before this market existed. */
+  cleanSheets?: {
+    home: boolean;
+    away: boolean;
+  };
+  /** Optional: absent on predictions generated before per-market confidence existed. */
+  confidence?: MarketConfidences;
 }
 
 export interface HydratedPrediction {
@@ -83,6 +115,11 @@ export function hydrateMarkets(compact: CompactPrediction): HydratedMarkets {
       over8_5: compact.c[1] === 1,
       firstHalfOver3_5: compact.c[2] === 1,
     },
+    cleanSheets: {
+      home: compact.cs[0] === 1,
+      away: compact.cs[1] === 1,
+    },
+    confidence: compact.mc,
   };
 }
 
@@ -181,6 +218,11 @@ export interface ActualMarkets {
     /** null when first-half corner counts weren't available for this match. */
     firstHalfOver3_5: boolean | null;
   };
+  /** Absent on results derived before this market existed. */
+  cleanSheets?: {
+    home: boolean;
+    away: boolean;
+  };
 }
 
 export interface ActualResult {
@@ -224,6 +266,10 @@ export function deriveActualResult(raw: RawMatchResult): ActualResult {
         over8_5: totalCorners > 8.5,
         firstHalfOver3_5: htCornersTotal === null ? null : htCornersTotal > 3.5,
       },
+      cleanSheets: {
+        home: raw.finalScore.away === 0,
+        away: raw.finalScore.home === 0,
+      },
     },
   };
 }
@@ -260,8 +306,20 @@ export type MarketKey =
   | "drawOrOver2_5"
   | "over7_5"
   | "over8_5"
-  | "firstHalfOver3_5";
+  | "firstHalfOver3_5"
+  | "doubleChance"
+  | "homeCleanSheet"
+  | "awayCleanSheet";
 
+/**
+ * Actively offered/tracked markets — drives booking pickers, the accuracy
+ * page, and settled-match summaries. "over8_5" was pulled from this list
+ * (2026-09-07): it settled at 42% across 167 matches, worse than a coin
+ * flip, while over7_5 held at 54% — so corners stayed, that one line didn't.
+ * It stays in the MarketKey type (below) and every decode function keeps
+ * handling it so already-published bookings referencing it keep rendering
+ * correctly; it just isn't offered for new picks or shown anywhere new.
+ */
 export const MARKET_KEYS: MarketKey[] = [
   "fullTimeDraw",
   "firstHalfOutcome",
@@ -271,9 +329,28 @@ export const MARKET_KEYS: MarketKey[] = [
   "over2_5",
   "drawOrOver2_5",
   "over7_5",
-  "over8_5",
   "firstHalfOver3_5",
+  "doubleChance",
+  "homeCleanSheet",
+  "awayCleanSheet",
 ];
+
+/**
+ * Which full-time outcomes each Double Chance selection covers. Unlike every
+ * other market here, correctness isn't a string-equality check against a
+ * single "actual value" — two of the three selections are always "covered"
+ * by any given result, so this is a set-membership test instead. See
+ * isMarketCorrect/isPickCorrect's "doubleChance" cases.
+ */
+const DOUBLE_CHANCE_COVERAGE: Record<string, OutcomeCode[]> = {
+  "1X": ["1", "X"],
+  X2: ["X", "2"],
+  "12": ["1", "2"],
+};
+
+function isDoubleChanceCorrect(selection: string, outcomeCode: OutcomeCode): boolean {
+  return DOUBLE_CHANCE_COVERAGE[selection]?.includes(outcomeCode) ?? false;
+}
 
 export const MARKET_LABELS: Record<MarketKey, string> = {
   fullTimeDraw: "FT Draw",
@@ -286,6 +363,9 @@ export const MARKET_LABELS: Record<MarketKey, string> = {
   over7_5: "Corners O7.5",
   over8_5: "Corners O8.5",
   firstHalfOver3_5: "1H Corners O3.5",
+  doubleChance: "Double Chance",
+  homeCleanSheet: "Clean Sheet (Home)",
+  awayCleanSheet: "Clean Sheet (Away)",
 };
 
 /** Was this one market's prediction right? null when the actual or predicted value isn't known. */
@@ -319,6 +399,66 @@ export function isMarketCorrect(
       return actual.corners.firstHalfOver3_5 === null
         ? null
         : predicted.corners.firstHalfOver3_5 === actual.corners.firstHalfOver3_5;
+    case "doubleChance": {
+      const selection = marketPredictionValue(predicted, key);
+      return selection === null ? null : isDoubleChanceCorrect(selection, actual.outcome.code);
+    }
+    case "homeCleanSheet":
+      return !predicted.cleanSheets || !actual.cleanSheets
+        ? null
+        : predicted.cleanSheets.home === actual.cleanSheets.home;
+    case "awayCleanSheet":
+      return !predicted.cleanSheets || !actual.cleanSheets
+        ? null
+        : predicted.cleanSheets.away === actual.cleanSheets.away;
+  }
+}
+
+/**
+ * Confidence (1-100) behind one specific market's call, rather than the one
+ * blanket number covering the whole fixture. Null when the prediction
+ * predates per-market confidence, or for over8_5 (retired, not surfaced
+ * anywhere new). Combo markets don't have their own Claude-asked number —
+ * their confidence is derived from whichever underlying primitive actually
+ * determines the combo's value, same as the value itself is derived rather
+ * than asked for directly.
+ */
+export function marketConfidence(predicted: HydratedMarkets, key: MarketKey): number | null {
+  const mc = predicted.confidence;
+  if (!mc) return null;
+  switch (key) {
+    case "fullTimeDraw":
+    case "doubleChance":
+      return mc.o;
+    case "firstHalfOutcome":
+      return mc.ht;
+    case "winEitherHalf":
+      // Needs both halves to go this side's way (or the other side to win
+      // neither) — only as strong as the less confident of the two reads.
+      return Math.min(mc.ht, mc.h2);
+    case "highestScoringHalf":
+      return mc.sh;
+    case "over1_5":
+      return mc.g1;
+    case "over2_5":
+      return mc.g2;
+    case "drawOrOver2_5":
+      // True because a draw OR an over-2.5 read holds — confidence follows
+      // whichever one actually drives the call. False needs both to fail,
+      // so it's bounded by the weaker of the two "no" reads.
+      if (predicted.outcome.code === "X") return mc.o;
+      if (predicted.goals.over2_5) return mc.g2;
+      return Math.min(mc.o, mc.g2);
+    case "over7_5":
+      return mc.c1;
+    case "over8_5":
+      return null;
+    case "firstHalfOver3_5":
+      return mc.c3;
+    case "homeCleanSheet":
+      return mc.csh;
+    case "awayCleanSheet":
+      return mc.csa;
   }
 }
 
@@ -355,6 +495,14 @@ export function marketPredictionLabel(predicted: HydratedMarkets, key: MarketKey
       return predicted.corners.over8_5 ? "Yes" : "No";
     case "firstHalfOver3_5":
       return predicted.corners.firstHalfOver3_5 ? "Yes" : "No";
+    case "doubleChance": {
+      const v = marketPredictionValue(predicted, key);
+      return v === null ? "–" : marketValueLabel(key, v);
+    }
+    case "homeCleanSheet":
+      return predicted.cleanSheets ? (predicted.cleanSheets.home ? "Yes" : "No") : "–";
+    case "awayCleanSheet":
+      return predicted.cleanSheets ? (predicted.cleanSheets.away ? "Yes" : "No") : "–";
   }
 }
 
@@ -388,6 +536,12 @@ export function marketOptions(key: MarketKey): MarketOption[] {
         { value: "1st", label: "First Half" },
         { value: "2nd", label: "Second Half" },
         { value: "Equal", label: "Evenly Split" },
+      ];
+    case "doubleChance":
+      return [
+        { value: "1X", label: "Home/Draw" },
+        { value: "X2", label: "Draw/Away" },
+        { value: "12", label: "Home/Away" },
       ];
     default:
       return YES_NO_OPTIONS;
@@ -428,6 +582,17 @@ export function marketPredictionValue(predicted: HydratedMarkets, key: MarketKey
       return predicted.corners.over8_5 ? "yes" : "no";
     case "firstHalfOver3_5":
       return predicted.corners.firstHalfOver3_5 ? "yes" : "no";
+    case "doubleChance":
+      // No principled single pick when the model's own FT call is a draw —
+      // "1X" and "X2" both include it with nothing to choose between them,
+      // and "12" would directly contradict the model's own outcome pick.
+      if (predicted.outcome.code === "1") return "1X";
+      if (predicted.outcome.code === "2") return "X2";
+      return null;
+    case "homeCleanSheet":
+      return predicted.cleanSheets ? (predicted.cleanSheets.home ? "yes" : "no") : null;
+    case "awayCleanSheet":
+      return predicted.cleanSheets ? (predicted.cleanSheets.away ? "yes" : "no") : null;
   }
 }
 
@@ -436,6 +601,12 @@ export function marketPredictionValue(predicted: HydratedMarkets, key: MarketKey
  * marketPredictionValue()/user_value use — lets a user's override be graded
  * with a plain string comparison. Null when the actual result can't tell
  * this market apart (only firstHalfOver3_5, when HT corners weren't recorded).
+ *
+ * Exception: "doubleChance" returns the raw outcome code ("1"/"X"/"2"), not
+ * a "1X"-style selection — there's no single selection two of the three
+ * options don't also satisfy, so grading it is a set-membership check
+ * (isDoubleChanceCorrect), not string equality. isPickCorrect special-cases
+ * it below rather than using this value directly.
  */
 export function actualMarketValue(actual: ActualMarkets, key: MarketKey): string | null {
   switch (key) {
@@ -459,6 +630,12 @@ export function actualMarketValue(actual: ActualMarkets, key: MarketKey): string
       return actual.corners.over8_5 ? "yes" : "no";
     case "firstHalfOver3_5":
       return actual.corners.firstHalfOver3_5 === null ? null : actual.corners.firstHalfOver3_5 ? "yes" : "no";
+    case "doubleChance":
+      return actual.outcome.code;
+    case "homeCleanSheet":
+      return actual.cleanSheets ? (actual.cleanSheets.home ? "yes" : "no") : null;
+    case "awayCleanSheet":
+      return actual.cleanSheets ? (actual.cleanSheets.away ? "yes" : "no") : null;
   }
 }
 
@@ -475,10 +652,19 @@ export function isPickCorrect(
   key: MarketKey,
 ): boolean | null {
   if (userValue) {
+    if (key === "doubleChance") return isDoubleChanceCorrect(userValue, actual.outcome.code);
     const actualValue = actualMarketValue(actual, key);
     return actualValue === null ? null : userValue === actualValue;
   }
   return isMarketCorrect(predicted, actual, key);
+}
+
+const MARKET_CONFIDENCE_KEYS = ["o", "ht", "h2", "sh", "g1", "g2", "c1", "c3", "csh", "csa"] as const;
+
+function isMarketConfidences(value: unknown): value is MarketConfidences {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return MARKET_CONFIDENCE_KEYS.every((key) => typeof v[key] === "number");
 }
 
 export function isCompactPrediction(value: unknown): value is CompactPrediction {
@@ -494,6 +680,9 @@ export function isCompactPrediction(value: unknown): value is CompactPrediction 
     v.g.length === 2 &&
     Array.isArray(v.c) &&
     v.c.length === 3 &&
+    Array.isArray(v.cs) &&
+    v.cs.length === 2 &&
+    isMarketConfidences(v.mc) &&
     typeof v.conf === "number" &&
     typeof v.sum === "string"
   );

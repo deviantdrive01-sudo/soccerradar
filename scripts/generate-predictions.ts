@@ -159,7 +159,19 @@ Each array element must have EXACTLY these keys:
 - "sh": highest scoring half, one of "1st" | "2nd" | "Equal"
 - "g": [over_1_5, over_2_5] each 0 or 1, whether total goals will exceed that line
 - "c": [over_7_5, over_8_5, ht_over_3_5] each 0 or 1, corner count over that line (last value is first-half corners over 3.5)
-- "conf": integer confidence score 1-100 for this prediction set
+- "cs": [home_clean_sheet, away_clean_sheet] each 0 or 1, whether that side will concede zero goals
+- "mc": independent integer confidence scores 1-100, one per market below — these are NOT all the same number, since your certainty genuinely varies market to market (e.g. very sure on the outcome but unsure on corners is normal and expected):
+  - "o": confidence in the "o" pick
+  - "ht": confidence in the "ht" pick
+  - "h2": confidence in the "h2" pick
+  - "sh": confidence in the "sh" pick
+  - "g1": confidence in the over_1_5 pick
+  - "g2": confidence in the over_2_5 pick
+  - "c1": confidence in the over_7_5 corners pick
+  - "c3": confidence in the ht_over_3_5 corners pick
+  - "csh": confidence in the home_clean_sheet pick
+  - "csa": confidence in the away_clean_sheet pick
+- "conf": integer confidence score 1-100 for this prediction set overall
 - "sum": one short sentence (max ~25 words) of tactical reasoning
 
 Corner-market methodology: weigh head-to-head history for these two specific teams at least as heavily as current form. Each entry in headToHead may include a "corners" field with the real total corner count from that specific past meeting (home + away, scraped from that match's own stats) — when present, use these actual numbers rather than estimating from form:
@@ -167,6 +179,8 @@ Corner-market methodology: weigh head-to-head history for these two specific tea
 - If at least 2 of the available meetings had low corner counts, treat that as a red flag against the over lines, even if current form looks corner-heavy.
 - Some headToHead entries may have "corners": null (not available for that match) — ignore those entries for the corner read specifically, and base it only on entries where real corner data is present.
 - Head-to-head history should inform the prediction, not override it outright — still weigh current form, and fall back to current form and team style when head-to-head data is sparse, absent, or no entries have corner data available.
+
+Clean-sheet methodology: each headToHead entry includes the real final score from that past meeting — use it to gauge each side's defensive record against this specific opponent, not just their defensive record in general. If a team has shut the other out in most of the available meetings, treat that as a real signal regardless of current attacking form, since defensive struggles against a particular opponent's style/system tend to recur. Weigh current defensive form alongside it, and fall back to current form alone when head-to-head meetings are sparse or absent.
 
 Output strictly valid JSON: an array of objects with exactly those keys, no additional keys, no trailing commentary.`;
 
@@ -211,7 +225,10 @@ async function predictBatch(client: Anthropic, batch: FixtureContext[]): Promise
 
   const response = await client.messages.create({
     model,
-    max_tokens: 400 * batch.length,
+    // Bumped from 400/fixture: adding per-market confidence ("mc", 10 extra
+    // numbers) and the clean-sheet market meaningfully grew the per-fixture
+    // JSON output.
+    max_tokens: 600 * batch.length,
     // This model defaults to adaptive extended thinking, which can consume
     // the entire max_tokens budget on internal reasoning and leave nothing
     // for the actual JSON output (hit in practice: stop_reason "max_tokens"

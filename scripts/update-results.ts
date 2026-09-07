@@ -142,10 +142,19 @@ function rowsEqual(a: ResultRow[], b: ResultRow[]): boolean {
   return sa.every((v, i) => v === sb[i]);
 }
 
+function parseCorners(statsText: string): { home: number; away: number } | null {
+  const cornersMatch = statsText.match(/(\d+)\s*\n\s*Corner kicks\s*\n\s*(\d+)/i);
+  return cornersMatch ? { home: Number(cornersMatch[1]), away: Number(cornersMatch[2]) } : null;
+}
+
 async function extractMatchDetail(
   page: Page,
   matchId: string,
-): Promise<{ ht: { home: number; away: number } | null; corners: { home: number; away: number } | null }> {
+): Promise<{
+  ht: { home: number; away: number } | null;
+  corners: { home: number; away: number } | null;
+  htCorners: { home: number; away: number } | null;
+}> {
   const url = `https://www.flashscore.com/match/football/${matchId}/#/match-summary`;
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -155,17 +164,41 @@ async function extractMatchDetail(
   const ht = htMatch ? { home: Number(htMatch[1]), away: Number(htMatch[2]) } : null;
 
   let corners: { home: number; away: number } | null = null;
+  let htCorners: { home: number; away: number } | null = null;
   try {
     await page.getByText("Stats", { exact: true }).first().click({ timeout: 5000 });
     await page.waitForTimeout(2000);
     const statsText = await page.evaluate(() => document.body.innerText);
-    const cornersMatch = statsText.match(/(\d+)\s*\n\s*Corner kicks\s*\n\s*(\d+)/i);
-    if (cornersMatch) corners = { home: Number(cornersMatch[1]), away: Number(cornersMatch[2]) };
+    corners = parseCorners(statsText);
+
+    // The full-match Stats view (".../stats/overall/?mid=...") has sibling
+    // "1st Half"/"2nd Half" period tabs at the same URL shape with "overall"
+    // swapped out — confirmed live: a match with 6-7 full-match corners
+    // showed a genuinely different 2-3 split on the 1st-half URL, not a
+    // duplicate of the full-match numbers. Navigating there directly is far
+    // more reliable than clicking the tab (clicking it round-tripped back to
+    // the same full-match numbers in testing, likely an SPA routing quirk).
+    const statsUrl = page.url();
+    if (statsUrl.includes("/stats/overall/")) {
+      try {
+        await page.goto(statsUrl.replace("/stats/overall/", "/stats/1st-half/"), {
+          waitUntil: "domcontentloaded",
+          timeout: 30000,
+        });
+        await page.waitForTimeout(2000);
+        const htStatsText = await page.evaluate(() => document.body.innerText);
+        htCorners = parseCorners(htStatsText);
+      } catch {
+        // 1st-half stats view unavailable for this match — htCorners stays
+        // null (RawMatchResult.htCorners is optional for exactly this case),
+        // it doesn't block recording the rest of the result.
+      }
+    }
   } catch {
     // Stats tab not available/clickable — corners stay null, reported as a skip.
   }
 
-  return { ht, corners };
+  return { ht, corners, htCorners };
 }
 
 async function main() {
@@ -253,7 +286,7 @@ async function main() {
 
   for (const { prediction, row } of matched) {
     try {
-      const { ht, corners } = await extractMatchDetail(page, row.matchId);
+      const { ht, corners, htCorners } = await extractMatchDetail(page, row.matchId);
       if (!ht) {
         detailFailures.push({ prediction, reason: "could not extract half-time score" });
         continue;
@@ -267,7 +300,7 @@ async function main() {
         finalScore: { home: Number(row.homeScore), away: Number(row.awayScore) },
         htScore: ht,
         corners,
-        htCorners: null,
+        htCorners,
       };
       const actualResult = deriveActualResult(raw);
 

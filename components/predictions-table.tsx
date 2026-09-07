@@ -66,7 +66,7 @@ export function PredictionsTable({
     (showWinEitherHalf ? 1 : 0) +
     (showDrawOrOver ? 1 : 0) +
     (showGoals ? 2 : 0) +
-    (showCorners ? 3 : 0) +
+    (showCorners ? 2 : 0) +
     1 + // Confidence
     (rowAction ? 1 : 0);
 
@@ -93,7 +93,6 @@ export function PredictionsTable({
             {showGoals && <TableHead className={cn(CELL, "text-center")}>O1.5</TableHead>}
             {showGoals && <TableHead className={cn(CELL, "text-center")}>O2.5</TableHead>}
             {showCorners && <TableHead className={cn(CELL, "text-center")}>C7.5</TableHead>}
-            {showCorners && <TableHead className={cn(CELL, "text-center")}>C8.5</TableHead>}
             {showCorners && <TableHead className={cn(CELL, "text-center")}>1H C3.5</TableHead>}
             <TableHead className={cn(CELL, "text-center")}>Conf</TableHead>
           </TableRow>
@@ -194,11 +193,6 @@ export function PredictionsTable({
                   {showCorners && (
                     <TableCell className={cn(CELL, "text-center")}>
                       <YesNo value={m ? m.corners.over7_5 : null} />
-                    </TableCell>
-                  )}
-                  {showCorners && (
-                    <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={m ? m.corners.over8_5 : null} />
                     </TableCell>
                   )}
                   {showCorners && (

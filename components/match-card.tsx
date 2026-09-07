@@ -183,7 +183,6 @@ export function MatchCard({
             {showCorners && (
               <>
                 <PickBadge label="C7.5" value={markets.corners.over7_5} tone="sky" />
-                <PickBadge label="C8.5" value={markets.corners.over8_5} tone="sky" />
                 <PickBadge label="1HC3.5" value={markets.corners.firstHalfOver3_5} tone="sky" />
               </>
             )}

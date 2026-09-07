@@ -9,7 +9,15 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingPickButton } from "@/components/booking-pick-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
-import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
+import {
+  isDrawOrOver2_5,
+  isFullTimeDraw,
+  marketConfidence,
+  marketPredictionLabel,
+  settledMarketTally,
+  summarizeSettledMarkets,
+  winEitherHalfCode,
+} from "@/lib/hydrate";
 import { SITE_URL } from "@/lib/site";
 import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey, HydratedMarkets } from "@/lib/hydrate";
@@ -53,6 +61,12 @@ function confidenceClass(confidence: number): string {
   return "bg-red-500/15 text-red-400 border-red-500/30";
 }
 
+function ConfidenceSuffix({ markets, marketKey }: { markets: HydratedMarkets; marketKey: MarketKey }) {
+  const confidence = marketConfidence(markets, marketKey);
+  if (confidence === null) return null;
+  return <span className="ml-1 opacity-70">{confidence}%</span>;
+}
+
 function YesNoBadge({
   label,
   value,
@@ -66,10 +80,12 @@ function YesNoBadge({
   marketKey: MarketKey;
   markets: HydratedMarkets;
 }) {
+  const confidence = marketConfidence(markets, marketKey);
   return (
     <span className="inline-flex items-center gap-1">
       <Badge variant="outline" className={value ? "border-primary/30 text-primary" : "text-muted-foreground"}>
         {label} {value ? "✓" : "✗"}
+        {confidence !== null && <span className="ml-1 opacity-70">{confidence}%</span>}
       </Badge>
       <BookingPickButton predictionId={predictionId} marketKey={marketKey} markets={markets} />
     </span>
@@ -211,12 +227,14 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 1H: {markets.firstHalfOutcome.label}
+                <ConfidenceSuffix markets={markets} marketKey="firstHalfOutcome" />
               </Badge>
               <BookingPickButton predictionId={prediction.id} marketKey="firstHalfOutcome" markets={markets} />
             </span>
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 {markets.highestScoringHalf.label}
+                <ConfidenceSuffix markets={markets} marketKey="highestScoringHalf" />
               </Badge>
               <BookingPickButton predictionId={prediction.id} marketKey="highestScoringHalf" markets={markets} />
             </span>
@@ -224,8 +242,16 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
               <Badge variant="secondary" className="font-medium">
                 Win Either Half:{" "}
                 {winEitherHalf === null ? "–" : winEitherHalf === "1" ? prediction.home_team : prediction.away_team}
+                <ConfidenceSuffix markets={markets} marketKey="winEitherHalf" />
               </Badge>
               <BookingPickButton predictionId={prediction.id} marketKey="winEitherHalf" markets={markets} />
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Badge variant="secondary" className="font-medium">
+                Double Chance: {marketPredictionLabel(markets, "doubleChance")}
+                <ConfidenceSuffix markets={markets} marketKey="doubleChance" />
+              </Badge>
+              <BookingPickButton predictionId={prediction.id} marketKey="doubleChance" markets={markets} />
             </span>
           </div>
         </div>
@@ -248,7 +274,6 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Corners</div>
           <div className="flex flex-wrap gap-1.5">
             <YesNoBadge label="O7.5" value={markets.corners.over7_5} predictionId={prediction.id} marketKey="over7_5" markets={markets} />
-            <YesNoBadge label="O8.5" value={markets.corners.over8_5} predictionId={prediction.id} marketKey="over8_5" markets={markets} />
             <YesNoBadge
               label="1H O3.5"
               value={markets.corners.firstHalfOver3_5}
@@ -257,6 +282,26 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
             />
           </div>
         </div>
+
+        {markets.cleanSheets && (
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Clean Sheet</div>
+            <div className="flex flex-wrap gap-1.5">
+              <YesNoBadge
+                label={prediction.home_team}
+                value={markets.cleanSheets.home}
+                predictionId={prediction.id}
+                marketKey="homeCleanSheet" markets={markets}
+              />
+              <YesNoBadge
+                label={prediction.away_team}
+                value={markets.cleanSheets.away}
+                predictionId={prediction.id}
+                marketKey="awayCleanSheet" markets={markets}
+              />
+            </div>
+          </div>
+        )}
 
         {prediction.h2h && prediction.h2h.length > 0 && (
           <div className="space-y-1.5 border-t border-border/60 pt-3">
