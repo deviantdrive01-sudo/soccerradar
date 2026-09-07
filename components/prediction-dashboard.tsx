@@ -225,8 +225,8 @@ export function PredictionDashboard({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-2" data-tour="view-toggle">
-            <div className="inline-flex rounded-md border border-border/60 p-0.5">
+          <div className="flex min-w-0 items-center gap-2" data-tour="view-toggle">
+            <div className="inline-flex shrink-0 rounded-md border border-border/60 p-0.5">
               <Button
                 type="button"
                 size="sm"

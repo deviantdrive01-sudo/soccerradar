@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "cn";
 
 export type MarketFilter =
@@ -30,22 +31,25 @@ export function MarketFilterToggle({
   onChange: (value: MarketFilter) => void;
 }) {
   return (
-    <div className="inline-flex flex-wrap gap-0.5 rounded-md border border-border/60 p-0.5">
-      {OPTIONS.map((option) => (
-        <Button
-          key={option.value}
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => onChange(option.value)}
-          className={cn(
-            "h-7 whitespace-nowrap px-3",
-            value === option.value && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-          )}
-        >
-          {option.label}
-        </Button>
-      ))}
-    </div>
+    <ScrollArea className="min-w-0 flex-1">
+      <div className="flex gap-0.5 rounded-md border border-border/60 p-0.5">
+        {OPTIONS.map((option) => (
+          <Button
+            key={option.value}
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "h-7 shrink-0 whitespace-nowrap px-3",
+              value === option.value && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+            )}
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }
