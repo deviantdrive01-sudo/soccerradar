@@ -109,7 +109,7 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
 
         <div className="space-y-3 rounded-lg border border-border/60 bg-muted/60 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium text-foreground/80">
-            <span>{league?.name ?? "Unknown league"}</span>
+            <span>{league ? `${league.country} · ${league.name}` : "Unknown league"}</span>
             <span>
               {kickoff.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}
               {" · "}
@@ -167,7 +167,7 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
 
       <div className="space-y-3 rounded-lg border border-border/60 bg-muted/60 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium text-foreground/80">
-          <span>{league?.name ?? "Unknown league"}</span>
+          <span>{league ? `${league.country} · ${league.name}` : "Unknown league"}</span>
           <span>
             {kickoff.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}
             {" · "}
