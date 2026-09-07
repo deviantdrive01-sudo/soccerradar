@@ -4,7 +4,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { AllLeaguesBadge } from "@/components/all-leagues-badge";
 
 const STORAGE_KEY = "soccerradar-league-fab-position";
-const SIZE = 56; // px, matches the size-14 badge below
+const SIZE = 64; // px, matches the size-16 badge below
 const DRAG_THRESHOLD = 8; // px of movement before a press counts as a drag, not a tap
 const MARGIN = 8;
 // Keeps the badge clear of the header above and the sticky bottom nav /
@@ -138,7 +138,7 @@ export function DraggableLeagueFab({ hasActiveFilter, onOpen }: { hasActiveFilte
       className="fixed z-20 rounded-full lg:hidden"
     >
       <span className="pointer-events-none absolute inset-0 -z-10 animate-pulse rounded-full bg-primary opacity-60 blur-lg motion-reduce:animate-none" />
-      <AllLeaguesBadge className="size-14" />
+      <AllLeaguesBadge className="size-16" />
       {hasActiveFilter && (
         <span className="absolute right-0 top-0 size-3.5 rounded-full border-2 border-background bg-red-500" />
       )}

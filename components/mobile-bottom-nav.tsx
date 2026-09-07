@@ -33,7 +33,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const todaysPickActive = pathname === "/";
+  const todaysPickActive = pathname.startsWith("/top-bookings");
   const bookingsActive = pathname.startsWith("/account/bookings");
   const collectionsActive = pathname.startsWith("/account/collections");
 
@@ -81,7 +81,7 @@ export function MobileBottomNav() {
         className="fixed inset-x-4 bottom-4 z-40 flex items-stretch justify-between rounded-2xl border border-border/60 bg-card shadow-lg sm:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <Link href="/" className={TAB_CLASS} aria-label="Today's Pick" aria-current={todaysPickActive ? "page" : undefined}>
+        <Link href="/top-bookings" className={TAB_CLASS} aria-label="Top Bookings" aria-current={todaysPickActive ? "page" : undefined}>
           <span
             className={cn(
               "flex size-8 items-center justify-center rounded-full",

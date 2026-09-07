@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,6 +96,18 @@ export function PredictionDashboard({
   // only) — both just open this one drawer, which reuses LeagueSidebar as-is
   // so mobile gets the same favorite-toggle buttons desktop already has.
   const [leagueDrawerOpen, setLeagueDrawerOpen] = useState(false);
+  // Some browsers (seen on Brave) synthesize a click from the same tap that
+  // opened this drawer with more delay than Chromium typically does, and it
+  // can land on a league row or the backdrop right after opening, closing
+  // the drawer immediately (reads as "the first tap did nothing"). Ignoring
+  // dismiss/select actions for a brief window after open absorbs that,
+  // regardless of exactly how delayed a given browser's ghost click is.
+  const drawerOpenedAtRef = useRef(0);
+  const openLeagueDrawer = useCallback(() => {
+    drawerOpenedAtRef.current = Date.now();
+    setLeagueDrawerOpen(true);
+  }, []);
+  const isDrawerGhostClick = useCallback(() => Date.now() - drawerOpenedAtRef.current < 300, []);
 
   const setActiveLeagueOverride = useCallback((v: string) => updateParam("league", v, ALL_LEAGUES), [updateParam]);
   const setActiveDate = useCallback(
@@ -321,17 +333,26 @@ export function PredictionDashboard({
       {/* Quick access to the league picker without scrolling back to the
           sticky top bar — thumb-reachable, phone/tablet only, and draggable
           so it never permanently sits on top of a match. */}
-      <DraggableLeagueFab hasActiveFilter={activeLeague !== ALL_LEAGUES} onOpen={() => setLeagueDrawerOpen(true)} />
+      <DraggableLeagueFab hasActiveFilter={activeLeague !== ALL_LEAGUES} onOpen={openLeagueDrawer} />
 
       {leagueDrawerOpen && (
         <div className="lg:hidden">
-          <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setLeagueDrawerOpen(false)} />
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => {
+              if (isDrawerGhostClick()) return;
+              setLeagueDrawerOpen(false);
+            }}
+          />
           <div className="fixed inset-y-0 right-0 z-50 flex w-80 max-w-[85vw] flex-col overflow-y-auto bg-background p-2">
             <div className="flex items-center justify-between px-2 py-2">
               <span className="text-sm font-semibold">Leagues</span>
               <button
                 type="button"
-                onClick={() => setLeagueDrawerOpen(false)}
+                onClick={() => {
+                  if (isDrawerGhostClick()) return;
+                  setLeagueDrawerOpen(false);
+                }}
                 aria-label="Close"
                 className="flex size-8 items-center justify-center rounded-md hover:bg-muted"
               >
@@ -344,6 +365,7 @@ export function PredictionDashboard({
               totalCount={dateFilteredPredictions.length}
               activeLeague={activeLeague}
               onChange={(value) => {
+                if (isDrawerGhostClick()) return;
                 setActiveLeagueOverride(value);
                 setLeagueDrawerOpen(false);
               }}
