@@ -18,6 +18,24 @@ const SITE_DESCRIPTION = `${SITE_TAGLINE} AI-generated football predictions acro
 
 const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
+// Organization + WebSite structured data — lets Google associate the logo
+// with the site for knowledge-panel/rich-result branding. logo must be an
+// absolute URL per Google's guidelines.
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo-light.svg`,
+};
+
+const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+};
+
 const generalSans = localFont({
   src: [
     { path: "./fonts/GeneralSans-Variable.woff2", weight: "300 700", style: "normal" },
@@ -83,6 +101,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           crossOrigin="anonymous"
         />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
+        />
         <Script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
         <Script id="ga4-init" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || [];

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Goal } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderSearch } from "@/components/header-search";
 import { HeaderAccount } from "@/components/header-account";
@@ -13,11 +12,11 @@ export function SiteHeader() {
   return (
     <header className="border-b border-border/60 bg-background">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-4 py-3 sm:gap-3 sm:flex-nowrap">
-        <Link href="/" className="order-1 flex shrink-0 items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Goal className="size-4.5" />
-          </div>
-          <span className="text-lg font-bold tracking-tight">SoccerRadar</span>
+        <Link href="/" className="order-1 flex shrink-0 items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static SVG, no next/image benefit */}
+          <img src="/logo-light.svg" alt="SoccerRadar" className="h-8 w-auto dark:hidden" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-dark.svg" alt="SoccerRadar" className="hidden h-8 w-auto dark:block" />
         </Link>
 
         <SiteNavTabs />
