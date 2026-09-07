@@ -21,7 +21,7 @@ async function getCollectionData(id: number) {
   const [{ data: owner }, { data: items }, { data: leagues }] = await Promise.all([
     supabase.from("profiles").select("username").eq("id", collection.user_id).maybeSingle(),
     supabase.from("bookmark_collection_items").select("prediction_id").eq("collection_id", id),
-    supabase.from("leagues").select("id, name"),
+    supabase.from("leagues").select("id, name, country"),
   ]);
 
   const predictionIds = (items ?? []).map((i) => i.prediction_id);

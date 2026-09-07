@@ -27,7 +27,7 @@ async function getBookingData(id: number) {
       .select("prediction_id, market_key, created_at")
       .eq("booking_id", id)
       .order("created_at", { ascending: true }),
-    supabase.from("leagues").select("id, name"),
+    supabase.from("leagues").select("id, name, country"),
   ]);
 
   const predictionIds = [...new Set((items ?? []).map((i) => i.prediction_id))];

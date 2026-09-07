@@ -29,7 +29,7 @@ export function CollectionManage({
   ownerLabel: string;
   initialTitle: string;
   predictions: Prediction[];
-  leagueById: Map<number, { name: string }>;
+  leagueById: Map<number, { name: string; country: string }>;
   shareUrl: string;
 }) {
   const { user } = useAccount();
@@ -190,25 +190,29 @@ export function CollectionManage({
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((prediction) => (
-            <div key={prediction.id} className="relative">
-              <MatchCard
-                prediction={prediction}
-                leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
-                marketFilter="all"
-              />
-              {isOwner && (
-                <button
-                  type="button"
-                  onClick={() => handleRemove(prediction.id)}
-                  aria-label="Remove from collection"
-                  className="absolute right-2 top-2 z-10 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur hover:bg-background"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
+          {items.map((prediction) => {
+            const league = leagueById.get(prediction.league_id);
+            const leagueLabel = league ? `${league.country} · ${league.name}` : "";
+            return (
+              <div key={prediction.id} className="relative">
+                <MatchCard
+                  prediction={prediction}
+                  leagueName={leagueLabel}
+                  marketFilter="all"
+                />
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(prediction.id)}
+                    aria-label="Remove from collection"
+                    className="absolute right-2 top-2 z-10 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur hover:bg-background"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

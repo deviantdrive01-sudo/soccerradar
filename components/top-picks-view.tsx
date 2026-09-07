@@ -28,7 +28,7 @@ export function TopPicksView({
   shareTitle,
 }: {
   predictions: Prediction[];
-  leagueById: Map<number, { name: string }>;
+  leagueById: Map<number, { name: string; country: string }>;
   marketFilter: MarketFilter;
   /** The exact market this collection represents — lets a booking pick be added with no extra selection step. */
   marketKey: MarketKey;
@@ -111,21 +111,25 @@ export function TopPicksView({
     <div className="space-y-4">
       {toolbar}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {predictions.map((prediction, index) => (
-          <Fragment key={prediction.id}>
-            <MatchCard
-              prediction={prediction}
-              leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
-              marketFilter={marketFilter}
-              bookingButton={<BookingPickButton predictionId={prediction.id} marketKey={marketKey} />}
-            />
-            {(index + 1) % CARD_AD_INTERVAL === 0 &&
-              index !== predictions.length - 1 &&
-              (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (
-                <AdSlot orientation="horizontal" dismissible className="h-full" />
-              )}
-          </Fragment>
-        ))}
+        {predictions.map((prediction, index) => {
+          const league = leagueById.get(prediction.league_id);
+          const leagueLabel = league ? `${league.country} · ${league.name}` : "";
+          return (
+            <Fragment key={prediction.id}>
+              <MatchCard
+                prediction={prediction}
+                leagueName={leagueLabel}
+                marketFilter={marketFilter}
+                bookingButton={<BookingPickButton predictionId={prediction.id} marketKey={marketKey} />}
+              />
+              {(index + 1) % CARD_AD_INTERVAL === 0 &&
+                index !== predictions.length - 1 &&
+                (index + 1) / CARD_AD_INTERVAL <= MAX_CARD_ADS && (
+                  <AdSlot orientation="horizontal" dismissible className="h-full" />
+                )}
+            </Fragment>
+          );
+        })}
       </div>
     </div>
   );

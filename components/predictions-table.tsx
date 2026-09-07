@@ -42,7 +42,7 @@ export function PredictionsTable({
   rowAction,
 }: {
   predictions: Prediction[];
-  leagueById: Map<number, { name: string }>;
+  leagueById: Map<number, { name: string; country: string }>;
   marketFilter: MarketFilter;
   /** Disable when the page already has its own ad placement (e.g. a sidebar), to avoid doubling up. */
   showInFeedAds?: boolean;
@@ -73,7 +73,7 @@ export function PredictionsTable({
   const groups: { leagueId: number; leagueName: string; rows: Prediction[] }[] = [];
   for (const [leagueId, league] of leagueById) {
     const rows = predictions.filter((p) => p.league_id === leagueId);
-    if (rows.length > 0) groups.push({ leagueId, leagueName: league.name, rows });
+    if (rows.length > 0) groups.push({ leagueId, leagueName: `${league.country} · ${league.name}`, rows });
   }
 
   return (

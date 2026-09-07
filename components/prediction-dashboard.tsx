@@ -163,7 +163,7 @@ export function PredictionDashboard({
     const groups: { leagueId: number; leagueName: string; predictions: Prediction[] }[] = [];
     for (const [leagueId, league] of leagueById) {
       const preds = byLeague.get(leagueId);
-      if (preds && preds.length > 0) groups.push({ leagueId, leagueName: league.name, predictions: preds });
+      if (preds && preds.length > 0) groups.push({ leagueId, leagueName: `${league.country} · ${league.name}`, predictions: preds });
     }
     return groups;
   }, [visiblePredictions, leagueById]);
