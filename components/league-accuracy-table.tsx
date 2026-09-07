@@ -23,7 +23,8 @@ function pctClass(pct: number, known: number): string {
 
 function MatchRow({ prediction }: { prediction: Prediction }) {
   const actual = prediction.actual_result;
-  if (!actual) return null;
+  // A match can in rare cases settle before it was ever predicted — nothing to grade.
+  if (!actual || !prediction.markets) return null;
 
   const results = summarizeSettledMarkets(prediction.markets, actual.markets);
   const { known, correct } = settledMarketTally(results);

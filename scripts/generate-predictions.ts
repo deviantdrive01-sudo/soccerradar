@@ -1,35 +1,25 @@
 /**
- * Recurring predictions job — discovers upcoming fixtures from Flashscore
- * (rather than API-Football's weekly-only cron, which misses anything
- * confirmed mid-week) and generates AI predictions for any that aren't
- * already in the `predictions` table.
+ * Prediction-generation job — stage 2 of the two-stage pipeline (see
+ * crawl-fixtures.ts for stage 1). Picks up bare fixture rows that
+ * crawl-fixtures.ts already inserted (`markets is null`), scrapes real
+ * head-to-head + corner history for each one directly from its own
+ * match_id, generates predictions via Claude, and updates each row in
+ * place — the same fixture the site is already showing, now filled in,
+ * not a new row.
  *
- * Runs on a schedule via .github/workflows/update-predictions.yml, same
- * reasoning as update-results.ts: headless Chromium doesn't fit cleanly in
- * a Vercel serverless function, so this runs on a GitHub Actions runner
- * instead. Playwright is installed fresh in the workflow job (--no-save),
- * never added to package.json.
- *
- * For each new fixture, this also scrapes real head-to-head corner data —
- * the last 3 meetings between these two exact teams, with the actual total
- * corner count pulled from each past match's own Stats tab (the same
- * extraction already proven in update-results.ts). The previous
- * API-Football-based pipeline's prompt claimed to use "corner counts from
- * their last 3 meetings" but never actually supplied that data (API-
- * Football's basic head-to-head endpoint has no corner stats) — this fixes
- * that gap with real numbers instead of removing the claim.
+ * Runs on a schedule via .github/workflows/generate-predictions.yml, offset
+ * ~30 min after crawl-fixtures.yml so freshly-crawled rows are there to pick
+ * up. Same reasoning as the other scripts for running via GitHub Actions
+ * rather than a Vercel function: headless Chromium doesn't fit there.
  *
  * This file duplicates a slimmed-down version of lib/prediction-engine.ts's
  * prompt/batching logic rather than importing it directly, because that
- * module (and lib/api-football.ts) are marked `import "server-only"`,
- * which throws when loaded outside Next.js's server bundler — the same
- * reason update-results.ts reimplements its own team-name normalization
- * instead of importing a guarded module.
+ * module (and lib/api-football.ts) are marked `import "server-only"`, which
+ * throws when loaded outside Next.js's server bundler.
  */
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { chromium, type Page } from "playwright";
-import { LEAGUE_SOURCES, flashscoreFixturesUrl } from "../lib/league-sources";
 import { hydratePrediction, isCompactPrediction, type HydratedPrediction } from "../lib/hydrate";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -45,120 +35,12 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
-const FIXTURE_WINDOW_DAYS = 3; // how far ahead to look for new fixtures each run
 const MAX_H2H_MEETINGS = 3; // capped to bound the extra scraping this adds per fixture
+const MAX_PENDING_PER_RUN = 60; // bounds Claude spend per run
 const BATCH_SIZE = 8;
 const DEFAULT_MODEL = "claude-sonnet-5";
 
-// ---------- team-name matching (same approach as update-results.ts) ----------
-
-function normalizeTeamName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/ø/g, "o")
-    .replace(/æ/g, "ae")
-    .replace(/å/g, "a")
-    .replace(/ı/g, "i")
-    .replace(/ş/g, "s")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ç/g, "c")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\(.*?\)/g, "")
-    .replace(/[.''`´-]/g, " ")
-    .replace(/\butd\b/g, "united")
-    .replace(/\b(fc|cf|sc|ac|afc|cfk|sfk|cd|ca|club|de|do|da|w)\b/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-function namesMatch(a: string, b: string): boolean {
-  const ca = normalizeTeamName(a);
-  const cb = normalizeTeamName(b);
-  if (!ca || !cb) return false;
-  if (ca === cb) return true;
-  const wordsA = new Set(ca.split(" ").filter((w) => w.length > 1));
-  const wordsB = new Set(cb.split(" ").filter((w) => w.length > 1));
-  if (wordsA.size === 0 || wordsB.size === 0) return false;
-  const [shorter, longer] = wordsA.size <= wordsB.size ? [wordsA, wordsB] : [wordsB, wordsA];
-  let overlap = 0;
-  for (const w of shorter) if (longer.has(w)) overlap++;
-  return overlap === shorter.size && overlap > 0;
-}
-
-// ---------- Flashscore fixture discovery ----------
-
-interface FixtureRow {
-  matchId: string;
-  home: string;
-  away: string;
-  kickoff: string; // ISO
-}
-
-/** "07.09. 18:00" (Flashscore's dd.mm. format, no year) -> a full ISO datetime. */
-function parseFlashscoreDateTime(dateText: string): string | null {
-  const match = dateText.match(/(\d{2})\.(\d{2})\.\s*(\d{2}):(\d{2})/);
-  if (!match) return null;
-  const [, day, month, hour, minute] = match;
-  const now = new Date();
-  let year = now.getFullYear();
-  const candidate = new Date(Date.UTC(year, Number(month) - 1, Number(day), Number(hour), Number(minute)));
-  // Fixtures pages only show near-term matches — if this date lands more than
-  // a month in the past relative to now, it must actually be next year (only
-  // realistically hit right around New Year's).
-  if (candidate.getTime() < now.getTime() - 30 * 24 * 3600 * 1000) {
-    year += 1;
-  }
-  return new Date(Date.UTC(year, Number(month) - 1, Number(day), Number(hour), Number(minute))).toISOString();
-}
-
-async function scrapeFixturesOnce(page: Page, url: string): Promise<FixtureRow[]> {
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForTimeout(2500);
-  for (let i = 0; i < 2; i++) {
-    try {
-      await page.getByText(/show more matches/i).first().click({ timeout: 1500 });
-      await page.waitForTimeout(1200);
-    } catch {
-      break;
-    }
-  }
-  const raw = await page.evaluate(() => {
-    const els = document.querySelectorAll('[id^="g_1_"]');
-    return Array.from(els).map((el) => {
-      const home =
-        el.querySelector(".event__homeParticipant .wcl-name_jjfMf")?.textContent?.trim() ??
-        el.querySelector(".event__homeParticipant")?.textContent?.trim() ??
-        "";
-      const away =
-        el.querySelector(".event__awayParticipant .wcl-name_jjfMf")?.textContent?.trim() ??
-        el.querySelector(".event__awayParticipant")?.textContent?.trim() ??
-        "";
-      const dateText = el.querySelector(".wcl-dateContent_eEChT")?.textContent?.trim() ?? "";
-      const id = (el.getAttribute("id") ?? "").replace("g_1_", "");
-      return { id, home, away, dateText };
-    });
-  });
-
-  const rows: FixtureRow[] = [];
-  for (const r of raw) {
-    const kickoff = parseFlashscoreDateTime(r.dateText);
-    if (kickoff && r.home && r.away && r.id) rows.push({ matchId: r.id, home: r.home, away: r.away, kickoff });
-  }
-  return rows;
-}
-
-function rowsEqual(a: FixtureRow[], b: FixtureRow[]): boolean {
-  if (a.length !== b.length) return false;
-  const key = (r: FixtureRow) => `${r.matchId}|${r.home}|${r.away}|${r.kickoff}`;
-  const sa = a.map(key).sort();
-  const sb = b.map(key).sort();
-  return sa.every((v, i) => v === sb[i]);
-}
-
-// ---------- H2H + corner history ----------
+// ---------- H2H + corner history (same approach as crawl-fixtures.ts's sibling, update-results.ts) ----------
 
 interface H2hRow {
   date: string;
@@ -317,12 +199,30 @@ async function predictBatch(client: Anthropic, batch: FixtureContext[]): Promise
   const response = await client.messages.create({
     model,
     max_tokens: 400 * batch.length,
+    // This model defaults to adaptive extended thinking, which can consume
+    // the entire max_tokens budget on internal reasoning and leave nothing
+    // for the actual JSON output (hit in practice: stop_reason "max_tokens"
+    // with a single "thinking" content block and no text block at all).
+    // The task is a compact, deterministic classification with the
+    // methodology already spelled out in the system prompt — thinking adds
+    // cost and failure risk here, not quality.
+    thinking: { type: "disabled" },
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: JSON.stringify(userPayload) }],
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") throw new Error("No text content in Claude response");
+  if (!textBlock || textBlock.type !== "text") {
+    console.error(
+      "No text content in Claude response. stop_reason:",
+      response.stop_reason,
+      "content block types:",
+      response.content.map((b) => b.type),
+      "usage:",
+      response.usage,
+    );
+    throw new Error("No text content in Claude response");
+  }
 
   const json = extractJsonArray(textBlock.text);
   const parsed: unknown = JSON.parse(json);
@@ -343,99 +243,83 @@ async function generatePredictions(fixtures: FixtureContext[]): Promise<Hydrated
 // ---------- main ----------
 
 async function main() {
-  const { data: leagues, error: leaguesError } = await supabase.from("leagues").select("*").eq("is_active", true);
+  const now = new Date();
+
+  const { data: pending, error: pendingError } = await supabase
+    .from("predictions")
+    .select("id, league_id, match_id, home_team, away_team, match_date")
+    .is("markets", null)
+    .gte("match_date", now.toISOString())
+    .order("match_date", { ascending: true })
+    .limit(MAX_PENDING_PER_RUN);
+
+  if (pendingError) {
+    console.error("Failed to load pending fixtures:", pendingError.message);
+    process.exit(1);
+  }
+
+  if (!pending || pending.length === 0) {
+    console.log("\n=== Generate-predictions summary ===");
+    console.log("Pending fixtures: 0");
+    return;
+  }
+
+  const { data: leagues, error: leaguesError } = await supabase.from("leagues").select("id, name");
   if (leaguesError) {
     console.error("Failed to load leagues:", leaguesError.message);
     process.exit(1);
   }
+  const leagueNameById = new Map(leagues.map((l) => [l.id, l.name]));
 
-  const sourceByLeagueId = new Map(LEAGUE_SOURCES.map((s) => [s.leagueId, s]));
-  const now = new Date();
-  const windowEnd = new Date(now.getTime() + FIXTURE_WINDOW_DAYS * 24 * 3600 * 1000);
+  console.log(`Found ${pending.length} pending fixture(s) needing predictions.`);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ userAgent: USER_AGENT });
 
-  const noSlugLeagues: string[] = [];
-  const unstableLeagues: string[] = [];
-  const newFixtures: { league: (typeof leagues)[number]; row: FixtureRow }[] = [];
-
-  for (const league of leagues) {
-    const source = sourceByLeagueId.get(league.id);
-    if (!source) {
-      noSlugLeagues.push(league.name);
-      continue;
-    }
-
-    const url = flashscoreFixturesUrl(source.slug);
-    let snapshots: FixtureRow[][];
-    try {
-      snapshots = [await scrapeFixturesOnce(page, url), await scrapeFixturesOnce(page, url), await scrapeFixturesOnce(page, url)];
-    } catch (e) {
-      console.log(`[${league.name}] scrape failed: ${(e as Error).message}`);
-      unstableLeagues.push(league.name);
-      continue;
-    }
-    if (!rowsEqual(snapshots[0], snapshots[1]) || !rowsEqual(snapshots[1], snapshots[2])) {
-      console.log(`[${league.name}] fixtures page unstable across reloads, skipping`);
-      unstableLeagues.push(league.name);
-      continue;
-    }
-
-    const upcoming = snapshots[0].filter((r) => {
-      const t = new Date(r.kickoff).getTime();
-      return t >= now.getTime() && t <= windowEnd.getTime();
-    });
-    if (upcoming.length === 0) continue;
-
-    const { data: existing } = await supabase
-      .from("predictions")
-      .select("home_team, away_team")
-      .eq("league_id", league.id)
-      .gte("match_date", now.toISOString())
-      .lte("match_date", windowEnd.toISOString());
-
-    for (const row of upcoming) {
-      const alreadyExists = (existing ?? []).some(
-        (p) => namesMatch(p.home_team, row.home) && namesMatch(p.away_team, row.away),
-      );
-      if (!alreadyExists) newFixtures.push({ league, row });
-    }
-  }
-
-  console.log(`Found ${newFixtures.length} new fixture(s) needing predictions (next ${FIXTURE_WINDOW_DAYS} days).`);
-
   const fixtureContexts: FixtureContext[] = [];
-  for (const { league, row } of newFixtures) {
-    const h2h = await scrapeH2hSections(page, row.matchId);
+  const skippedFixtures: string[] = [];
 
-    const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
-    for (const meeting of h2h.headToHead) {
-      const corners = await extractCorners(page, meeting.mid);
-      headToHeadWithCorners.push({ ...meeting, corners });
+  for (const row of pending) {
+    const leagueName = leagueNameById.get(row.league_id) ?? "Unknown league";
+    try {
+      const h2h = await scrapeH2hSections(page, row.match_id);
+
+      const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
+      for (const meeting of h2h.headToHead) {
+        const corners = await extractCorners(page, meeting.mid);
+        headToHeadWithCorners.push({ ...meeting, corners });
+      }
+
+      fixtureContexts.push({
+        matchId: row.match_id,
+        homeTeam: row.home_team,
+        awayTeam: row.away_team,
+        leagueName,
+        kickoff: row.match_date,
+        stats: {
+          headToHead: headToHeadWithCorners,
+          homeTeamForm: h2h.homeTeamForm,
+          awayTeamForm: h2h.awayTeamForm,
+        },
+      });
+    } catch (err) {
+      // A single flaky page load (Flashscore navigation timeout, etc.) must
+      // not sink the whole batch — skip this fixture and let it get picked
+      // up fresh on the next scheduled run rather than generating a
+      // prediction from thin/absent stats.
+      const label = `${row.home_team} vs ${row.away_team} (${leagueName})`;
+      console.warn(`Skipping ${label} — H2H scrape failed:`, err instanceof Error ? err.message : err);
+      skippedFixtures.push(label);
     }
-
-    fixtureContexts.push({
-      matchId: row.matchId,
-      homeTeam: row.home,
-      awayTeam: row.away,
-      leagueName: league.name,
-      kickoff: row.kickoff,
-      stats: {
-        headToHead: headToHeadWithCorners,
-        homeTeamForm: h2h.homeTeamForm,
-        awayTeamForm: h2h.awayTeamForm,
-      },
-    });
   }
 
   await browser.close();
 
   if (fixtureContexts.length === 0) {
-    console.log("\n=== Predictions-update summary ===");
-    console.log("New fixtures: 0");
-    console.log(`No league slug configured: ${noSlugLeagues.join(", ") || "none"}`);
-    console.log(`Unstable/failed league scrape: ${unstableLeagues.join(", ") || "none"}`);
+    console.log("\n=== Generate-predictions summary ===");
+    console.log(`Pending fixtures: ${pending.length}`);
+    console.log("Predictions generated: 0");
+    console.log(`Skipped (H2H scrape failed): ${skippedFixtures.join(", ") || "none"}`);
     return;
   }
 
@@ -448,38 +332,28 @@ async function main() {
   console.log(`Generating predictions for ${fixtureContexts.length} fixture(s) via Claude...`);
   const predictions = await generatePredictions(fixtureContexts);
 
-  const fixtureById = new Map(fixtureContexts.map((f) => [f.matchId, f]));
-  const leagueByName = new Map(leagues.map((l) => [l.name, l]));
-  const rows = predictions
-    .map((prediction) => {
-      const fixture = fixtureById.get(prediction.matchId);
-      if (!fixture) return null;
-      const league = leagueByName.get(fixture.leagueName);
-      if (!league) return null;
-      return {
-        league_id: league.id,
-        match_id: prediction.matchId,
-        home_team: fixture.homeTeam,
-        away_team: fixture.awayTeam,
-        match_date: fixture.kickoff,
+  let updated = 0;
+  for (const prediction of predictions) {
+    const { error: updateError } = await supabase
+      .from("predictions")
+      .update({
         markets: prediction.markets,
         confidence: prediction.confidence,
         summary: prediction.summary,
-      };
-    })
-    .filter((r): r is NonNullable<typeof r> => r !== null);
+      })
+      .eq("match_id", prediction.matchId);
 
-  const { error: upsertError } = await supabase.from("predictions").upsert(rows, { onConflict: "match_id" });
-  if (upsertError) {
-    console.error("Failed to upsert predictions:", upsertError.message);
-    process.exit(1);
+    if (updateError) {
+      console.error(`Failed to update prediction for match_id ${prediction.matchId}:`, updateError.message);
+      continue;
+    }
+    updated++;
   }
 
-  console.log("\n=== Predictions-update summary ===");
-  console.log(`New fixtures found: ${newFixtures.length}`);
-  console.log(`Predictions generated & upserted: ${rows.length}`);
-  console.log(`No league slug configured: ${noSlugLeagues.join(", ") || "none"}`);
-  console.log(`Unstable/failed league scrape: ${unstableLeagues.join(", ") || "none"}`);
+  console.log("\n=== Generate-predictions summary ===");
+  console.log(`Pending fixtures: ${pending.length}`);
+  console.log(`Predictions generated & updated: ${updated}`);
+  console.log(`Skipped (H2H scrape failed): ${skippedFixtures.join(", ") || "none"}`);
 }
 
 main().catch((e) => {

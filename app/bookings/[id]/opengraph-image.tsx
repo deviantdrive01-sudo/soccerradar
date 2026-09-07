@@ -3,6 +3,7 @@ import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { parseIdFromParam } from "@/lib/share-slug";
 import { ShareImageTemplate, SHARE_IMAGE_SIZE, type ShareImageItem } from "@/lib/share-image";
 import { MARKET_LABELS, marketPredictionLabel } from "@/lib/hydrate";
+import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
@@ -42,7 +43,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       items = (bookingItems ?? [])
         .map((i) => {
           const prediction = predictionById.get(i.prediction_id);
-          if (!prediction) return null;
+          if (!prediction || !isPredicted(prediction)) return null;
           const marketKey = i.market_key as MarketKey;
           const league = leagueById.get(prediction.league_id) ?? "";
           const value = marketPredictionLabel(prediction.markets, marketKey);

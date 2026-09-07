@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { BarChart3, Goal } from "lucide-react";
+import { Goal } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderSearch } from "@/components/header-search";
 import { HeaderAccount } from "@/components/header-account";
+import { SiteNavTabs } from "@/components/site-nav-tabs";
+import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { TelegramIcon } from "@/components/share-buttons";
 
 const TELEGRAM_URL = "https://t.me/socceradar";
@@ -18,26 +20,20 @@ export function SiteHeader() {
           <span className="text-lg font-bold tracking-tight">SoccerRadar</span>
         </Link>
 
-        <div className="order-3 w-full sm:order-2 sm:w-auto sm:max-w-sm sm:flex-1">
+        <SiteNavTabs />
+
+        <div className="order-4 w-full sm:order-3 sm:w-auto sm:max-w-sm sm:flex-1">
           <HeaderSearch />
         </div>
 
-        <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:order-3">
-          <Link
-            href="/accuracy"
-            data-tour="track-record"
-            aria-label="Track Record"
-            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
-          >
-            <BarChart3 className="size-4" />
-            <span className="hidden sm:inline">Track Record</span>
-          </Link>
+        <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:order-4">
+          <MobileNavDrawer />
           <a
             href={TELEGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Join our Telegram community"
-            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
+            className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex sm:px-3"
           >
             <TelegramIcon className="size-4" />
             <span className="hidden sm:inline">Join our Community</span>

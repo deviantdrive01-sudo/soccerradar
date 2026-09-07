@@ -1,22 +1,20 @@
-name: Update predictions (fixture discovery)
+name: Crawl fixtures
 
 on:
   schedule:
-    # Every 6 hours. Less frequent than results-update (every 2h) since
-    # fixture confirmations don't change nearly as fast as match results do,
-    # and a prediction just needs to exist a day or so before kickoff, not
-    # within minutes of a fixture being confirmed.
-    - cron: "22 */6 * * *"
+    # Every 2 hours, offset from results-update (:12) and generate-predictions
+    # (:43) so the three don't pile onto the same runner queue slot.
+    - cron: "13 */2 * * *"
   workflow_dispatch: {}
 
 concurrency:
-  group: update-predictions
+  group: crawl-fixtures
   cancel-in-progress: false
 
 jobs:
-  update-predictions:
+  crawl-fixtures:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -32,9 +30,8 @@ jobs:
           npm install --no-save playwright@1.63.0
           npx playwright install --with-deps chromium
 
-      - name: Run predictions update
+      - name: Run fixture crawl
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: npx tsx scripts/update-predictions.ts
+        run: npx tsx scripts/crawl-fixtures.ts

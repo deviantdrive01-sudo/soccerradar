@@ -119,6 +119,14 @@ async function predictBatch(
   const response = await client.messages.create({
     model,
     max_tokens: 400 * batch.length,
+    // This model defaults to adaptive extended thinking, which can consume
+    // the entire max_tokens budget on internal reasoning and leave nothing
+    // for the actual JSON output (confirmed in practice: stop_reason
+    // "max_tokens" with a single "thinking" content block and no text block
+    // at all). The task is a compact, deterministic classification with the
+    // methodology already spelled out in the system prompt — thinking adds
+    // cost and failure risk here, not quality.
+    thinking: { type: "disabled" },
     system: [
       {
         type: "text",
@@ -136,6 +144,14 @@ async function predictBatch(
 
   const textBlock = response.content.find((block) => block.type === "text");
   if (!textBlock || textBlock.type !== "text") {
+    console.error(
+      "Anthropic response contained no text block. stop_reason:",
+      response.stop_reason,
+      "content block types:",
+      response.content.map((b) => b.type),
+      "usage:",
+      response.usage,
+    );
     throw new Error("Anthropic response contained no text block");
   }
 

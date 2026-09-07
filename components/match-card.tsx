@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
+import { isPredicted } from "@/lib/supabase/types";
+import type { HydratedMarkets } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 import type { MarketFilter } from "@/components/market-filter";
 import { ChevronDown } from "lucide-react";
@@ -28,7 +30,7 @@ function BoolBadge({ label, value }: { label: string; value: boolean | null }) {
   );
 }
 
-function GoalsBadges({ markets }: { markets: Prediction["markets"] }) {
+function GoalsBadges({ markets }: { markets: HydratedMarkets }) {
   return (
     <>
       <Badge variant="outline" className={markets.goals.over1_5 ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}>
@@ -41,7 +43,7 @@ function GoalsBadges({ markets }: { markets: Prediction["markets"] }) {
   );
 }
 
-function CornersBadges({ markets }: { markets: Prediction["markets"] }) {
+function CornersBadges({ markets }: { markets: HydratedMarkets }) {
   return (
     <>
       <Badge variant="outline" className={markets.corners.over7_5 ? "border-sky-500/30 text-sky-400" : "text-muted-foreground"}>
@@ -59,7 +61,10 @@ function CornersBadges({ markets }: { markets: Prediction["markets"] }) {
 
 function ResultSummary({ prediction }: { prediction: Prediction }) {
   const actual = prediction.actual_result;
-  if (!actual) return null;
+  // A match can in rare cases settle before it was ever predicted (crawl
+  // found the fixture, kickoff passed before generate-predictions got to
+  // it) — nothing to grade in that case.
+  if (!actual || !prediction.markets) return null;
 
   const results = summarizeSettledMarkets(prediction.markets, actual.markets);
   const { known, correct } = settledMarketTally(results);
@@ -97,6 +102,41 @@ export function MatchCard({
   bookingButton?: React.ReactNode;
 }) {
   const kickoff = new Date(prediction.match_date);
+
+  if (!isPredicted(prediction)) {
+    return (
+      <Card className="border-border/60 bg-muted/60">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+          <div className="text-xs font-medium text-foreground/80">{leagueName}</div>
+          <div className="text-xs font-medium text-foreground/80">
+            {kickoff.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}
+            {" · "}
+            {kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="flex min-w-0 items-start gap-2">
+              <CollectionPickerButton predictionId={prediction.id} />
+              <Link
+                href={`/match/${prediction.id}`}
+                className="min-w-0 text-lg font-semibold leading-tight hover:text-primary hover:underline"
+              >
+                {prediction.home_team}
+                <span className="mx-2 text-muted-foreground font-medium">vs</span>
+                {prediction.away_team}
+              </Link>
+            </div>
+            <Badge variant="outline" className="shrink-0 text-muted-foreground">
+              Pending
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">Prediction coming soon — check back shortly.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const showFtDraw = marketFilter === "all" || marketFilter === "ftDraw";
   const showHighestHalf = marketFilter === "all" || marketFilter === "highestHalf";
   const showWinEitherHalf = marketFilter === "all" || marketFilter === "winEitherHalf";

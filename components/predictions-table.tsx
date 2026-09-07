@@ -12,6 +12,7 @@ import {
 import { AdSlot } from "@/components/ad-slot";
 import { cn } from "cn";
 import { isDrawOrOver2_5, isFullTimeDraw, isMarketCorrect, MARKET_KEYS, winEitherHalfCode } from "@/lib/hydrate";
+import { isPredicted } from "@/lib/supabase/types";
 import type { Prediction } from "@/lib/supabase/types";
 import type { MarketFilter } from "@/components/market-filter";
 
@@ -110,7 +111,8 @@ export function PredictionsTable({
             </TableRow>
             {group.rows.map((prediction) => {
               const kickoff = new Date(prediction.match_date);
-              const winEitherHalf = winEitherHalfCode(prediction.markets);
+              const m = isPredicted(prediction) ? prediction.markets : null;
+              const winEitherHalf = m ? winEitherHalfCode(m) : null;
               return (
                 <TableRow key={prediction.id}>
                   {rowAction && <TableCell className={cn(CELL, "text-center")}>{rowAction(prediction)}</TableCell>}
@@ -134,9 +136,11 @@ export function PredictionsTable({
                       {prediction.actual_result ? (
                         (() => {
                           const actual = prediction.actual_result;
-                          const known = MARKET_KEYS.map((key) =>
-                            isMarketCorrect(prediction.markets, actual.markets, key),
-                          ).filter((v): v is boolean => v !== null);
+                          const known = m
+                            ? MARKET_KEYS.map((key) => isMarketCorrect(m, actual.markets, key)).filter(
+                                (v): v is boolean => v !== null,
+                              )
+                            : [];
                           const correctCount = known.filter(Boolean).length;
                           return (
                             <span className="whitespace-nowrap">
@@ -154,17 +158,17 @@ export function PredictionsTable({
                   )}
                   {showFtDraw && (
                     <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={isFullTimeDraw(prediction.markets)} />
+                      <YesNo value={m ? isFullTimeDraw(m) : null} />
                     </TableCell>
                   )}
                   {showFtDraw && (
                     <TableCell className={cn(CELL, "text-center text-muted-foreground")}>
-                      {prediction.markets.firstHalfOutcome.code}
+                      {m ? m.firstHalfOutcome.code : "–"}
                     </TableCell>
                   )}
                   {showHighestHalf && (
                     <TableCell className={cn(CELL, "whitespace-nowrap text-muted-foreground")}>
-                      {prediction.markets.highestScoringHalf.code}
+                      {m ? m.highestScoringHalf.code : "–"}
                     </TableCell>
                   )}
                   {showWinEitherHalf && (
@@ -174,38 +178,44 @@ export function PredictionsTable({
                   )}
                   {showDrawOrOver && (
                     <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={isDrawOrOver2_5(prediction.markets)} />
+                      <YesNo value={m ? isDrawOrOver2_5(m) : null} />
                     </TableCell>
                   )}
                   {showGoals && (
                     <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={prediction.markets.goals.over1_5} />
+                      <YesNo value={m ? m.goals.over1_5 : null} />
                     </TableCell>
                   )}
                   {showGoals && (
                     <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={prediction.markets.goals.over2_5} />
+                      <YesNo value={m ? m.goals.over2_5 : null} />
                     </TableCell>
                   )}
                   {showCorners && (
                     <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={prediction.markets.corners.over7_5} />
+                      <YesNo value={m ? m.corners.over7_5 : null} />
                     </TableCell>
                   )}
                   {showCorners && (
                     <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={prediction.markets.corners.over8_5} />
+                      <YesNo value={m ? m.corners.over8_5 : null} />
                     </TableCell>
                   )}
                   {showCorners && (
                     <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={prediction.markets.corners.firstHalfOver3_5} />
+                      <YesNo value={m ? m.corners.firstHalfOver3_5 : null} />
                     </TableCell>
                   )}
                   <TableCell className={cn(CELL, "text-center")}>
-                    <Badge variant="outline" className={cn("shrink-0 px-1.5 py-0 text-[11px]", confidenceClass(prediction.confidence))}>
-                      {prediction.confidence}%
-                    </Badge>
+                    {prediction.confidence !== null ? (
+                      <Badge variant="outline" className={cn("shrink-0 px-1.5 py-0 text-[11px]", confidenceClass(prediction.confidence))}>
+                        {prediction.confidence}%
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[11px] text-muted-foreground">
+                        Pending
+                      </Badge>
+                    )}
                   </TableCell>
                 </TableRow>
               );

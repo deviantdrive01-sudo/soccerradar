@@ -3,16 +3,22 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X, CheckCircle2, XCircle } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
 import { ShareButtons } from "@/components/share-buttons";
-import { renameBooking, deleteBooking, toggleBookingItem } from "@/app/account/bookings/actions";
+import { renameBooking, deleteBooking, toggleBookingItem, setBookingVisibility } from "@/app/account/bookings/actions";
 import { marketPredictionLabel, MARKET_LABELS } from "@/lib/hydrate";
-import type { MarketKey } from "@/lib/hydrate";
+import { gradePicks, tallyGraded } from "@/lib/booking-grading";
+import { accuracyPct, pctClass } from "@/lib/accuracy";
+import { cn } from "@/lib/utils";
+import type { HydratedMarkets, MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
 export interface BookingPick {
-  prediction: Prediction;
+  // A booking can only ever reference an already-predicted match (there's no
+  // pick-a-market UI for a pending fixture), so this is narrower than the
+  // base Prediction type — see isPredicted() in lib/supabase/types.ts.
+  prediction: Prediction & { markets: HydratedMarkets; confidence: number; summary: string };
   marketKey: MarketKey;
 }
 
@@ -21,6 +27,7 @@ export function BookingManage({
   ownerId,
   ownerLabel,
   initialTitle,
+  initialIsPublic,
   picks,
   leagueById,
   shareUrl,
@@ -29,6 +36,7 @@ export function BookingManage({
   ownerId: string;
   ownerLabel: string;
   initialTitle: string;
+  initialIsPublic: boolean;
   picks: BookingPick[];
   leagueById: Map<number, { name: string }>;
   shareUrl: string;
@@ -41,6 +49,25 @@ export function BookingManage({
   const [title, setTitle] = useState(initialTitle);
   const [renaming, setRenaming] = useState(false);
   const [titleDraft, setTitleDraft] = useState(initialTitle);
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [visibilityPending, setVisibilityPending] = useState(false);
+
+  const graded = gradePicks(items);
+  const { settled, correct } = tallyGraded(graded);
+  const gradedByKey = new Map(graded.map((g) => [`${g.prediction.id}-${g.marketKey}`, g.correct]));
+
+  async function handleToggleVisibility() {
+    const next = !isPublic;
+    setIsPublic(next);
+    setVisibilityPending(true);
+    try {
+      await setBookingVisibility(bookingId, next);
+    } catch {
+      setIsPublic(!next);
+    } finally {
+      setVisibilityPending(false);
+    }
+  }
 
   async function handleRemove(predictionId: number, marketKey: MarketKey) {
     setItems((prev) => prev.filter((p) => !(p.prediction.id === predictionId && p.marketKey === marketKey)));
@@ -110,9 +137,30 @@ export function BookingManage({
             <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
           )}
           <p className="text-sm text-muted-foreground">by {ownerLabel}</p>
+          {settled > 0 && (
+            <p className={cn("mt-1 text-sm font-medium", pctClass(accuracyPct(correct, settled), settled))}>
+              {correct}/{settled} settled · {accuracyPct(correct, settled)}% win rate
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {isOwner && (
+            <button
+              type="button"
+              onClick={handleToggleVisibility}
+              disabled={visibilityPending}
+              className={cn(
+                "h-8 rounded-md px-3 text-xs font-medium disabled:opacity-60",
+                isPublic
+                  ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+                  : "border border-border/60 hover:bg-muted",
+              )}
+              title={isPublic ? "Listed on Top Bookings — click to make private" : "Not listed on Top Bookings — click to publish"}
+            >
+              {isPublic ? "Make Private" : "Publish to Public"}
+            </button>
+          )}
           {isOwner && !renaming && (
             <>
               <button
@@ -145,29 +193,34 @@ export function BookingManage({
         <div className="py-16 text-center text-sm text-muted-foreground">No picks in this booking.</div>
       ) : (
         <div className="divide-y divide-border/60 rounded-md border border-border/60">
-          {items.map(({ prediction, marketKey }) => (
-            <div key={`${prediction.id}-${marketKey}`} className="flex items-center justify-between gap-2 px-3 py-2.5">
-              <Link href={`/match/${prediction.id}`} className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium hover:text-primary hover:underline">
-                  {prediction.home_team} <span className="font-normal text-muted-foreground">vs</span> {prediction.away_team}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {leagueById.get(prediction.league_id)?.name ?? ""} · {MARKET_LABELS[marketKey]}:{" "}
-                  <span className="font-medium text-foreground">{marketPredictionLabel(prediction.markets, marketKey)}</span>
-                </div>
-              </Link>
-              {isOwner && (
-                <button
-                  type="button"
-                  onClick={() => handleRemove(prediction.id, marketKey)}
-                  aria-label="Remove this pick"
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-border/60 hover:bg-muted"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
+          {items.map(({ prediction, marketKey }) => {
+            const correctness = gradedByKey.get(`${prediction.id}-${marketKey}`) ?? null;
+            return (
+              <div key={`${prediction.id}-${marketKey}`} className="flex items-center justify-between gap-2 px-3 py-2.5">
+                {correctness === true && <CheckCircle2 className="size-4 shrink-0 text-emerald-400" aria-label="Correct" />}
+                {correctness === false && <XCircle className="size-4 shrink-0 text-red-400" aria-label="Incorrect" />}
+                <Link href={`/match/${prediction.id}`} className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium hover:text-primary hover:underline">
+                    {prediction.home_team} <span className="font-normal text-muted-foreground">vs</span> {prediction.away_team}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {leagueById.get(prediction.league_id)?.name ?? ""} · {MARKET_LABELS[marketKey]}:{" "}
+                    <span className="font-medium text-foreground">{marketPredictionLabel(prediction.markets, marketKey)}</span>
+                  </div>
+                </Link>
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(prediction.id, marketKey)}
+                    aria-label="Remove this pick"
+                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-border/60 hover:bg-muted"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

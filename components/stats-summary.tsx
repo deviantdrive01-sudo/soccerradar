@@ -1,4 +1,5 @@
 import { Flame, ListChecks, Percent, Trophy } from "lucide-react";
+import { isPredicted } from "@/lib/supabase/types";
 import type { Prediction } from "@/lib/supabase/types";
 
 function Stat({
@@ -22,10 +23,13 @@ function Stat({
 export function StatsSummary({ predictions }: { predictions: Prediction[] }) {
   const matchCount = predictions.length;
   const leagueCount = new Set(predictions.map((p) => p.league_id)).size;
-  const avgConfidence = matchCount
-    ? Math.round(predictions.reduce((sum, p) => sum + p.confidence, 0) / matchCount)
+  // Confidence only exists once a prediction has been generated — pending
+  // fixtures (crawled, not yet predicted) don't count toward these two.
+  const predicted = predictions.filter(isPredicted);
+  const avgConfidence = predicted.length
+    ? Math.round(predicted.reduce((sum, p) => sum + p.confidence, 0) / predicted.length)
     : 0;
-  const highConfidenceCount = predictions.filter((p) => p.confidence >= 70).length;
+  const highConfidenceCount = predicted.filter((p) => p.confidence >= 70).length;
 
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">

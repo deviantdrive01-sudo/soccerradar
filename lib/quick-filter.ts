@@ -93,10 +93,10 @@ export function quickFilterOptionBySlug(slug: string): QuickFilterOption | undef
 }
 
 export function matchesQuickFilter(prediction: Prediction, filter: QuickFilter): boolean {
+  if (filter === QUICK_FILTER_NONE) return true;
   const m = prediction.markets;
+  if (!m) return false; // no prediction yet — can't match any specific market filter
   switch (filter) {
-    case QUICK_FILTER_NONE:
-      return true;
     case "cornersO7_5Yes":
       return m.corners.over7_5;
     case "halfDrawYes":

@@ -4,6 +4,7 @@ import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { BookingManage, type BookingPick } from "@/components/booking-manage";
 import { SITE_URL } from "@/lib/site";
 import { buildShareSlug, parseIdFromParam } from "@/lib/share-slug";
+import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
@@ -12,7 +13,11 @@ export const revalidate = 300;
 async function getBookingData(id: number) {
   const supabase = createSupabaseReadClient();
 
-  const { data: booking } = await supabase.from("bookings").select("id, user_id, title").eq("id", id).maybeSingle();
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("id, user_id, title, is_public")
+    .eq("id", id)
+    .maybeSingle();
   if (!booking) return null;
 
   const [{ data: owner }, { data: items }, { data: leagues }] = await Promise.all([
@@ -33,9 +38,10 @@ async function getBookingData(id: number) {
 
   const predictionById = new Map((predictions ?? []).map((p) => [p.id, p]));
   const picks: BookingPick[] = (items ?? [])
-    .map((item) => {
+    .map((item): BookingPick | null => {
       const prediction = predictionById.get(item.prediction_id);
-      return prediction ? { prediction, marketKey: item.market_key as MarketKey } : null;
+      if (!prediction || !isPredicted(prediction)) return null;
+      return { prediction, marketKey: item.market_key as MarketKey };
     })
     .filter((p): p is BookingPick => p !== null);
 
@@ -88,6 +94,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[id]"
         ownerId={booking.user_id}
         ownerLabel={ownerLabel}
         initialTitle={booking.title}
+        initialIsPublic={booking.is_public}
         picks={picks}
         leagueById={leagueById}
         shareUrl={`${SITE_URL}/bookings/${buildShareSlug(booking.id, ownerUsername)}`}

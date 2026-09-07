@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { parseIdFromParam } from "@/lib/share-slug";
 import { ShareImageTemplate, SHARE_IMAGE_SIZE, type ShareImageItem } from "@/lib/share-image";
+import { isPredicted } from "@/lib/supabase/types";
 import type { Prediction } from "@/lib/supabase/types";
 
 export const alt = "SoccerRadar collection";
@@ -44,7 +45,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           : { data: [] as Prediction[] };
       const leagueById = new Map((leagues ?? []).map((l) => [l.id, l.name]));
 
-      items = (predictions ?? []).map((p) => ({
+      items = (predictions ?? []).filter(isPredicted).map((p) => ({
         home: p.home_team,
         away: p.away_team,
         detail: `${leagueById.get(p.league_id) ?? ""} · ${p.markets.outcome.label}`,

@@ -27,6 +27,7 @@ import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingAddButton } from "@/components/booking-add-button";
 import { cn } from "cn";
+import { isPredicted } from "@/lib/supabase/types";
 import type { League, Prediction } from "@/lib/supabase/types";
 
 const ALL_DATES = "all";
@@ -171,7 +172,7 @@ export function PredictionDashboard({
             </Select>
           </div>
 
-          <div className="lg:hidden" data-tour="todays-pick">
+          <div className="hidden sm:block lg:hidden" data-tour="todays-pick">
             <ScrollArea className="max-w-[calc(100vw-2rem)]">
               <div className="flex items-center gap-1.5 pb-1">
                 <span className="shrink-0 text-xs font-semibold text-muted-foreground">Todays Pick:</span>
@@ -256,7 +257,9 @@ export function PredictionDashboard({
               rowAction={(prediction) => (
                 <div className="flex items-center justify-center gap-1">
                   <CollectionPickerButton predictionId={prediction.id} />
-                  <BookingAddButton predictionId={prediction.id} markets={prediction.markets} />
+                  {isPredicted(prediction) && (
+                    <BookingAddButton predictionId={prediction.id} markets={prediction.markets} />
+                  )}
                 </div>
               )}
             />
@@ -268,7 +271,11 @@ export function PredictionDashboard({
                     prediction={prediction}
                     leagueName={leagueById.get(prediction.league_id)?.name ?? ""}
                     marketFilter={marketFilter}
-                    bookingButton={<BookingAddButton predictionId={prediction.id} markets={prediction.markets} />}
+                    bookingButton={
+                      isPredicted(prediction) ? (
+                        <BookingAddButton predictionId={prediction.id} markets={prediction.markets} />
+                      ) : undefined
+                    }
                   />
                   {(index + 1) % CARD_AD_INTERVAL === 0 &&
                     index !== visiblePredictions.length - 1 &&

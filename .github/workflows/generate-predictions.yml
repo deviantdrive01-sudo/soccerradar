@@ -1,0 +1,38 @@
+name: Generate predictions
+
+on:
+  schedule:
+    # Every 2 hours, 30 min after crawl-fixtures (:13) so freshly-crawled
+    # fixtures are already there to pick up.
+    - cron: "43 */2 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: generate-predictions
+  cancel-in-progress: false
+
+jobs:
+  generate-predictions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install Playwright (this job only — not part of the app's dependencies)
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Run prediction generation
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npx tsx scripts/generate-predictions.ts

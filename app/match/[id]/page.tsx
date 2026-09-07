@@ -12,6 +12,7 @@ import { BookingPickButton } from "@/components/booking-pick-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SITE_URL } from "@/lib/site";
+import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction, League } from "@/lib/supabase/types";
 
@@ -84,6 +85,59 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
   const { prediction, league } = data;
 
   const kickoff = new Date(prediction.match_date);
+
+  if (!isPredicted(prediction)) {
+    return (
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="size-4" />
+            All predictions
+          </Link>
+          <div className="flex items-center gap-2">
+            <FavoriteButton
+              target={{ type: "match", predictionId: prediction.id }}
+              className="rounded-md border border-border/60"
+            />
+            <CollectionPickerButton predictionId={prediction.id} />
+            <ShareButtons
+              url={`${SITE_URL}/match/${prediction.id}`}
+              title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-border/60 bg-muted/60 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium text-foreground/80">
+            <span>{league?.name ?? "Unknown league"}</span>
+            <span>
+              {kickoff.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}
+              {" · "}
+              {kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h1 className="min-w-0 text-2xl font-bold leading-tight">
+              {prediction.home_team}
+              <span className="mx-2 text-muted-foreground font-medium">vs</span>
+              {prediction.away_team}
+            </h1>
+            <Badge variant="outline" className="text-muted-foreground">
+              Prediction pending
+            </Badge>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            We&apos;ve spotted this fixture — the AI prediction is being generated and will appear here shortly.
+          </p>
+        </div>
+
+        <AdSlot orientation="horizontal" />
+      </main>
+    );
+  }
+
   const markets = prediction.markets;
   const winEitherHalf = winEitherHalfCode(markets);
   const actual = prediction.actual_result;

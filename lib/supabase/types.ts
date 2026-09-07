@@ -76,6 +76,8 @@ export interface Booking {
   id: number;
   user_id: string;
   title: string;
+  is_public: boolean;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -95,12 +97,25 @@ export interface Prediction {
   home_team: string;
   away_team: string;
   match_date: string;
-  markets: HydratedMarkets;
-  confidence: number;
-  summary: string;
+  /** Null until scripts/generate-predictions.ts fills it in — a bare fixture
+   * inserted by scripts/crawl-fixtures.ts starts with no prediction yet. */
+  markets: HydratedMarkets | null;
+  confidence: number | null;
+  summary: string | null;
   actual_result: ActualResult | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * A row is "pending" (crawled, not yet predicted) iff markets is null — the
+ * three fields are always set together, never partially. Use this instead of
+ * checking each field separately so TypeScript narrows all three at once.
+ */
+export function isPredicted(
+  p: Prediction,
+): p is Prediction & { markets: HydratedMarkets; confidence: number; summary: string } {
+  return p.markets !== null;
 }
 
 /**
@@ -125,11 +140,16 @@ export interface Database {
       predictions: {
         Row: Row<Prediction>;
         Insert: Row<
-          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result"> & {
+          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result" | "markets" | "confidence" | "summary"> & {
             id?: number;
             // Optional so upserts that omit it (e.g. the weekly cron re-fetching a
             // fixture) don't clobber an actual_result already recorded for that match.
             actual_result?: ActualResult | null;
+            // Optional — scripts/crawl-fixtures.ts inserts bare rows with none of
+            // these yet; scripts/generate-predictions.ts fills them in later via update.
+            markets?: HydratedMarkets | null;
+            confidence?: number | null;
+            summary?: string | null;
           }
         >;
         Update: Row<Partial<Omit<Prediction, "id">>>;
@@ -185,7 +205,13 @@ export interface Database {
       };
       bookings: {
         Row: Row<Booking>;
-        Insert: Row<Omit<Booking, "id" | "created_at" | "updated_at"> & { id?: number }>;
+        Insert: Row<
+          Omit<Booking, "id" | "created_at" | "updated_at" | "is_public" | "published_at"> & {
+            id?: number;
+            is_public?: boolean;
+            published_at?: string | null;
+          }
+        >;
         Update: Row<Partial<Omit<Booking, "id" | "created_at">>>;
         Relationships: [];
       };

@@ -50,6 +50,32 @@ export async function deleteBooking(id: number): Promise<void> {
   revalidatePath(`/bookings/${id}`);
 }
 
+export async function setBookingVisibility(id: number, isPublic: boolean): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not signed in");
+
+  const supabase = await createSupabaseServerClient();
+  const { data: current } = await supabase
+    .from("bookings")
+    .select("published_at")
+    .eq("id", id)
+    .eq("user_id", user.userId)
+    .maybeSingle();
+
+  await supabase
+    .from("bookings")
+    .update({
+      is_public: isPublic,
+      published_at: isPublic ? (current?.published_at ?? new Date().toISOString()) : (current?.published_at ?? null),
+    })
+    .eq("id", id)
+    .eq("user_id", user.userId);
+
+  revalidatePath("/account/bookings");
+  revalidatePath(`/bookings/${id}`);
+  revalidatePath("/top-bookings");
+}
+
 export async function toggleBookingItem(
   bookingId: number,
   predictionId: number,

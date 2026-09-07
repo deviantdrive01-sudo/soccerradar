@@ -15,7 +15,7 @@ export default async function BookingsPage() {
   const supabase = await createSupabaseServerClient();
   const { data: bookings } = await supabase
     .from("bookings")
-    .select("id, title, created_at")
+    .select("id, title, is_public, created_at")
     .eq("user_id", user.userId)
     .order("created_at", { ascending: false });
 
@@ -52,6 +52,8 @@ export default async function BookingsPage() {
                 <div className="truncate text-sm font-medium hover:text-primary hover:underline">{b.title}</div>
                 <div className="text-xs text-muted-foreground">
                   {itemCountByBooking.get(b.id) ?? 0} pick{itemCountByBooking.get(b.id) === 1 ? "" : "s"}
+                  {" · "}
+                  <span className={b.is_public ? "text-emerald-400" : ""}>{b.is_public ? "Public" : "Private"}</span>
                 </div>
               </Link>
               <AccountDeleteButton action={deleteBooking} id={b.id} />
