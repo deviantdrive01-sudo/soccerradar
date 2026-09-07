@@ -32,9 +32,13 @@ const LOGO_ICON_SVG = `data:image/svg+xml;base64,${Buffer.from(
 // The stadium-and-ball photo backdrop, read from disk once per serverless
 // instance and inlined as a data URI — avoids the app self-fetching its own
 // public/ asset over HTTP during image generation (a known source of
-// flakiness for OG image routes on some hosts).
-const BACKGROUND_PNG = `data:image/png;base64,${fs
-  .readFileSync(path.join(process.cwd(), "public", "share-background.png"))
+// flakiness for OG image routes on some hosts). JPEG at this quality is
+// visually indistinguishable from the original PNG at ~5% of its size
+// (~110KB vs ~2MB); tried WebP first for an even smaller file, but Satori's
+// image decoder choked on it ("u2 is not iterable") — JPEG is the safer,
+// universally-supported choice for a background-image data URI here.
+const BACKGROUND_JPEG = `data:image/jpeg;base64,${fs
+  .readFileSync(path.join(process.cwd(), "public", "share-background.jpg"))
   .toString("base64")}`;
 
 const YELLOW = "#F1FF3B";
@@ -102,7 +106,7 @@ export function ShareImageTemplate({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        backgroundImage: `url(${BACKGROUND_PNG})`,
+        backgroundImage: `url(${BACKGROUND_JPEG})`,
         backgroundSize: "cover",
         fontFamily: "General Sans",
       }}
