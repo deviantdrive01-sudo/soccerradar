@@ -3,10 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Flag, Equal, Goal, Swords, Shuffle, type LucideIcon } from "lucide-react";
+import { BarChart3, Compass, Flag, Equal, Goal, Swords, Shuffle, type LucideIcon } from "lucide-react";
 import { TodaysPickIcon, TodaysPickIconFilled, BookingsIcon, CollectionsIcon, CollectionsIconFilled, MoreMenuIcon } from "@/components/bottom-nav-icons";
+import { RestartTourButton } from "@/components/restart-tour-button";
 import { QUICK_FILTER_OPTIONS, type QuickFilter } from "@/lib/quick-filter";
 import { cn } from "cn";
+
+const MORE_ROW_CLASS = "flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-sm font-medium hover:bg-white/10";
 
 const FILTER_ICONS: Partial<Record<QuickFilter, LucideIcon>> = {
   cornersO7_5Yes: Flag,
@@ -18,7 +21,7 @@ const FILTER_ICONS: Partial<Record<QuickFilter, LucideIcon>> = {
   drawOrOverYes: Shuffle,
 };
 
-const TAB_CLASS = "flex flex-1 flex-col items-center justify-center gap-1 py-2.5";
+const TAB_CLASS = "flex flex-1 flex-col items-center justify-center gap-1 py-4";
 
 /**
  * Site-wide phone tab bar — replaces the old hamburger drawer entirely. The
@@ -64,6 +67,10 @@ export function MobileBottomNav() {
                 <BarChart3 className="size-4 shrink-0" />
                 Track Record
               </Link>
+              <RestartTourButton className={MORE_ROW_CLASS} onNavigate={() => setMoreOpen(false)}>
+                <Compass className="size-4 shrink-0" />
+                Take the tour
+              </RestartTourButton>
             </nav>
           </div>
         </>

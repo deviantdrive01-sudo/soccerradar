@@ -17,7 +17,10 @@ const GA_MEASUREMENT_ID = "G-5DW3J6DCD0";
 const SITE_NAME = "SoccerRadar";
 const SITE_DESCRIPTION = `${SITE_TAGLINE} AI-generated football predictions across 16 top global leagues, backed by a public, verifiable track record. No cherry-picking, nothing held back.`;
 
-const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
+// Dark is the default for every visitor without an explicit saved choice —
+// intentionally ignores prefers-color-scheme so brand-dark stays the norm
+// regardless of OS setting; an explicit toggle click still always wins.
+const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':true;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
 // Organization + WebSite structured data — lets Google associate the logo
 // with the site for knowledge-panel/rich-result branding. logo must be an
