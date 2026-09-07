@@ -13,6 +13,7 @@ import { useIsMobile } from "@/lib/use-is-mobile";
 import { cn } from "cn";
 import type { MarketFilter } from "@/components/market-filter";
 import type { MarketKey } from "@/lib/hydrate";
+import { isPredicted } from "@/lib/supabase/types";
 import type { Prediction } from "@/lib/supabase/types";
 
 type ViewMode = "cards" | "table";
@@ -93,7 +94,9 @@ export function TopPicksView({
             rowAction={(prediction) => (
               <div className="flex items-center justify-center gap-1">
                 <CollectionPickerButton predictionId={prediction.id} />
-                <BookingPickButton predictionId={prediction.id} marketKey={marketKey} />
+                {isPredicted(prediction) && (
+                  <BookingPickButton predictionId={prediction.id} marketKey={marketKey} markets={prediction.markets} />
+                )}
               </div>
             )}
           />
@@ -120,7 +123,11 @@ export function TopPicksView({
                 prediction={prediction}
                 leagueName={leagueLabel}
                 marketFilter={marketFilter}
-                bookingButton={<BookingPickButton predictionId={prediction.id} marketKey={marketKey} />}
+                bookingButton={
+                  isPredicted(prediction) ? (
+                    <BookingPickButton predictionId={prediction.id} marketKey={marketKey} markets={prediction.markets} />
+                  ) : undefined
+                }
               />
               {(index + 1) % CARD_AD_INTERVAL === 0 &&
                 index !== predictions.length - 1 &&

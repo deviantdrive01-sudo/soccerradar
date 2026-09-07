@@ -32,7 +32,7 @@ async function getTopBookings(): Promise<TopBookingEntry[]> {
 
   const [{ data: profiles }, { data: items }] = await Promise.all([
     supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
-    supabase.from("booking_items").select("booking_id, prediction_id, market_key").in("booking_id", bookingIds),
+    supabase.from("booking_items").select("booking_id, prediction_id, market_key, user_value").in("booking_id", bookingIds),
   ]);
 
   const predictionIds = [...new Set((items ?? []).map((i) => i.prediction_id))];
@@ -44,7 +44,7 @@ async function getTopBookings(): Promise<TopBookingEntry[]> {
   const usernameById = new Map((profiles ?? []).map((p) => [p.id, p.username]));
   const avatarById = new Map((profiles ?? []).map((p) => [p.id, p.avatar_url]));
   const predictionById = new Map((predictions ?? []).map((p) => [p.id, p]));
-  const itemsByBooking = new Map<number, { prediction_id: number; market_key: string }[]>();
+  const itemsByBooking = new Map<number, { prediction_id: number; market_key: string; user_value: string | null }[]>();
   for (const item of items ?? []) {
     const existing = itemsByBooking.get(item.booking_id);
     if (existing) existing.push(item);
@@ -54,12 +54,12 @@ async function getTopBookings(): Promise<TopBookingEntry[]> {
   return bookings.map((booking) => {
     const rawItems = itemsByBooking.get(booking.id) ?? [];
     const picks = rawItems
-      .map((item): { prediction: Prediction; marketKey: MarketKey } | null => {
+      .map((item): { prediction: Prediction; marketKey: MarketKey; userValue: string | null } | null => {
         const prediction = predictionById.get(item.prediction_id);
         if (!prediction || !isPredicted(prediction)) return null;
-        return { prediction, marketKey: item.market_key as MarketKey };
+        return { prediction, marketKey: item.market_key as MarketKey, userValue: item.user_value };
       })
-      .filter((p): p is { prediction: Prediction; marketKey: MarketKey } => p !== null);
+      .filter((p): p is { prediction: Prediction; marketKey: MarketKey; userValue: string | null } => p !== null);
 
     const graded = gradePicks(picks);
     const { settled, correct } = tallyGraded(graded);

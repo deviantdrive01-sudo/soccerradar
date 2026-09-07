@@ -67,6 +67,7 @@ export const LEAGUE_SOURCES: LeagueSource[] = [
   { leagueId: 35, leagueName: "Damallsvenskan", slug: "sweden/allsvenskan-women" },
   { leagueId: 36, leagueName: "Allsvenskan", slug: "sweden/allsvenskan" },
   { leagueId: 37, leagueName: "Challenge League", slug: "switzerland/challenge-league" },
+  { leagueId: 38, leagueName: "Champions League", slug: "europe/champions-league" },
 
   // --- Dropped by the user, not yet added to the `leagues` table ---
   // { leagueName: "Cymru Premier (Wales)", slug: "wales/cymru-premier" },

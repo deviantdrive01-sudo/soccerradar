@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, Ticket } from "lucide-react";
 import { useAccount, bookingItemKey } from "@/components/account-provider";
-import { MARKET_KEYS, MARKET_LABELS, marketPredictionLabel } from "@/lib/hydrate";
+import { MARKET_KEYS, MARKET_LABELS, marketPredictionLabel, marketPredictionValue, marketOptions } from "@/lib/hydrate";
 import { cn } from "cn";
 import type { MarketKey, HydratedMarkets } from "@/lib/hydrate";
 
@@ -30,10 +30,16 @@ export function BookingAddButton({
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [selectedMarketKey, setSelectedMarketKey] = useState<MarketKey | null>(null);
+  const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
 
   const inAnyBooking = MARKET_KEYS.some((key) => bookings.some((b) => b.items.has(bookingItemKey(predictionId, key))));
+
+  function selectMarket(key: MarketKey) {
+    setSelectedMarketKey(key);
+    setSelectedValue(marketPredictionValue(markets, key));
+  }
 
   function handleOpen() {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -51,6 +57,7 @@ export function BookingAddButton({
   function handleClose() {
     setOpen(false);
     setSelectedMarketKey(null);
+    setSelectedValue(null);
     setNewTitle("");
   }
 
@@ -60,7 +67,7 @@ export function BookingAddButton({
     const id = await createBooking(newTitle);
     setCreating(false);
     setNewTitle("");
-    if (id !== null) toggleBookingItem(id, predictionId, selectedMarketKey);
+    if (id !== null) toggleBookingItem(id, predictionId, selectedMarketKey, selectedValue);
   }
 
   return (
@@ -97,7 +104,7 @@ export function BookingAddButton({
                       <button
                         key={key}
                         type="button"
-                        onClick={() => setSelectedMarketKey(key)}
+                        onClick={() => selectMarket(key)}
                         className="flex w-full items-center justify-between rounded px-1.5 py-1.5 text-left text-xs hover:bg-muted"
                       >
                         <span>{MARKET_LABELS[key]}</span>
@@ -114,8 +121,32 @@ export function BookingAddButton({
                     className="mb-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
                   >
                     <ChevronLeft className="size-3.5" />
-                    {MARKET_LABELS[selectedMarketKey]}: {marketPredictionLabel(markets, selectedMarketKey)}
+                    {MARKET_LABELS[selectedMarketKey]}
                   </button>
+
+                  <div className="mb-1.5 flex flex-wrap gap-1">
+                    {marketOptions(selectedMarketKey).map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setSelectedValue(option.value)}
+                        className={cn(
+                          "rounded px-1.5 py-1 text-[11px] font-medium",
+                          selectedValue === option.value
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-border/60 text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedValue !== null && selectedValue !== marketPredictionValue(markets, selectedMarketKey) && (
+                    <p className="mb-1.5 px-1 text-[10px] text-muted-foreground">
+                      SoccerRadar predicts {marketPredictionLabel(markets, selectedMarketKey)} — you&apos;re booking against it.
+                    </p>
+                  )}
+
                   {bookings.length === 0 && <p className="px-1 pb-2 text-[11px] text-muted-foreground">No bookings yet.</p>}
                   <div className="max-h-40 space-y-0.5 overflow-y-auto">
                     {bookings.map((b) => (
@@ -126,7 +157,7 @@ export function BookingAddButton({
                         <input
                           type="checkbox"
                           checked={b.items.has(bookingItemKey(predictionId, selectedMarketKey))}
-                          onChange={() => toggleBookingItem(b.id, predictionId, selectedMarketKey)}
+                          onChange={() => toggleBookingItem(b.id, predictionId, selectedMarketKey, selectedValue)}
                           className="size-3.5"
                         />
                         <span className="truncate">{b.title}</span>

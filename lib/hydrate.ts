@@ -358,6 +358,129 @@ export function marketPredictionLabel(predicted: HydratedMarkets, key: MarketKey
   }
 }
 
+export interface MarketOption {
+  /** Short code stored on booking_items.user_value and compared against actualMarketValue when grading. */
+  value: string;
+  label: string;
+}
+
+const YES_NO_OPTIONS: MarketOption[] = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+];
+
+/** The selectable sides for a market, for a booking pick's "which side" UI — in SoccerRadar's own predicted order first (Home/Draw/Away, not alphabetical). */
+export function marketOptions(key: MarketKey): MarketOption[] {
+  switch (key) {
+    case "firstHalfOutcome":
+      return [
+        { value: "1", label: "Home" },
+        { value: "X", label: "Draw" },
+        { value: "2", label: "Away" },
+      ];
+    case "winEitherHalf":
+      return [
+        { value: "1", label: "Home" },
+        { value: "2", label: "Away" },
+      ];
+    case "highestScoringHalf":
+      return [
+        { value: "1st", label: "First Half" },
+        { value: "2nd", label: "Second Half" },
+        { value: "Equal", label: "Evenly Split" },
+      ];
+    default:
+      return YES_NO_OPTIONS;
+  }
+}
+
+/** Turns a stored user_value/prediction code back into its display label — same codes marketOptions() offers. */
+export function marketValueLabel(key: MarketKey, value: string): string {
+  return marketOptions(key).find((o) => o.value === value)?.label ?? value;
+}
+
+/**
+ * SoccerRadar's own call for this market, as the short code stored in
+ * booking_items.user_value — the counterpart to marketPredictionLabel(),
+ * used to pre-select the default option when a user is picking a side.
+ * Null only for winEitherHalf on a prediction generated before that market
+ * existed (see winEitherHalfCode).
+ */
+export function marketPredictionValue(predicted: HydratedMarkets, key: MarketKey): string | null {
+  switch (key) {
+    case "fullTimeDraw":
+      return isFullTimeDraw(predicted) ? "yes" : "no";
+    case "firstHalfOutcome":
+      return predicted.firstHalfOutcome.code;
+    case "winEitherHalf":
+      return winEitherHalfCode(predicted);
+    case "highestScoringHalf":
+      return predicted.highestScoringHalf.code;
+    case "over1_5":
+      return predicted.goals.over1_5 ? "yes" : "no";
+    case "over2_5":
+      return predicted.goals.over2_5 ? "yes" : "no";
+    case "drawOrOver2_5":
+      return isDrawOrOver2_5(predicted) ? "yes" : "no";
+    case "over7_5":
+      return predicted.corners.over7_5 ? "yes" : "no";
+    case "over8_5":
+      return predicted.corners.over8_5 ? "yes" : "no";
+    case "firstHalfOver3_5":
+      return predicted.corners.firstHalfOver3_5 ? "yes" : "no";
+  }
+}
+
+/**
+ * What actually happened for this market, as the same short code
+ * marketPredictionValue()/user_value use — lets a user's override be graded
+ * with a plain string comparison. Null when the actual result can't tell
+ * this market apart (only firstHalfOver3_5, when HT corners weren't recorded).
+ */
+export function actualMarketValue(actual: ActualMarkets, key: MarketKey): string | null {
+  switch (key) {
+    case "fullTimeDraw":
+      return isActualFullTimeDraw(actual) ? "yes" : "no";
+    case "firstHalfOutcome":
+      return actual.firstHalfOutcome.code;
+    case "winEitherHalf":
+      return actualWinEitherHalfCode(actual);
+    case "highestScoringHalf":
+      return actual.highestScoringHalf.code;
+    case "over1_5":
+      return actual.goals.over1_5 ? "yes" : "no";
+    case "over2_5":
+      return actual.goals.over2_5 ? "yes" : "no";
+    case "drawOrOver2_5":
+      return isActualDrawOrOver2_5(actual) ? "yes" : "no";
+    case "over7_5":
+      return actual.corners.over7_5 ? "yes" : "no";
+    case "over8_5":
+      return actual.corners.over8_5 ? "yes" : "no";
+    case "firstHalfOver3_5":
+      return actual.corners.firstHalfOver3_5 === null ? null : actual.corners.firstHalfOver3_5 ? "yes" : "no";
+  }
+}
+
+/**
+ * Was this pick right? Grades against the user's own override when a
+ * booking_item has one (a deliberate call against SoccerRadar's own
+ * prediction), otherwise falls back to isMarketCorrect's normal behavior —
+ * every existing pick with no override keeps grading exactly as before.
+ */
+export function isPickCorrect(
+  userValue: string | null | undefined,
+  predicted: HydratedMarkets,
+  actual: ActualMarkets,
+  key: MarketKey,
+): boolean | null {
+  if (userValue) {
+    const actualValue = actualMarketValue(actual, key);
+    return actualValue === null ? null : userValue === actualValue;
+  }
+  return isMarketCorrect(predicted, actual, key);
+}
+
 export function isCompactPrediction(value: unknown): value is CompactPrediction {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;

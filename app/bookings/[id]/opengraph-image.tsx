@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { parseIdFromParam } from "@/lib/share-slug";
 import { ShareImageTemplate, SHARE_IMAGE_SIZE, SHARE_IMAGE_OPTIONS, resolveAvatarDataUri, type ShareImageItem } from "@/lib/share-image";
-import { MARKET_LABELS, marketPredictionLabel } from "@/lib/hydrate";
+import { MARKET_LABELS, marketPredictionLabel, marketValueLabel } from "@/lib/hydrate";
 import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
@@ -28,7 +28,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       title = booking.title;
       const [{ data: owner }, { data: bookingItems }, { data: leagues }] = await Promise.all([
         supabase.from("profiles").select("username, avatar_url").eq("id", booking.user_id).maybeSingle(),
-        supabase.from("booking_items").select("prediction_id, market_key").eq("booking_id", numericId),
+        supabase.from("booking_items").select("prediction_id, market_key, user_value").eq("booking_id", numericId),
         supabase.from("leagues").select("id, name"),
       ]);
       ownerLabel = owner?.username ?? ownerLabel;
@@ -48,7 +48,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           if (!prediction || !isPredicted(prediction)) return null;
           const marketKey = i.market_key as MarketKey;
           const league = leagueById.get(prediction.league_id) ?? "";
-          const value = marketPredictionLabel(prediction.markets, marketKey);
+          const value = i.user_value ? marketValueLabel(marketKey, i.user_value) : marketPredictionLabel(prediction.markets, marketKey);
           return {
             home: prediction.home_team,
             away: prediction.away_team,

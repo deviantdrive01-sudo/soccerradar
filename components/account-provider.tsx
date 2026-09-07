@@ -49,7 +49,7 @@ interface AccountContextValue extends AccountState {
   toggleMatch: (predictionId: number) => void;
   toggleCollectionItem: (collectionId: number, predictionId: number) => void;
   createCollection: (title: string) => Promise<number | null>;
-  toggleBookingItem: (bookingId: number, predictionId: number, marketKey: MarketKey) => void;
+  toggleBookingItem: (bookingId: number, predictionId: number, marketKey: MarketKey, userValue?: string | null) => void;
   createBooking: (title: string) => Promise<number | null>;
   refresh: () => void;
 }
@@ -195,7 +195,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   );
 
   const toggleBookingItem = useCallback(
-    (bookingId: number, predictionId: number, marketKey: MarketKey) => {
+    (bookingId: number, predictionId: number, marketKey: MarketKey, userValue?: string | null) => {
       if (!state.user) {
         router.push("/login");
         return;
@@ -205,7 +205,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         bookings.map((b) => (b.id === bookingId ? { ...b, items: withToggled(b.items, key) } : b));
 
       setState((s) => ({ ...s, bookings: applyToggle(s.bookings) }));
-      toggleBookingItemAction(bookingId, predictionId, marketKey).catch(() => {
+      toggleBookingItemAction(bookingId, predictionId, marketKey, userValue).catch(() => {
         setState((s) => ({ ...s, bookings: applyToggle(s.bookings) }));
       });
     },

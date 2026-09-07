@@ -1,4 +1,4 @@
-import { isMarketCorrect, type MarketKey } from "@/lib/hydrate";
+import { isPickCorrect, type MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
 /**
@@ -9,18 +9,20 @@ import type { Prediction } from "@/lib/supabase/types";
 export interface GradedPick {
   prediction: Prediction;
   marketKey: MarketKey;
+  userValue?: string | null;
   correct: boolean | null;
 }
 
 export function gradePicks(
-  picks: { prediction: Prediction; marketKey: MarketKey }[],
+  picks: { prediction: Prediction; marketKey: MarketKey; userValue?: string | null }[],
 ): GradedPick[] {
-  return picks.map(({ prediction, marketKey }) => ({
+  return picks.map(({ prediction, marketKey, userValue }) => ({
     prediction,
     marketKey,
+    userValue,
     correct:
       prediction.actual_result && prediction.markets
-        ? isMarketCorrect(prediction.markets, prediction.actual_result.markets, marketKey)
+        ? isPickCorrect(userValue, prediction.markets, prediction.actual_result.markets, marketKey)
         : null,
   }));
 }

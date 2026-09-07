@@ -24,7 +24,7 @@ async function getBookingData(id: number) {
     supabase.from("profiles").select("username").eq("id", booking.user_id).maybeSingle(),
     supabase
       .from("booking_items")
-      .select("prediction_id, market_key, created_at")
+      .select("prediction_id, market_key, user_value, created_at")
       .eq("booking_id", id)
       .order("created_at", { ascending: true }),
     supabase.from("leagues").select("id, name, country"),
@@ -41,7 +41,7 @@ async function getBookingData(id: number) {
     .map((item): BookingPick | null => {
       const prediction = predictionById.get(item.prediction_id);
       if (!prediction || !isPredicted(prediction)) return null;
-      return { prediction, marketKey: item.market_key as MarketKey };
+      return { prediction, marketKey: item.market_key as MarketKey, userValue: item.user_value };
     })
     .filter((p): p is BookingPick => p !== null);
 

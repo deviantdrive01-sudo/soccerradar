@@ -29,8 +29,8 @@ export default async function BookingsPage() {
   const bookingIds = (bookings ?? []).map((b) => b.id);
   const { data: items } =
     bookingIds.length > 0
-      ? await supabase.from("booking_items").select("booking_id, prediction_id, market_key").in("booking_id", bookingIds)
-      : { data: [] as { booking_id: number; prediction_id: number; market_key: string }[] };
+      ? await supabase.from("booking_items").select("booking_id, prediction_id, market_key, user_value").in("booking_id", bookingIds)
+      : { data: [] as { booking_id: number; prediction_id: number; market_key: string; user_value: string | null }[] };
 
   const predictionIds = [...new Set((items ?? []).map((i) => i.prediction_id))];
   const { data: predictions } =
@@ -40,12 +40,12 @@ export default async function BookingsPage() {
   const predictionById = new Map((predictions ?? []).map((p) => [p.id, p]));
 
   const itemCountByBooking = new Map<number, number>();
-  const picksByBooking = new Map<number, { prediction: Prediction; marketKey: MarketKey }[]>();
+  const picksByBooking = new Map<number, { prediction: Prediction; marketKey: MarketKey; userValue: string | null }[]>();
   for (const item of items ?? []) {
     itemCountByBooking.set(item.booking_id, (itemCountByBooking.get(item.booking_id) ?? 0) + 1);
     const prediction = predictionById.get(item.prediction_id);
     if (!prediction || !isPredicted(prediction)) continue;
-    const pick = { prediction, marketKey: item.market_key as MarketKey };
+    const pick = { prediction, marketKey: item.market_key as MarketKey, userValue: item.user_value };
     const existing = picksByBooking.get(item.booking_id);
     if (existing) existing.push(pick);
     else picksByBooking.set(item.booking_id, [pick]);

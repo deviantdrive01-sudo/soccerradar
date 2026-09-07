@@ -80,6 +80,8 @@ export async function toggleBookingItem(
   bookingId: number,
   predictionId: number,
   marketKey: MarketKey,
+  /** The user's own call for this market, when it diverges from SoccerRadar's prediction. Omit/null to just track SoccerRadar's own call. */
+  userValue?: string | null,
 ): Promise<{ added: boolean }> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not signed in");
@@ -99,7 +101,9 @@ export async function toggleBookingItem(
     return { added: false };
   }
 
-  await supabase.from("booking_items").insert({ booking_id: bookingId, prediction_id: predictionId, market_key: marketKey });
+  await supabase
+    .from("booking_items")
+    .insert({ booking_id: bookingId, prediction_id: predictionId, market_key: marketKey, user_value: userValue ?? null });
   revalidatePath(`/bookings/${bookingId}`);
   return { added: true };
 }

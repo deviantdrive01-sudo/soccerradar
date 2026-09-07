@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useAccount, bookingItemKey } from "@/components/account-provider";
+import { marketOptions, marketPredictionLabel, marketPredictionValue } from "@/lib/hydrate";
 import { cn } from "cn";
-import type { MarketKey } from "@/lib/hydrate";
+import type { HydratedMarkets, MarketKey } from "@/lib/hydrate";
 
 export function BookingPickButton({
   predictionId,
   marketKey,
+  markets,
   className,
 }: {
   predictionId: number;
   marketKey: MarketKey;
+  markets: HydratedMarkets;
   /** Merged into the trigger button — use for size/position overrides (e.g. overlaying a card corner). */
   className?: string;
 }) {
@@ -20,9 +23,16 @@ export function BookingPickButton({
   const [open, setOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
+  const defaultValue = marketPredictionValue(markets, marketKey);
+  const [selectedValue, setSelectedValue] = useState<string | null>(defaultValue);
 
   const key = bookingItemKey(predictionId, marketKey);
   const inAnyBooking = bookings.some((b) => b.items.has(key));
+
+  function handleToggle() {
+    if (!open) setSelectedValue(defaultValue);
+    setOpen((v) => !v);
+  }
 
   async function handleCreate() {
     if (!newTitle.trim()) return;
@@ -30,14 +40,14 @@ export function BookingPickButton({
     const id = await createBooking(newTitle);
     setCreating(false);
     setNewTitle("");
-    if (id !== null) toggleBookingItem(id, predictionId, marketKey);
+    if (id !== null) toggleBookingItem(id, predictionId, marketKey, selectedValue);
   }
 
   return (
     <div className="relative inline-block">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         aria-label="Add this pick to a booking"
         className={cn("inline-flex size-4 shrink-0 items-center justify-center rounded-full border border-border/60 hover:bg-muted/60", className)}
       >
@@ -52,6 +62,29 @@ export function BookingPickButton({
               <p className="p-2 text-xs text-muted-foreground">Log in to add picks to a booking.</p>
             ) : (
               <>
+                <div className="mb-1.5 flex flex-wrap gap-1">
+                  {marketOptions(marketKey).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setSelectedValue(option.value)}
+                      className={cn(
+                        "rounded px-1.5 py-1 text-[11px] font-medium",
+                        selectedValue === option.value
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border/60 text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                {selectedValue !== null && selectedValue !== defaultValue && (
+                  <p className="mb-1.5 px-1 text-[10px] text-muted-foreground">
+                    SoccerRadar predicts {marketPredictionLabel(markets, marketKey)} — you&apos;re booking against it.
+                  </p>
+                )}
+
                 {bookings.length === 0 && <p className="px-1 pb-2 text-xs text-muted-foreground">No bookings yet.</p>}
                 <div className="max-h-40 space-y-0.5 overflow-y-auto">
                   {bookings.map((b) => (
@@ -62,7 +95,7 @@ export function BookingPickButton({
                       <input
                         type="checkbox"
                         checked={b.items.has(key)}
-                        onChange={() => toggleBookingItem(b.id, predictionId, marketKey)}
+                        onChange={() => toggleBookingItem(b.id, predictionId, marketKey, selectedValue)}
                         className="size-3.5"
                       />
                       <span className="truncate">{b.title}</span>

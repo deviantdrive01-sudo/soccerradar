@@ -13,7 +13,7 @@ import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SITE_URL } from "@/lib/site";
 import { isPredicted } from "@/lib/supabase/types";
-import type { MarketKey } from "@/lib/hydrate";
+import type { MarketKey, HydratedMarkets } from "@/lib/hydrate";
 import type { Prediction, League } from "@/lib/supabase/types";
 
 export const revalidate = 300;
@@ -59,18 +59,20 @@ function YesNoBadge({
   value,
   predictionId,
   marketKey,
+  markets,
 }: {
   label: string;
   value: boolean;
   predictionId: number;
   marketKey: MarketKey;
+  markets: HydratedMarkets;
 }) {
   return (
     <span className="inline-flex items-center gap-1">
       <Badge variant="outline" className={value ? "border-primary/30 text-primary" : "text-muted-foreground"}>
         {label} {value ? "✓" : "✗"}
       </Badge>
-      <BookingPickButton predictionId={predictionId} marketKey={marketKey} />
+      <BookingPickButton predictionId={predictionId} marketKey={marketKey} markets={markets} />
     </span>
   );
 }
@@ -212,25 +214,25 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Outcome</div>
           <div className="flex flex-wrap gap-1.5">
-            <YesNoBadge label="FT Draw" value={isFullTimeDraw(markets)} predictionId={prediction.id} marketKey="fullTimeDraw" />
+            <YesNoBadge label="FT Draw" value={isFullTimeDraw(markets)} predictionId={prediction.id} marketKey="fullTimeDraw" markets={markets} />
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 1H: {markets.firstHalfOutcome.label}
               </Badge>
-              <BookingPickButton predictionId={prediction.id} marketKey="firstHalfOutcome" />
+              <BookingPickButton predictionId={prediction.id} marketKey="firstHalfOutcome" markets={markets} />
             </span>
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 {markets.highestScoringHalf.label}
               </Badge>
-              <BookingPickButton predictionId={prediction.id} marketKey="highestScoringHalf" />
+              <BookingPickButton predictionId={prediction.id} marketKey="highestScoringHalf" markets={markets} />
             </span>
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 Win Either Half:{" "}
                 {winEitherHalf === null ? "–" : winEitherHalf === "1" ? prediction.home_team : prediction.away_team}
               </Badge>
-              <BookingPickButton predictionId={prediction.id} marketKey="winEitherHalf" />
+              <BookingPickButton predictionId={prediction.id} marketKey="winEitherHalf" markets={markets} />
             </span>
           </div>
         </div>
@@ -238,13 +240,13 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Goals</div>
           <div className="flex flex-wrap gap-1.5">
-            <YesNoBadge label="O1.5" value={markets.goals.over1_5} predictionId={prediction.id} marketKey="over1_5" />
-            <YesNoBadge label="O2.5" value={markets.goals.over2_5} predictionId={prediction.id} marketKey="over2_5" />
+            <YesNoBadge label="O1.5" value={markets.goals.over1_5} predictionId={prediction.id} marketKey="over1_5" markets={markets} />
+            <YesNoBadge label="O2.5" value={markets.goals.over2_5} predictionId={prediction.id} marketKey="over2_5" markets={markets} />
             <YesNoBadge
               label="Draw/O2.5"
               value={isDrawOrOver2_5(markets)}
               predictionId={prediction.id}
-              marketKey="drawOrOver2_5"
+              marketKey="drawOrOver2_5" markets={markets}
             />
           </div>
         </div>
@@ -252,13 +254,13 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Corners</div>
           <div className="flex flex-wrap gap-1.5">
-            <YesNoBadge label="O7.5" value={markets.corners.over7_5} predictionId={prediction.id} marketKey="over7_5" />
-            <YesNoBadge label="O8.5" value={markets.corners.over8_5} predictionId={prediction.id} marketKey="over8_5" />
+            <YesNoBadge label="O7.5" value={markets.corners.over7_5} predictionId={prediction.id} marketKey="over7_5" markets={markets} />
+            <YesNoBadge label="O8.5" value={markets.corners.over8_5} predictionId={prediction.id} marketKey="over8_5" markets={markets} />
             <YesNoBadge
               label="1H O3.5"
               value={markets.corners.firstHalfOver3_5}
               predictionId={prediction.id}
-              marketKey="firstHalfOver3_5"
+              marketKey="firstHalfOver3_5" markets={markets}
             />
           </div>
         </div>

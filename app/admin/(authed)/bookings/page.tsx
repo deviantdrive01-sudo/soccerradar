@@ -31,8 +31,8 @@ export default async function AdminBookingsPage() {
       ? supabase.from("profiles").select("id, username, avatar_url").in("id", userIds)
       : Promise.resolve({ data: [] as { id: string; username: string | null; avatar_url: string | null }[] }),
     bookingIds.length > 0
-      ? supabase.from("booking_items").select("booking_id, prediction_id, market_key").in("booking_id", bookingIds)
-      : Promise.resolve({ data: [] as { booking_id: number; prediction_id: number; market_key: string }[] }),
+      ? supabase.from("booking_items").select("booking_id, prediction_id, market_key, user_value").in("booking_id", bookingIds)
+      : Promise.resolve({ data: [] as { booking_id: number; prediction_id: number; market_key: string; user_value: string | null }[] }),
   ]);
 
   const predictionIds = [...new Set((items ?? []).map((i) => i.prediction_id))];
@@ -54,13 +54,13 @@ export default async function AdminBookingsPage() {
   // Average win rate per owner, across every one of their bookings — not
   // just the one in this row — so the admin can see if this owner's picks
   // have generally been reliable, not just this single booking's.
-  const picksByOwner = new Map<string, { prediction: Prediction; marketKey: MarketKey }[]>();
+  const picksByOwner = new Map<string, { prediction: Prediction; marketKey: MarketKey; userValue: string | null }[]>();
   for (const item of items ?? []) {
     const booking = bookingById.get(item.booking_id);
     const prediction = predictionById.get(item.prediction_id);
     if (!booking || !prediction) continue;
     const existing = picksByOwner.get(booking.user_id);
-    const pick = { prediction, marketKey: item.market_key as MarketKey };
+    const pick = { prediction, marketKey: item.market_key as MarketKey, userValue: item.user_value };
     if (existing) existing.push(pick);
     else picksByOwner.set(booking.user_id, [pick]);
   }

@@ -96,6 +96,8 @@ export interface BookingItem {
   booking_id: number;
   prediction_id: number;
   market_key: MarketKey;
+  /** The user's own call for this market, when it diverges from SoccerRadar's prediction. Null = no override. */
+  user_value: string | null;
   created_at: string;
 }
 
@@ -247,7 +249,7 @@ export interface Database {
       };
       booking_items: {
         Row: Row<BookingItem>;
-        Insert: Row<Omit<BookingItem, "id" | "created_at"> & { id?: number }>;
+        Insert: Row<Omit<BookingItem, "id" | "created_at" | "user_value"> & { id?: number; user_value?: string | null }>;
         Update: Row<Partial<Omit<BookingItem, "id">>>;
         Relationships: [];
       };

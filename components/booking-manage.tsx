@@ -7,7 +7,7 @@ import { ArrowLeft, X, CheckCircle2, XCircle } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
 import { ShareButtons } from "@/components/share-buttons";
 import { renameBooking, deleteBooking, toggleBookingItem, setBookingVisibility } from "@/app/account/bookings/actions";
-import { marketPredictionLabel, MARKET_LABELS } from "@/lib/hydrate";
+import { marketPredictionLabel, marketPredictionValue, marketValueLabel, MARKET_LABELS } from "@/lib/hydrate";
 import { gradePicks, tallyGraded } from "@/lib/booking-grading";
 import { accuracyPct, pctClass } from "@/lib/accuracy";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,8 @@ export interface BookingPick {
   // base Prediction type — see isPredicted() in lib/supabase/types.ts.
   prediction: Prediction & { markets: HydratedMarkets; confidence: number; summary: string };
   marketKey: MarketKey;
+  /** The user's own call for this market, when it diverges from SoccerRadar's prediction. */
+  userValue?: string | null;
 }
 
 export function BookingManage({
@@ -193,11 +195,13 @@ export function BookingManage({
         <div className="py-16 text-center text-sm text-muted-foreground">No picks in this booking.</div>
       ) : (
         <div className="divide-y divide-border/60 rounded-md border border-border/60">
-          {items.map(({ prediction, marketKey }) => {
+          {items.map(({ prediction, marketKey, userValue }) => {
             const correctness = gradedByKey.get(`${prediction.id}-${marketKey}`) ?? null;
             const kickoff = new Date(prediction.match_date);
             const league = leagueById.get(prediction.league_id);
             const leagueLabel = league ? `${league.country} · ${league.name}` : "";
+            const pickLabel = userValue ? marketValueLabel(marketKey, userValue) : marketPredictionLabel(prediction.markets, marketKey);
+            const isOverride = !!userValue && userValue !== marketPredictionValue(prediction.markets, marketKey);
             return (
               <div key={`${prediction.id}-${marketKey}`} className="flex items-center justify-between gap-2 px-3 py-2.5">
                 {correctness === true && <CheckCircle2 className="size-4 shrink-0 text-emerald-400" aria-label="Correct" />}
@@ -213,7 +217,12 @@ export function BookingManage({
                     {kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
                     {" · "}
                     {MARKET_LABELS[marketKey]}:{" "}
-                    <span className="font-medium text-foreground">{marketPredictionLabel(prediction.markets, marketKey)}</span>
+                    <span className="font-medium text-foreground">{pickLabel}</span>
+                    {isOverride && (
+                      <span className="ml-1.5 text-amber-500">
+                        (vs SoccerRadar: {marketPredictionLabel(prediction.markets, marketKey)})
+                      </span>
+                    )}
                   </div>
                 </Link>
                 {isOwner && (
