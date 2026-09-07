@@ -14,7 +14,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: "bottom-nav",
     title: "Get around in one tap",
-    body: "Top Bookings, My Bookings, and Collections are always one tap away — More holds today's quick-filter shortcuts and Track Record.",
+    body: "Today's Pick opens quick-filter shortcuts, and Top Bookings and Collections are one tap away — More holds My Bookings, Track Record, and the tour.",
   },
   {
     target: "league-sidebar",
