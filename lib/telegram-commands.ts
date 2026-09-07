@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { sendTelegramMessage, type TelegramUpdate } from "@/lib/telegram";
+import { sendTelegramMessage, type TelegramUpdate, type TelegramUser } from "@/lib/telegram";
 import { computeAccuracy, accuracyPct } from "@/lib/accuracy";
 import { gradePicks, tallyGraded } from "@/lib/booking-grading";
 import { isPredicted, type Prediction } from "@/lib/supabase/types";
@@ -177,9 +177,31 @@ async function handleLeaderboard(): Promise<string> {
   return `Top public bookings:\n\n${lines.join("\n")}\n\n${WEBSITE_URL}/top-bookings`;
 }
 
+async function handleNewChatMembers(chatId: number, members: TelegramUser[]): Promise<void> {
+  const names = members.filter((m) => !m.is_bot).map((m) => m.first_name);
+  if (names.length === 0) return; // only the bot itself joined — nothing to greet
+
+  const greeting =
+    names.length === 1
+      ? `Welcome, ${names[0]}! 👋`
+      : `Welcome, ${names.join(", ")}! 👋`;
+
+  await sendTelegramMessage(
+    chatId,
+    `${greeting} This is the SoccerRadar Discussion Group — chat about today's matches here.\n\n${COMMAND_LIST}\n\nLink your account: ${WEBSITE_URL}/account/telegram`,
+  );
+}
+
 export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void> {
   const message = update.message;
-  if (!message?.text) return;
+  if (!message) return;
+
+  if (message.new_chat_members && message.new_chat_members.length > 0) {
+    await handleNewChatMembers(message.chat.id, message.new_chat_members);
+    return;
+  }
+
+  if (!message.text) return;
 
   const chatId = message.chat.id;
   const { command, arg } = commandAndArg(message.text);

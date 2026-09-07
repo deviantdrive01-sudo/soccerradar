@@ -2,6 +2,13 @@ import "server-only";
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 
+export interface TelegramUser {
+  id: number;
+  is_bot: boolean;
+  first_name: string;
+  username?: string;
+}
+
 /** Shape of the subset of a Telegram Bot API update this app actually reads. */
 export interface TelegramUpdate {
   update_id: number;
@@ -9,8 +16,10 @@ export interface TelegramUpdate {
     message_id: number;
     date: number;
     chat: { id: number; type: string };
-    from?: { id: number; username?: string; first_name?: string };
+    from?: TelegramUser;
     text?: string;
+    /** Present as a service-message field when one or more users join the chat. */
+    new_chat_members?: TelegramUser[];
   };
 }
 
