@@ -20,7 +20,8 @@ import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingAddButton } from "@/components/booking-add-button";
 import { useAccount } from "@/components/account-provider";
 import { useIsMobile } from "@/lib/use-is-mobile";
-import { ListFilter, X } from "lucide-react";
+import { X } from "lucide-react";
+import { DraggableLeagueFab } from "@/components/draggable-league-fab";
 import { cn } from "cn";
 import { isPredicted } from "@/lib/supabase/types";
 import type { League, Prediction } from "@/lib/supabase/types";
@@ -147,12 +148,6 @@ export function PredictionDashboard({
     }
     return dateFilteredPredictions.filter((p) => p.league_id === Number(activeLeague));
   }, [dateFilteredPredictions, activeLeague, leagueById]);
-
-  const activeLeagueLabel = useMemo(() => {
-    if (activeLeague === ALL_LEAGUES) return "All Leagues";
-    if (isCountryFilterValue(activeLeague)) return countryFromFilterValue(activeLeague);
-    return leagueById.get(Number(activeLeague))?.name ?? "All Leagues";
-  }, [activeLeague, leagueById]);
 
   // Table view groups by league internally (it just iterates leagueById, so
   // it already picks up the favorites-first order above) — Cards view needs
@@ -324,16 +319,9 @@ export function PredictionDashboard({
       </div>
 
       {/* Quick access to the league picker without scrolling back to the
-          sticky top bar — thumb-reachable, phone/tablet only. */}
-      <button
-        type="button"
-        data-tour="league-sidebar"
-        onClick={() => setLeagueDrawerOpen(true)}
-        className="fixed bottom-20 right-4 z-20 flex max-w-[65vw] items-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 lg:hidden"
-      >
-        <ListFilter className="size-4 shrink-0" />
-        <span className="truncate">{activeLeagueLabel}</span>
-      </button>
+          sticky top bar — thumb-reachable, phone/tablet only, and draggable
+          so it never permanently sits on top of a match. */}
+      <DraggableLeagueFab hasActiveFilter={activeLeague !== ALL_LEAGUES} onOpen={() => setLeagueDrawerOpen(true)} />
 
       {leagueDrawerOpen && (
         <div className="lg:hidden">

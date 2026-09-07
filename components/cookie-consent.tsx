@@ -41,7 +41,7 @@ export function CookieConsent() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <div className="fixed inset-x-0 bottom-24 z-50 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:bottom-0">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">
           We use cookies to support advertising (via Google AdSense) and remember your preferences. See our{" "}

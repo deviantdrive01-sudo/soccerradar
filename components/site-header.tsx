@@ -3,7 +3,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { HeaderSearch } from "@/components/header-search";
 import { HeaderAccount } from "@/components/header-account";
 import { SiteNavTabs } from "@/components/site-nav-tabs";
-import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { TelegramIcon } from "@/components/share-buttons";
 
 const TELEGRAM_URL = "https://t.me/socceradar";
@@ -50,7 +49,6 @@ export function SiteHeader() {
             <TelegramIcon className="relative size-4" />
             <span className="relative">Join our Community</span>
           </a>
-          <MobileNavDrawer />
           <ThemeToggle />
           <HeaderAccount />
         </div>
