@@ -9,6 +9,7 @@ import { ShareButtons } from "@/components/share-buttons";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingPickButton } from "@/components/booking-pick-button";
 import { AdSlot } from "@/components/ad-slot";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import { cn } from "cn";
 import type { MarketFilter } from "@/components/market-filter";
 import type { MarketKey } from "@/lib/hydrate";
@@ -35,7 +36,8 @@ export function TopPicksView({
   shareTitle: string;
 }) {
   const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const viewMode = viewModeOverride ?? "table";
+  const isMobile = useIsMobile();
+  const viewMode = viewModeOverride ?? (isMobile ? "cards" : "table");
 
   const toolbar = (
     <div className="flex flex-wrap items-center justify-between gap-3">
