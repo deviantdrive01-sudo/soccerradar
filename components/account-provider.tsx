@@ -13,6 +13,7 @@ export interface AccountUser {
   email: string | null;
   username: string | null;
   role: ProfileRole;
+  avatarUrl: string | null;
 }
 
 export interface AccountCollection {

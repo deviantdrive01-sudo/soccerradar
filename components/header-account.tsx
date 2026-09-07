@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
 import { logout } from "@/app/account/actions";
+import { Avatar } from "@/components/avatar";
 
 const MENU_ITEMS = [
   { href: "/account", label: "Overview" },
@@ -49,13 +49,8 @@ export function HeaderAccount() {
 
   return (
     <div className="group relative shrink-0" data-tour="account">
-      <Link
-        href="/account"
-        aria-label={user.username ?? "My Account"}
-        className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:px-3"
-      >
-        <User className="size-4" />
-        <span className="hidden sm:inline">{user.username ?? "My Account"}</span>
+      <Link href="/account" aria-label={user.username ?? "My Account"} className="flex items-center rounded-full">
+        <Avatar avatarUrl={user.avatarUrl} username={user.username} />
       </Link>
 
       <div className="invisible absolute right-0 top-full z-20 w-44 pt-1 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">

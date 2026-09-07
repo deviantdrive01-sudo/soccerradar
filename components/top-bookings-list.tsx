@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/avatar";
 import { accuracyPct, pctClass } from "@/lib/accuracy";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,8 @@ export interface TopBookingEntry {
   id: number;
   title: string;
   ownerLabel: string;
+  ownerUsername: string | null;
+  ownerAvatarUrl: string | null;
   shareUrl: string;
   pickCount: number;
   settled: number;
@@ -79,10 +82,13 @@ export function TopBookingsList({ entries }: { entries: TopBookingEntry[] }) {
           >
             <div className={cn("absolute inset-x-0 top-0 h-1", accentClass(entry.settled, entry.correct))} />
             <div className="flex flex-col gap-3 p-4 pt-5">
-              <div className="min-w-0">
-                <div className="truncate text-base font-semibold group-hover:text-primary">{entry.title}</div>
-                <div className="text-xs text-muted-foreground">
-                  by {entry.ownerLabel} · {entry.pickCount} pick{entry.pickCount === 1 ? "" : "s"}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar avatarUrl={entry.ownerAvatarUrl} username={entry.ownerUsername} size="size-8" />
+                <div className="min-w-0">
+                  <div className="truncate text-base font-semibold group-hover:text-primary">{entry.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    by {entry.ownerLabel} · {entry.pickCount} pick{entry.pickCount === 1 ? "" : "s"}
+                  </div>
                 </div>
               </div>
               {entry.settled > 0 ? (

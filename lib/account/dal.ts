@@ -6,6 +6,7 @@ export interface CurrentUser {
   userId: string;
   email: string | null;
   username: string | null;
+  avatarUrl: string | null;
 }
 
 /**
@@ -20,7 +21,16 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   if (!user) return null;
 
-  const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, avatar_url")
+    .eq("id", user.id)
+    .single();
 
-  return { userId: user.id, email: user.email ?? null, username: profile?.username ?? null };
+  return {
+    userId: user.id,
+    email: user.email ?? null,
+    username: profile?.username ?? null,
+    avatarUrl: profile?.avatar_url ?? null,
+  };
 });

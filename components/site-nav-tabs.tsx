@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/", label: "Home" },
   { href: "/accuracy", label: "Track Record" },
   { href: "/top-bookings", label: "Top Bookings" },
 ] as const;
@@ -17,7 +16,7 @@ export function SiteNavTabs() {
   return (
     <nav className="order-2 hidden shrink-0 items-center gap-0.5 rounded-full bg-muted p-1 sm:flex">
       {TABS.map((tab) => {
-        const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+        const active = pathname.startsWith(tab.href);
         return (
           <Link
             key={tab.href}

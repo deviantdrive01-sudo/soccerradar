@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/account/dal";
-import { UsernameForm, PasswordForm } from "@/components/account-profile-forms";
+import {
+  ProfileInformationForm,
+  PasswordForm,
+  BrowserSessionsForm,
+} from "@/components/account-profile-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +19,15 @@ export default async function ProfilePage() {
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </div>
 
-      <UsernameForm currentUsername={user.username} />
-      <PasswordForm />
+      <div className="flex flex-col gap-6">
+        <ProfileInformationForm
+          currentUsername={user.username}
+          currentEmail={user.email}
+          currentAvatarUrl={user.avatarUrl}
+        />
+        <PasswordForm />
+        <BrowserSessionsForm />
+      </div>
     </div>
   );
 }

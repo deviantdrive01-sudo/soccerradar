@@ -31,7 +31,7 @@ async function getTopBookings(): Promise<TopBookingEntry[]> {
   const userIds = [...new Set(bookings.map((b) => b.user_id))];
 
   const [{ data: profiles }, { data: items }] = await Promise.all([
-    supabase.from("profiles").select("id, username").in("id", userIds),
+    supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
     supabase.from("booking_items").select("booking_id, prediction_id, market_key").in("booking_id", bookingIds),
   ]);
 
@@ -42,6 +42,7 @@ async function getTopBookings(): Promise<TopBookingEntry[]> {
       : { data: [] as Prediction[] };
 
   const usernameById = new Map((profiles ?? []).map((p) => [p.id, p.username]));
+  const avatarById = new Map((profiles ?? []).map((p) => [p.id, p.avatar_url]));
   const predictionById = new Map((predictions ?? []).map((p) => [p.id, p]));
   const itemsByBooking = new Map<number, { prediction_id: number; market_key: string }[]>();
   for (const item of items ?? []) {
@@ -63,11 +64,14 @@ async function getTopBookings(): Promise<TopBookingEntry[]> {
     const graded = gradePicks(picks);
     const { settled, correct } = tallyGraded(graded);
     const username = usernameById.get(booking.user_id) ?? null;
+    const ownerAvatarUrl = avatarById.get(booking.user_id) ?? null;
 
     return {
       id: booking.id,
       title: booking.title,
       ownerLabel: username ?? "a SoccerRadar user",
+      ownerUsername: username,
+      ownerAvatarUrl,
       shareUrl: `/bookings/${buildShareSlug(booking.id, username)}`,
       pickCount: picks.length,
       settled,

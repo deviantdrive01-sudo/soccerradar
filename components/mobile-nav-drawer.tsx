@@ -2,15 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, BarChart3, Trophy, ChevronDown } from "lucide-react";
+import { Menu, X, BarChart3, Trophy, ChevronDown, Flag, Equal, Goal, Swords, Shuffle, type LucideIcon } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TelegramIcon } from "@/components/share-buttons";
-import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
+import { QUICK_FILTER_OPTIONS, type QuickFilter } from "@/lib/quick-filter";
 
 const TELEGRAM_URL = "https://t.me/socceradar";
 
 const LINK_CLASS =
   "flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted";
+
+const FILTER_ICONS: Partial<Record<QuickFilter, LucideIcon>> = {
+  cornersO7_5Yes: Flag,
+  halfDrawYes: Equal,
+  over1_5Yes: Goal,
+  over2_5Yes: Goal,
+  winEitherYes: Swords,
+  ftDrawYes: Equal,
+  drawOrOverYes: Shuffle,
+};
 
 /** Phone-only hamburger + slide-out drawer — see SiteNavTabs for the sm+ pill-nav equivalent. */
 export function MobileNavDrawer() {
@@ -57,22 +67,26 @@ export function MobileNavDrawer() {
                 Join our Community
               </a>
 
-              <Collapsible>
+              <Collapsible defaultOpen>
                 <CollapsibleTrigger className={`${LINK_CLASS} w-full justify-between`}>
                   <span>Today&apos;s Pick</span>
                   <ChevronDown className="size-4 text-muted-foreground" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="flex flex-col gap-0.5 pl-6">
-                  {QUICK_FILTER_OPTIONS.map((option) => (
-                    <Link
-                      key={option.value}
-                      href={`/top-picks/${option.slug}`}
-                      onClick={() => setOpen(false)}
-                      className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      {option.collectionTitle}
-                    </Link>
-                  ))}
+                  {QUICK_FILTER_OPTIONS.map((option) => {
+                    const Icon = FILTER_ICONS[option.value] ?? Goal;
+                    return (
+                      <Link
+                        key={option.value}
+                        href={`/top-picks/${option.slug}`}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <Icon className="size-4" />
+                        {option.collectionTitle}
+                      </Link>
+                    );
+                  })}
                 </CollapsibleContent>
               </Collapsible>
             </nav>
