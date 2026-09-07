@@ -101,6 +101,22 @@ export interface BookingItem {
   created_at: string;
 }
 
+/**
+ * One row per website user, tracking their Telegram bot link. link_code/
+ * code_expires_at hold a pending, short-lived linking code; chat_id/
+ * linked_at are set once the bot confirms it. See supabase/migrations/
+ * 15_telegram_links.sql.
+ */
+export interface TelegramLink {
+  id: string;
+  user_id: string;
+  chat_id: number | null;
+  link_code: string | null;
+  code_expires_at: string | null;
+  linked_at: string | null;
+  created_at: string;
+}
+
 /** One past meeting between these two exact teams, scraped from its own Flashscore match page. */
 export interface H2hMeeting {
   date: string;
@@ -251,6 +267,20 @@ export interface Database {
         Row: Row<BookingItem>;
         Insert: Row<Omit<BookingItem, "id" | "created_at" | "user_value"> & { id?: number; user_value?: string | null }>;
         Update: Row<Partial<Omit<BookingItem, "id">>>;
+        Relationships: [];
+      };
+      telegram_links: {
+        Row: Row<TelegramLink>;
+        Insert: Row<
+          Omit<TelegramLink, "id" | "created_at" | "chat_id" | "link_code" | "code_expires_at" | "linked_at"> & {
+            id?: string;
+            chat_id?: number | null;
+            link_code?: string | null;
+            code_expires_at?: string | null;
+            linked_at?: string | null;
+          }
+        >;
+        Update: Row<Partial<Omit<TelegramLink, "id" | "user_id" | "created_at">>>;
         Relationships: [];
       };
     };

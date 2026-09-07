@@ -1,0 +1,215 @@
+import "server-only";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { sendTelegramMessage, type TelegramUpdate } from "@/lib/telegram";
+import { computeAccuracy, accuracyPct } from "@/lib/accuracy";
+import { gradePicks, tallyGraded } from "@/lib/booking-grading";
+import { isPredicted, type Prediction } from "@/lib/supabase/types";
+import type { MarketKey } from "@/lib/hydrate";
+
+const COMMAND_LIST = `/predictions - Today's top predictions
+/mybookings - Your bookings and how they're grading
+/stats - Site-wide prediction accuracy
+/leaderboard - Top public bookings
+/help - Show this list`;
+
+const WEBSITE_URL = "https://socceradar.site";
+
+function commandAndArg(text: string): { command: string; arg: string | null } {
+  const trimmed = text.trim();
+  const spaceIndex = trimmed.indexOf(" ");
+  const first = spaceIndex === -1 ? trimmed : trimmed.slice(0, spaceIndex);
+  const rest = spaceIndex === -1 ? null : trimmed.slice(spaceIndex + 1).trim() || null;
+  // Telegram commands can be suffixed with @BotUsername in group chats — strip it.
+  const command = first.split("@")[0].toLowerCase();
+  return { command, arg: rest };
+}
+
+async function handleLink(chatId: number, code: string | null): Promise<string> {
+  if (!code) {
+    return "Send this as `/link <code>` with the code shown on your SoccerRadar account page.";
+  }
+
+  const supabase = createAdminSupabaseClient();
+  const { data: link } = await supabase
+    .from("telegram_links")
+    .select("id, user_id, code_expires_at, linked_at")
+    .eq("link_code", code)
+    .maybeSingle();
+
+  if (!link || link.linked_at !== null || !link.code_expires_at || new Date(link.code_expires_at) < new Date()) {
+    return "❌ That code is invalid or expired — generate a new one on the website.";
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("username").eq("id", link.user_id).maybeSingle();
+
+  const { error } = await supabase
+    .from("telegram_links")
+    .update({ chat_id: chatId, linked_at: new Date().toISOString(), link_code: null, code_expires_at: null })
+    .eq("id", link.id);
+
+  if (error) return "Something went wrong linking your account — please try again.";
+
+  return `✅ Linked to @${profile?.username ?? "your account"}! Try /mybookings or /stats.`;
+}
+
+async function handlePredictions(): Promise<string> {
+  const supabase = createAdminSupabaseClient();
+  const now = new Date();
+  const dayAhead = new Date(now.getTime() + 24 * 3600 * 1000);
+
+  const { data } = await supabase
+    .from("predictions")
+    .select("home_team, away_team, markets, confidence")
+    .not("markets", "is", null)
+    .gte("match_date", now.toISOString())
+    .lte("match_date", dayAhead.toISOString())
+    .order("confidence", { ascending: false })
+    .limit(8);
+
+  const predictions = (data ?? []) as Pick<Prediction, "home_team" | "away_team" | "markets" | "confidence">[];
+  if (predictions.length === 0) return "No upcoming predictions in the next 24h yet — check back soon.";
+
+  const lines = predictions.map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)`);
+  return `Today's top picks:\n\n${lines.join("\n")}\n\nFull analysis: ${WEBSITE_URL}`;
+}
+
+async function findLinkedUserId(chatId: number): Promise<string | null> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase.from("telegram_links").select("user_id").eq("chat_id", chatId).maybeSingle();
+  return data?.user_id ?? null;
+}
+
+async function handleMyBookings(chatId: number): Promise<string> {
+  const userId = await findLinkedUserId(chatId);
+  if (!userId) return `Link your account first: ${WEBSITE_URL}/account/telegram`;
+
+  const supabase = createAdminSupabaseClient();
+  const { data: bookings } = await supabase
+    .from("bookings")
+    .select("id, title")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (!bookings || bookings.length === 0) return "You don't have any bookings yet.";
+
+  const bookingIds = bookings.map((b) => b.id);
+  const { data: items } = await supabase
+    .from("booking_items")
+    .select("booking_id, prediction_id, market_key, user_value")
+    .in("booking_id", bookingIds);
+
+  const predictionIds = [...new Set((items ?? []).map((i) => i.prediction_id))];
+  const { data: predictions } = predictionIds.length > 0 ? await supabase.from("predictions").select("*").in("id", predictionIds) : { data: [] };
+  const predictionById = new Map((predictions ?? []).map((p) => [p.id, p as Prediction]));
+
+  const lines = bookings.map((b) => {
+    const picks = (items ?? [])
+      .filter((i) => i.booking_id === b.id)
+      .map((i) => ({ prediction: predictionById.get(i.prediction_id), marketKey: i.market_key as MarketKey, userValue: i.user_value }))
+      .filter((p): p is { prediction: Prediction; marketKey: MarketKey; userValue: string | null } => !!p.prediction && isPredicted(p.prediction));
+
+    const tally = tallyGraded(gradePicks(picks));
+    const record = tally.settled > 0 ? ` — ${tally.correct}/${tally.settled} won` : "";
+    return `${b.title}${record}`;
+  });
+
+  return `Your bookings:\n\n${lines.join("\n")}`;
+}
+
+async function handleStats(): Promise<string> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase.from("predictions").select("*").not("actual_result", "is", null);
+
+  const summary = computeAccuracy((data ?? []) as Prediction[]);
+  if (summary.totalSettled === 0) return "No settled predictions yet.";
+
+  const overallPct = accuracyPct(summary.overallCorrect, summary.overallKnown);
+  const marketLines = summary.perMarket
+    .filter((m) => m.known > 0)
+    .sort((a, b) => accuracyPct(b.correct, b.known) - accuracyPct(a.correct, a.known))
+    .map((m) => `${m.label}: ${accuracyPct(m.correct, m.known)}%`);
+
+  return `Overall accuracy: ${overallPct}% (${summary.totalSettled} settled matches)\n\n${marketLines.join("\n")}\n\nFull breakdown: ${WEBSITE_URL}/accuracy`;
+}
+
+async function handleLeaderboard(): Promise<string> {
+  const supabase = createAdminSupabaseClient();
+  const { data: bookings } = await supabase
+    .from("bookings")
+    .select("id, user_id, title")
+    .eq("is_public", true)
+    .order("published_at", { ascending: false })
+    .limit(50);
+
+  if (!bookings || bookings.length === 0) return "No public bookings yet.";
+
+  const userIds = [...new Set(bookings.map((b) => b.user_id))];
+  const bookingIds = bookings.map((b) => b.id);
+
+  const [{ data: profiles }, { data: items }] = await Promise.all([
+    supabase.from("profiles").select("id, username").in("id", userIds),
+    supabase.from("booking_items").select("booking_id, prediction_id, market_key, user_value").in("booking_id", bookingIds),
+  ]);
+
+  const predictionIds = [...new Set((items ?? []).map((i) => i.prediction_id))];
+  const { data: predictions } = predictionIds.length > 0 ? await supabase.from("predictions").select("*").in("id", predictionIds) : { data: [] };
+  const predictionById = new Map((predictions ?? []).map((p) => [p.id, p as Prediction]));
+  const usernameById = new Map((profiles ?? []).map((p) => [p.id, p.username]));
+
+  const ranked = bookings
+    .map((b) => {
+      const picks = (items ?? [])
+        .filter((i) => i.booking_id === b.id)
+        .map((i) => ({ prediction: predictionById.get(i.prediction_id), marketKey: i.market_key as MarketKey, userValue: i.user_value }))
+        .filter((p): p is { prediction: Prediction; marketKey: MarketKey; userValue: string | null } => !!p.prediction && isPredicted(p.prediction));
+      const tally = tallyGraded(gradePicks(picks));
+      return { title: b.title, username: usernameById.get(b.user_id) ?? "someone", tally };
+    })
+    .filter((b) => b.tally.settled > 0)
+    .sort((a, b) => accuracyPct(b.tally.correct, b.tally.settled) - accuracyPct(a.tally.correct, a.tally.settled))
+    .slice(0, 10);
+
+  if (ranked.length === 0) return "No graded public bookings yet.";
+
+  const lines = ranked.map(
+    (b, i) => `${i + 1}. ${b.title} (@${b.username}) — ${b.tally.correct}/${b.tally.settled} · ${accuracyPct(b.tally.correct, b.tally.settled)}%`,
+  );
+  return `Top public bookings:\n\n${lines.join("\n")}\n\n${WEBSITE_URL}/top-bookings`;
+}
+
+export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void> {
+  const message = update.message;
+  if (!message?.text) return;
+
+  const chatId = message.chat.id;
+  const { command, arg } = commandAndArg(message.text);
+
+  let reply: string;
+  switch (command) {
+    case "/start":
+      reply = arg ? await handleLink(chatId, arg) : `Welcome to SoccerRadar!\n\n${COMMAND_LIST}\n\nLink your account: ${WEBSITE_URL}/account/telegram`;
+      break;
+    case "/link":
+      reply = await handleLink(chatId, arg);
+      break;
+    case "/help":
+      reply = COMMAND_LIST;
+      break;
+    case "/predictions":
+      reply = await handlePredictions();
+      break;
+    case "/mybookings":
+      reply = await handleMyBookings(chatId);
+      break;
+    case "/stats":
+      reply = await handleStats();
+      break;
+    case "/leaderboard":
+      reply = await handleLeaderboard();
+      break;
+    default:
+      return; // Not a recognized command — stay quiet rather than noise a group chat.
+  }
+
+  await sendTelegramMessage(chatId, reply);
+}
