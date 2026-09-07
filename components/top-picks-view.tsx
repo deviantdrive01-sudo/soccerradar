@@ -65,7 +65,7 @@ export function TopPicksView({
         </div>
 
         <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1">
-          <ShareButtons url={shareUrl} title={shareTitle} />
+          <ShareButtons url={shareUrl} title={shareTitle} imageUrl={`${shareUrl}/opengraph-image`} />
         </div>
       </div>
     </div>

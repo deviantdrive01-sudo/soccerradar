@@ -186,17 +186,6 @@ export function PredictionDashboard({
 
       <div className="min-w-0 flex-1 space-y-6">
         <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:mx-0 lg:rounded-lg lg:border">
-          <div className="lg:hidden" data-tour="league-sidebar">
-            <button
-              type="button"
-              onClick={() => setLeagueDrawerOpen(true)}
-              className="flex h-9 w-full items-center justify-between rounded-md border border-border/60 bg-background px-3 text-sm"
-            >
-              <span className="truncate">{activeLeagueLabel}</span>
-              <ListFilter className="size-4 shrink-0 text-muted-foreground" />
-            </button>
-          </div>
-
           <div className="hidden sm:block lg:hidden" data-tour="todays-pick">
             <ScrollArea className="max-w-[calc(100vw-2rem)]">
               <div className="flex items-center gap-1.5 pb-1">
@@ -330,6 +319,7 @@ export function PredictionDashboard({
           sticky top bar — thumb-reachable, phone/tablet only. */}
       <button
         type="button"
+        data-tour="league-sidebar"
         onClick={() => setLeagueDrawerOpen(true)}
         className="fixed bottom-20 right-4 z-20 flex max-w-[65vw] items-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 lg:hidden"
       >
