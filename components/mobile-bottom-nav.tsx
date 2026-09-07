@@ -70,6 +70,7 @@ export function MobileBottomNav() {
       )}
 
       <nav
+        data-tour="bottom-nav"
         className="fixed inset-x-4 bottom-4 z-40 flex items-stretch justify-between rounded-2xl border border-border/60 bg-card shadow-lg sm:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >

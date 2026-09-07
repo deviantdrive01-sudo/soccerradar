@@ -12,9 +12,14 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Find a team, league, or country from anywhere on the site.",
   },
   {
+    target: "bottom-nav",
+    title: "Get around in one tap",
+    body: "Today's Pick, My Bookings, and Collections are always one tap away — More holds the quick-filter shortcuts and Track Record.",
+  },
+  {
     target: "league-sidebar",
     title: "Browse by league",
-    body: "Filter to one league, or click a country to see every match in it.",
+    body: "Filter to one league, or click a country to see every match in it. On phone, tap the floating badge to open this list — press and drag it anywhere if it's sitting on top of a match.",
   },
   {
     target: "favorite-button",

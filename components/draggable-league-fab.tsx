@@ -83,7 +83,12 @@ export function DraggableLeagueFab({ hasActiveFilter, onOpen }: { hasActiveFilte
 
   function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
     if (!pos) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Some touch browsers reject capture for a given pointer id — the
+      // drag/tap tracking below doesn't actually depend on capture succeeding.
+    }
     dragRef.current = { startX: e.clientX, startY: e.clientY, originX: pos.x, originY: pos.y, moved: false };
   }
 
@@ -96,12 +101,19 @@ export function DraggableLeagueFab({ hasActiveFilter, onOpen }: { hasActiveFilte
     if (drag.moved) setPosition(clamp(drag.originX + dx, drag.originY + dy));
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(e: React.PointerEvent<HTMLButtonElement>) {
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag) return;
     if (!drag.moved) {
-      onOpen();
+      // On touch devices the browser also synthesizes a click from this same
+      // tap, landing just after this handler runs. If the drawer opens
+      // synchronously, that stray click hits a league row rendered at this
+      // exact spot and immediately closes the drawer again. Deferring the
+      // open to the next tick lets the synthetic click resolve first,
+      // against the old page (a harmless no-op), before the drawer exists.
+      e.preventDefault();
+      setTimeout(onOpen, 0);
       return;
     }
     try {
