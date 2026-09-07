@@ -31,7 +31,7 @@ export function AdminAdUploadForm() {
         pre-compress heavier files before uploading). Uploading replaces the video URL field above.
       </p>
       {state.error && <p className="text-xs text-destructive">{state.error}</p>}
-      {state.success && <p className="text-xs text-emerald-500">Uploaded — field below updated.</p>}
+      {state.success && <p className="text-xs text-primary">Uploaded — field below updated.</p>}
     </form>
   );
 }

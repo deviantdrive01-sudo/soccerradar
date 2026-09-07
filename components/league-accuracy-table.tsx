@@ -16,7 +16,7 @@ const ALL_DATES = "all";
 
 function pctClass(pct: number, known: number): string {
   if (known === 0) return "border-border/60 text-muted-foreground";
-  if (pct >= 60) return "border-emerald-500/30 text-emerald-400";
+  if (pct >= 60) return "border-primary/30 text-primary";
   if (pct >= 45) return "border-amber-500/30 text-amber-400";
   return "border-red-500/30 text-red-400";
 }

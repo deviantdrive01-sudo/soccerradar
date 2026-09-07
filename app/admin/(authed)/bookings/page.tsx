@@ -83,7 +83,80 @@ export default async function AdminBookingsPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border/60">
+      {/* Phone: stacked cards — the table below needs 820px+ to read without horizontal scrolling. */}
+      <div className="space-y-3 sm:hidden">
+        {(bookings ?? []).map((booking) => {
+          const username = usernameById.get(booking.user_id) ?? null;
+          const avatarUrl = avatarById.get(booking.user_id) ?? null;
+          const winRate = winRateByOwner.get(booking.user_id);
+          return (
+            <div key={booking.id} className="space-y-3 rounded-md border border-border/60 p-3">
+              <div className="flex items-start justify-between gap-2">
+                <Link
+                  href={`/bookings/${buildShareSlug(booking.id, username)}`}
+                  target="_blank"
+                  className="min-w-0 truncate font-medium hover:text-primary hover:underline"
+                >
+                  {booking.title}
+                </Link>
+                {booking.is_public ? (
+                  <span className="shrink-0 rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    Public
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Private
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Avatar avatarUrl={avatarUrl} username={username} size="size-6" textSize="text-[10px]" />
+                <span className="text-sm text-muted-foreground">{username ?? "—"}</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Win Rate</div>
+                  {winRate && winRate.settled > 0 ? (
+                    <span className={cn("font-medium", pctClass(accuracyPct(winRate.correct, winRate.settled), winRate.settled))}>
+                      {accuracyPct(winRate.correct, winRate.settled)}%
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Picks</div>
+                  {itemCountByBooking.get(booking.id) ?? 0}
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Created</div>
+                  {new Date(booking.created_at).toLocaleDateString("en-GB")}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 border-t border-border/60 pt-2">
+                {booking.is_public && (
+                  <form action={forceBookingPrivate}>
+                    <input type="hidden" name="bookingId" value={booking.id} />
+                    <button
+                      type="submit"
+                      className="h-7 rounded-md border border-border/60 px-2 text-xs font-medium hover:bg-muted/60"
+                    >
+                      Force Private
+                    </button>
+                  </form>
+                )}
+                {isSuperAdmin && <AdminDeleteBookingButton bookingId={booking.id} label={booking.title} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* sm+: table */}
+      <div className="hidden overflow-x-auto rounded-md border border-border/60 sm:block">
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-border/60 text-left text-muted-foreground">
@@ -136,7 +209,7 @@ export default async function AdminBookingsPage() {
                   </td>
                   <td className="p-2 text-center">
                     {booking.is_public ? (
-                      <span className="rounded-full border border-emerald-500/40 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                      <span className="rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
                         Public
                       </span>
                     ) : (

@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: PageProps<"/match/[id]">): Pr
 }
 
 function confidenceClass(confidence: number): string {
-  if (confidence >= 70) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+  if (confidence >= 70) return "bg-primary/15 text-primary border-primary/30";
   if (confidence >= 50) return "bg-amber-500/15 text-amber-400 border-amber-500/30";
   return "bg-red-500/15 text-red-400 border-red-500/30";
 }
@@ -67,7 +67,7 @@ function YesNoBadge({
 }) {
   return (
     <span className="inline-flex items-center gap-1">
-      <Badge variant="outline" className={value ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}>
+      <Badge variant="outline" className={value ? "border-primary/30 text-primary" : "text-muted-foreground"}>
         {label} {value ? "✓" : "✗"}
       </Badge>
       <BookingPickButton predictionId={predictionId} marketKey={marketKey} />

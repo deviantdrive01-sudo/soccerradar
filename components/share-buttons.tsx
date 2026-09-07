@@ -71,7 +71,7 @@ export function ShareButtons({ url, title, imageUrl }: { url: string; title: str
         <TelegramIcon className="size-3.5" />
       </button>
       <button type="button" onClick={handleCopyLink} aria-label={copied ? "Link copied" : "Copy link"} className={ICON_BUTTON}>
-        {copied ? <Check className="size-3.5 text-emerald-500" /> : <Link2 className="size-3.5" />}
+        {copied ? <Check className="size-3.5 text-primary" /> : <Link2 className="size-3.5" />}
       </button>
       {imageUrl && (
         <a href={imageUrl} download aria-label="Download image" className={ICON_BUTTON}>

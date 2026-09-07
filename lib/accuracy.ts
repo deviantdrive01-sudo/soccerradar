@@ -70,7 +70,9 @@ export function accuracyPct(correct: number, known: number): number {
   return known ? Math.round((correct / known) * 100) : 0;
 }
 
-/** Shared color threshold for any "% correct" badge across the site. */
+/** Shared color threshold for any "% correct" badge across the site. Green
+ * for a win reads more universally than the brand color would (which turns
+ * yellow in dark mode) — kept as plain emerald regardless of theme. */
 export function pctClass(pct: number, known: number): string {
   if (known === 0) return "border-border/60 text-muted-foreground";
   if (pct >= 60) return "border-emerald-500/30 text-emerald-400";

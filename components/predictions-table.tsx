@@ -21,14 +21,14 @@ const LEAGUE_GROUP_AD_INTERVAL = 6; // give more scroll room between in-feed ads
 const MAX_TABLE_ADS = 2; // cap total in-feed ads regardless of how many league groups are shown
 
 function confidenceClass(confidence: number): string {
-  if (confidence >= 70) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+  if (confidence >= 70) return "bg-primary/15 text-primary border-primary/30";
   if (confidence >= 50) return "bg-amber-500/15 text-amber-400 border-amber-500/30";
   return "bg-red-500/15 text-red-400 border-red-500/30";
 }
 
 function YesNo({ value }: { value: boolean | null }) {
   return (
-    <span className={value ? "text-emerald-400" : "text-muted-foreground"}>
+    <span className={value ? "text-primary" : "text-muted-foreground"}>
       {value === null ? "–" : value ? "✓" : "✗"}
     </span>
   );

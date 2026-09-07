@@ -61,7 +61,111 @@ export default async function AdminUsersPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border/60">
+      {/* Phone: stacked cards — the table below needs 880px+ to read without horizontal scrolling. */}
+      <div className="space-y-3 sm:hidden">
+        {sortedUsers.map((u) => {
+          const profile = profileById.get(u.id);
+          const role: ProfileRole = profile?.role ?? "user";
+          const isBanned = !!u.banned_until && new Date(u.banned_until) > new Date();
+          const isSelf = u.id === session.userId;
+          const canManage = isSuperAdmin || role === "user";
+
+          return (
+            <div key={u.id} className="space-y-3 rounded-md border border-border/60 p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{profile?.username ?? "—"}</div>
+                  <div className="truncate text-xs text-muted-foreground">{u.email}</div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  {role !== "user" && (
+                    <span
+                      className={
+                        role === "super_admin"
+                          ? "rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] font-medium text-amber-500"
+                          : "rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary"
+                      }
+                    >
+                      {ROLE_LABELS[role]}
+                    </span>
+                  )}
+                  {isBanned && (
+                    <span className="rounded-full border border-destructive/40 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                      Disabled
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 text-sm">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Joined</div>
+                  {new Date(u.created_at).toLocaleDateString("en-GB")}
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Favorites</div>
+                  {favCountByUser.get(u.id) ?? 0}
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Collections</div>
+                  {collectionCountByUser.get(u.id) ?? 0}
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Bookings</div>
+                  {bookingCountByUser.get(u.id) ?? 0}
+                </div>
+              </div>
+
+              {isSelf ? (
+                <div className="border-t border-border/60 pt-2 text-xs text-muted-foreground">You</div>
+              ) : !canManage ? (
+                <div className="border-t border-border/60 pt-2 text-xs text-muted-foreground">
+                  Only a super admin can manage this account
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2">
+                  <form action={toggleUserBan}>
+                    <input type="hidden" name="userId" value={u.id} />
+                    <input type="hidden" name="currentlyBanned" value={String(isBanned)} />
+                    <button
+                      type="submit"
+                      className="h-7 rounded-md border border-border/60 px-2 text-xs font-medium hover:bg-muted/60"
+                    >
+                      {isBanned ? "Enable" : "Disable"}
+                    </button>
+                  </form>
+                  {isSuperAdmin && (
+                    <>
+                      <form action={updateUserRole} className="flex items-center gap-1">
+                        <input type="hidden" name="userId" value={u.id} />
+                        <select
+                          name="role"
+                          defaultValue={role}
+                          className="h-7 rounded-md border border-border/60 bg-background px-1.5 text-xs"
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                          <option value="super_admin">Super Admin</option>
+                        </select>
+                        <button
+                          type="submit"
+                          className="h-7 rounded-md border border-border/60 px-2 text-xs font-medium hover:bg-muted/60"
+                        >
+                          Save
+                        </button>
+                      </form>
+                      <AdminDeleteUserButton userId={u.id} label={profile?.username ?? u.email ?? "this user"} />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* sm+: table */}
+      <div className="hidden overflow-x-auto rounded-md border border-border/60 sm:block">
         <table className="w-full min-w-[880px] text-sm">
           <thead>
             <tr className="border-b border-border/60 text-left text-muted-foreground">

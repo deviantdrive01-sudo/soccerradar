@@ -39,7 +39,7 @@ function SectionShell({
 
 function StatusMessage({ state }: { state: ProfileActionState }) {
   if (state.error) return <p className="text-xs text-destructive">{state.error}</p>;
-  if (state.success) return <p className="text-xs text-emerald-500">{state.success}</p>;
+  if (state.success) return <p className="text-xs text-primary">{state.success}</p>;
   return null;
 }
 

@@ -153,7 +153,7 @@ export function BookingManage({
               className={cn(
                 "h-8 rounded-md px-3 text-xs font-medium disabled:opacity-60",
                 isPublic
-                  ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+                  ? "bg-primary/15 text-primary hover:bg-primary/25"
                   : "border border-border/60 hover:bg-muted",
               )}
               title={isPublic ? "Listed on Top Bookings — click to make private" : "Not listed on Top Bookings — click to publish"}

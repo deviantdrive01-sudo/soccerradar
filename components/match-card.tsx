@@ -17,7 +17,7 @@ import type { MarketFilter } from "@/components/market-filter";
 import { ChevronDown } from "lucide-react";
 
 function confidenceClass(confidence: number): string {
-  if (confidence >= 70) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+  if (confidence >= 70) return "bg-primary/15 text-primary border-primary/30";
   if (confidence >= 50) return "bg-amber-500/15 text-amber-400 border-amber-500/30";
   return "bg-red-500/15 text-red-400 border-red-500/30";
 }
@@ -33,10 +33,10 @@ function BoolBadge({ label, value }: { label: string; value: boolean | null }) {
 function GoalsBadges({ markets }: { markets: HydratedMarkets }) {
   return (
     <>
-      <Badge variant="outline" className={markets.goals.over1_5 ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}>
+      <Badge variant="outline" className={markets.goals.over1_5 ? "border-primary/30 text-primary" : "text-muted-foreground"}>
         O1.5 {markets.goals.over1_5 ? "✓" : "✗"}
       </Badge>
-      <Badge variant="outline" className={markets.goals.over2_5 ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}>
+      <Badge variant="outline" className={markets.goals.over2_5 ? "border-primary/30 text-primary" : "text-muted-foreground"}>
         O2.5 {markets.goals.over2_5 ? "✓" : "✗"}
       </Badge>
     </>
@@ -218,7 +218,7 @@ export function MatchCard({
               {showDrawOrOver && (
                 <Badge
                   variant="outline"
-                  className={isDrawOrOver2_5(prediction.markets) ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}
+                  className={isDrawOrOver2_5(prediction.markets) ? "border-primary/30 text-primary" : "text-muted-foreground"}
                 >
                   Draw/O2.5 {isDrawOrOver2_5(prediction.markets) ? "✓" : "✗"}
                 </Badge>

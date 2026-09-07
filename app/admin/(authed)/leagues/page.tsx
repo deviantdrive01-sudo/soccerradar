@@ -24,7 +24,51 @@ export default async function AdminLeaguesPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border/60">
+      {/* Phone: stacked cards — the table below needs 900px+ to read without horizontal scrolling. */}
+      <div className="space-y-3 sm:hidden">
+        {(leagues ?? []).map((league) => (
+          <form
+            key={league.id}
+            action={updateLeague}
+            className="space-y-2 rounded-md border border-border/60 p-3"
+          >
+            <input type="hidden" name="id" value={league.id} />
+            <div>
+              <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Name</label>
+              <input name="name" defaultValue={league.name} className={FIELD} />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Country</label>
+              <input name="country" defaultValue={league.country} className={FIELD} />
+            </div>
+            <div className="text-xs text-muted-foreground">API league ID: {league.api_league_id}</div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Flashscore slug</label>
+              <input
+                name="flashscore_slug"
+                defaultValue={league.flashscore_slug ?? ""}
+                placeholder="e.g. germany/bundesliga"
+                className={FIELD}
+              />
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="checkbox" name="is_active" defaultChecked={league.is_active} className="size-4" />
+                Active
+              </label>
+              <button
+                type="submit"
+                className="h-8 rounded-md border border-border/60 px-3 text-xs font-medium hover:bg-muted/60"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        ))}
+      </div>
+
+      {/* sm+: table */}
+      <div className="hidden overflow-x-auto rounded-md border border-border/60 sm:block">
         <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b border-border/60 text-left text-muted-foreground">
