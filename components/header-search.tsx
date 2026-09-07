@@ -1,14 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { SearchDropdown } from "@/components/search-dropdown";
 
 export function HeaderSearch() {
   const [query, setQuery] = useState("");
+  const router = useRouter();
+
+  function goToResults() {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+    setQuery("");
+  }
 
   return (
-    <div className="relative w-full" data-tour="search">
+    <form
+      className="relative w-full"
+      data-tour="search"
+      onSubmit={(e) => {
+        e.preventDefault();
+        goToResults();
+      }}
+    >
       <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <input
         type="text"
@@ -27,7 +43,7 @@ export function HeaderSearch() {
           <X className="size-3.5" />
         </button>
       )}
-      <SearchDropdown query={query} />
-    </div>
+      <SearchDropdown query={query} onSeeAllResults={goToResults} onResultClick={() => setQuery("")} />
+    </form>
   );
 }

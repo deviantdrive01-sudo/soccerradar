@@ -17,7 +17,17 @@ interface TopPickResult {
  * a match outside the current 7-day window or the active league/date tab.
  * Also surfaces matching /top-picks/[slug] collections (e.g. "corners").
  */
-export function SearchDropdown({ query }: { query: string }) {
+export function SearchDropdown({
+  query,
+  onSeeAllResults,
+  onResultClick,
+}: {
+  query: string;
+  /** Navigates to the full /search results page for the current query. */
+  onSeeAllResults?: () => void;
+  /** Fired when a result link is clicked, so the parent can clear/close the dropdown. */
+  onResultClick?: () => void;
+}) {
   const [state, setState] = useState<{ query: string; results: SearchResult[]; topPicks: TopPickResult[] } | null>(
     null,
   );
@@ -69,6 +79,7 @@ export function SearchDropdown({ query }: { query: string }) {
                 <Link
                   key={pick.slug}
                   href={`/top-picks/${pick.slug}`}
+                  onClick={onResultClick}
                   className="flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-muted/50"
                 >
                   <span className="font-medium">Top Predictions Today: {pick.title}</span>
@@ -81,7 +92,8 @@ export function SearchDropdown({ query }: { query: string }) {
             <Link
               key={r.id}
               href={`/match/${r.id}`}
-              className="flex items-center justify-between gap-2 border-b border-border/40 px-3 py-2 text-sm last:border-0 hover:bg-muted/50"
+              onClick={onResultClick}
+              className="flex items-center justify-between gap-2 border-b border-border/40 px-3 py-2 text-sm hover:bg-muted/50"
             >
               <div className="min-w-0">
                 <div className="truncate font-medium">
@@ -101,6 +113,16 @@ export function SearchDropdown({ query }: { query: string }) {
             </Link>
           ))}
         </>
+      )}
+      {!loading && !errored && onSeeAllResults && (
+        <button
+          type="button"
+          onClick={onSeeAllResults}
+          className="flex w-full items-center justify-between gap-2 border-t border-border/40 px-3 py-2 text-sm font-medium text-primary hover:bg-muted/50"
+        >
+          See all results for &ldquo;{trimmed}&rdquo;
+          <ArrowRight className="size-3.5 shrink-0" />
+        </button>
       )}
     </div>
   );
