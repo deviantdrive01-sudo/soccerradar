@@ -92,6 +92,17 @@ export interface BookingItem {
   created_at: string;
 }
 
+/** One past meeting between these two exact teams, scraped from its own Flashscore match page. */
+export interface H2hMeeting {
+  date: string;
+  competition: string;
+  home: string;
+  away: string;
+  homeScore: number;
+  awayScore: number;
+  corners: { home: number; away: number } | null;
+}
+
 export interface Prediction {
   id: number;
   league_id: number;
@@ -104,6 +115,9 @@ export interface Prediction {
   markets: HydratedMarkets | null;
   confidence: number | null;
   summary: string | null;
+  /** Last up-to-3 meetings the prediction was based on. Null for predictions
+   * generated before this was persisted, or when no H2H history existed. */
+  h2h: H2hMeeting[] | null;
   actual_result: ActualResult | null;
   created_at: string;
   updated_at: string;
@@ -142,7 +156,7 @@ export interface Database {
       predictions: {
         Row: Row<Prediction>;
         Insert: Row<
-          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result" | "markets" | "confidence" | "summary"> & {
+          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result" | "markets" | "confidence" | "summary" | "h2h"> & {
             id?: number;
             // Optional so upserts that omit it (e.g. the weekly cron re-fetching a
             // fixture) don't clobber an actual_result already recorded for that match.
@@ -152,6 +166,7 @@ export interface Database {
             markets?: HydratedMarkets | null;
             confidence?: number | null;
             summary?: string | null;
+            h2h?: H2hMeeting[] | null;
           }
         >;
         Update: Row<Partial<Omit<Prediction, "id">>>;

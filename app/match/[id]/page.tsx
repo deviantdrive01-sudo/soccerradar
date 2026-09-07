@@ -263,6 +263,40 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
           </div>
         </div>
 
+        {prediction.h2h && prediction.h2h.length > 0 && (
+          <div className="space-y-1.5 border-t border-border/60 pt-3">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">
+              Head-to-Head — last {prediction.h2h.length} meeting{prediction.h2h.length === 1 ? "" : "s"}
+            </div>
+            <div className="space-y-1.5">
+              {prediction.h2h.map((meeting, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/60 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">
+                      {meeting.home} {meeting.homeScore}–{meeting.awayScore} {meeting.away}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {meeting.date}
+                      {meeting.competition ? ` · ${meeting.competition}` : ""}
+                    </div>
+                  </div>
+                  {meeting.corners && (
+                    <div className="shrink-0 text-xs text-muted-foreground">
+                      Corners {meeting.corners.home}–{meeting.corners.away}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              The same head-to-head data this prediction&apos;s corner read was based on.
+            </p>
+          </div>
+        )}
+
         {prediction.summary && (
           <div className="space-y-1 border-t border-border/60 pt-3">
             <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Tactical summary</div>

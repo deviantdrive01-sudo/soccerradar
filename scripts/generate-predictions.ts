@@ -332,14 +332,18 @@ async function main() {
   console.log(`Generating predictions for ${fixtureContexts.length} fixture(s) via Claude...`);
   const predictions = await generatePredictions(fixtureContexts);
 
+  const fixtureByMatchId = new Map(fixtureContexts.map((f) => [f.matchId, f]));
+
   let updated = 0;
   for (const prediction of predictions) {
+    const fixture = fixtureByMatchId.get(prediction.matchId);
     const { error: updateError } = await supabase
       .from("predictions")
       .update({
         markets: prediction.markets,
         confidence: prediction.confidence,
         summary: prediction.summary,
+        h2h: fixture?.stats.headToHead ?? null,
       })
       .eq("match_id", prediction.matchId);
 

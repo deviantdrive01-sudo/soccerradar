@@ -195,6 +195,7 @@ export function BookingManage({
         <div className="divide-y divide-border/60 rounded-md border border-border/60">
           {items.map(({ prediction, marketKey }) => {
             const correctness = gradedByKey.get(`${prediction.id}-${marketKey}`) ?? null;
+            const kickoff = new Date(prediction.match_date);
             return (
               <div key={`${prediction.id}-${marketKey}`} className="flex items-center justify-between gap-2 px-3 py-2.5">
                 {correctness === true && <CheckCircle2 className="size-4 shrink-0 text-emerald-400" aria-label="Correct" />}
@@ -204,7 +205,12 @@ export function BookingManage({
                     {prediction.home_team} <span className="font-normal text-muted-foreground">vs</span> {prediction.away_team}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {leagueById.get(prediction.league_id)?.name ?? ""} · {MARKET_LABELS[marketKey]}:{" "}
+                    {leagueById.get(prediction.league_id)?.name ?? ""} ·{" "}
+                    {kickoff.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}
+                    {", "}
+                    {kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
+                    {" · "}
+                    {MARKET_LABELS[marketKey]}:{" "}
                     <span className="font-medium text-foreground">{marketPredictionLabel(prediction.markets, marketKey)}</span>
                   </div>
                 </Link>
