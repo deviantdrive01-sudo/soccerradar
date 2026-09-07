@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { TopPicksView } from "@/components/top-picks-view";
@@ -55,10 +54,7 @@ export default async function TopPicksPage({ params }: PageProps<"/top-picks/[sl
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" />
-        All predictions
-      </Link>
+      <BackLink fallbackHref="/" fallbackLabel="All predictions" />
 
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Top Predictions Today</h1>

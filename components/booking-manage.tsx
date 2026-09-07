@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, X, CheckCircle2, XCircle } from "lucide-react";
+import { X, CheckCircle2, XCircle } from "lucide-react";
+import { BackLink } from "@/components/back-link";
 import { useAccount } from "@/components/account-provider";
 import { ShareButtons } from "@/components/share-buttons";
 import { renameBooking, deleteBooking, toggleBookingItem, setBookingVisibility } from "@/app/account/bookings/actions";
@@ -96,15 +97,9 @@ export function BookingManage({
   return (
     <div className="space-y-4">
       {isOwner ? (
-        <Link href="/account/bookings" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" />
-          My Bookings
-        </Link>
+        <BackLink fallbackHref="/account/bookings" fallbackLabel="My Bookings" />
       ) : (
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" />
-          All predictions
-        </Link>
+        <BackLink fallbackHref="/" fallbackLabel="All predictions" />
       )}
 
       <div className="flex flex-wrap items-start justify-between gap-3">

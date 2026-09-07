@@ -5,6 +5,7 @@ import { Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { NavigationHistoryTracker } from "@/components/navigation-history-tracker";
 import { CookieConsent } from "@/components/cookie-consent";
 import { AdSettingsProvider } from "@/components/ad-settings-provider";
 import { AccountProvider } from "@/components/account-provider";
@@ -135,6 +136,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           }
         >
           <AccountProvider>
+            <NavigationHistoryTracker />
             <SiteHeader />
             {children}
             <SiteFooter />

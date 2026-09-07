@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useAccount } from "@/components/account-provider";
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/components/match-card";
@@ -69,15 +69,9 @@ export function CollectionManage({
   return (
     <div className="space-y-4">
       {isOwner ? (
-        <Link href="/account/collections" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" />
-          My Collections
-        </Link>
+        <BackLink fallbackHref="/account/collections" fallbackLabel="My Collections" />
       ) : (
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" />
-          All predictions
-        </Link>
+        <BackLink fallbackHref="/" fallbackLabel="All predictions" />
       )}
 
       <div className="flex flex-wrap items-start justify-between gap-3">

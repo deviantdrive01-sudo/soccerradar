@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { BackLink } from "@/components/back-link";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { AdSlot } from "@/components/ad-slot";
@@ -92,10 +91,7 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4" />
-            All predictions
-          </Link>
+          <BackLink fallbackHref="/" fallbackLabel="All predictions" />
           <div className="flex items-center gap-2">
             <FavoriteButton
               target={{ type: "match", predictionId: prediction.id }}
@@ -150,10 +146,7 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" />
-          All predictions
-        </Link>
+        <BackLink fallbackHref="/" fallbackLabel="All predictions" />
         <div className="flex items-center gap-2">
           <FavoriteButton
             target={{ type: "match", predictionId: prediction.id }}

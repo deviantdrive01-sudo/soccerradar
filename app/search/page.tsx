@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { BackLink } from "@/components/back-link";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { PredictionDashboard } from "@/components/prediction-dashboard";
 import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
@@ -68,10 +69,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" />
-        All predictions
-      </Link>
+      <BackLink fallbackHref="/" fallbackLabel="All predictions" />
 
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
