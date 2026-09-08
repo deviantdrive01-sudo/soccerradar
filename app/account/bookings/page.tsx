@@ -61,7 +61,7 @@ export default async function BookingsPage() {
         <h1 className="text-2xl font-bold tracking-tight">My Bookings</h1>
         <p className="text-sm text-muted-foreground">
           Pick a specific market from any match — not the whole prediction — and mix picks from different matches
-          into one shareable slip. Experimental, separate from Collections.
+          into one shareable list for tracking, not a real wager. Experimental, separate from Collections.
         </p>
       </div>
 

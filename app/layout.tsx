@@ -23,6 +23,41 @@ const SITE_DESCRIPTION = `${SITE_TAGLINE} AI-generated football predictions acro
 // regardless of OS setting; an explicit toggle click still always wins.
 const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':true;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
+// Google Consent Mode v2 — must run before the AdSense tag and the GA
+// loader below, as a plain synchronous script (not next/script, which
+// defers to after hydration), so the "denied" default is in place before
+// either script has a chance to read it. Defaults everything to denied;
+// if this visitor already chose "accepted" on a previous visit (see
+// components/cookie-consent.tsx, same "soccerradar-cookie-consent" key),
+// immediately grants — so returning visitors aren't re-blocked every load.
+// Without this, AdSense/GA fired unconditionally with no consent signal at
+// all, which doesn't meet Google's EU User Consent Policy for EEA/UK
+// visitors (2026-09-08 fix).
+const CONSENT_INIT_SCRIPT = `(function(){
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    wait_for_update: 500
+  });
+  try {
+    if (localStorage.getItem('soccerradar-cookie-consent') === 'accepted') {
+      gtag('consent', 'update', {
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+        analytics_storage: 'granted'
+      });
+    }
+  } catch (e) {}
+  gtag('js', new Date());
+  gtag('config', '${GA_MEASUREMENT_ID}');
+})();`;
+
 // Organization + WebSite structured data — lets Google associate the logo
 // with the site for knowledge-panel/rich-result branding. logo must be an
 // absolute URL per Google's guidelines.
@@ -100,11 +135,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${generalSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
-          crossOrigin="anonymous"
-        />
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_INIT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <script
           type="application/ld+json"
@@ -115,12 +146,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
         />
         <Script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
-        <Script id="ga4-init" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');`}
-        </Script>
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground pb-24 sm:pb-0">
         <AdSettingsProvider

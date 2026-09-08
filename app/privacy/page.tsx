@@ -131,11 +131,15 @@ export default function PrivacyPolicyPage() {
       </Section>
 
       <p className="text-sm text-muted-foreground">
-        Questions about this policy? See our{" "}
-        <Link href="/" className="font-medium text-primary underline underline-offset-2">
-          homepage
-        </Link>{" "}
-        for how to reach us.
+        Questions about this policy or anything else? Email{" "}
+        <a href="mailto:support@socceradar.site" className="font-medium text-primary underline underline-offset-2">
+          support@socceradar.site
+        </a>
+        . See also our{" "}
+        <Link href="/terms" className="font-medium text-primary underline underline-offset-2">
+          Terms of Use
+        </Link>
+        .
       </p>
     </main>
   );

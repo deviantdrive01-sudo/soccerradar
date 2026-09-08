@@ -15,6 +15,12 @@ export function SiteFooter() {
         </p>
         <div className="flex shrink-0 items-center gap-3">
           <RestartTourButton />
+          <a href="mailto:support@socceradar.site" className="font-medium text-foreground/80 underline underline-offset-2 hover:text-foreground">
+            Contact
+          </a>
+          <Link href="/terms" className="font-medium text-foreground/80 underline underline-offset-2 hover:text-foreground">
+            Terms
+          </Link>
           <Link href="/privacy" className="font-medium text-foreground/80 underline underline-offset-2 hover:text-foreground">
             Privacy Policy
           </Link>
