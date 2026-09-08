@@ -8,7 +8,24 @@ import { isPredicted, type Prediction } from "@/lib/supabase/types";
  * clears the bar for that specific market. Thresholds set 2026-09-08: lower
  * for over_2_5 since it's typically a lower-confidence read than over_1_5.
  */
-export type TopMarketSlug = "over15" | "over25" | "corners" | "1x" | "x2";
+export type TopMarketSlug =
+  | "over15"
+  | "over25"
+  | "corners"
+  | "1x"
+  | "x2"
+  | "ftdraw"
+  | "1hhome"
+  | "1hdraw"
+  | "1haway"
+  | "firsthalf"
+  | "secondhalf"
+  | "evenhalf"
+  | "winhalfhome"
+  | "winhalfaway"
+  | "1hcorners"
+  | "cshome"
+  | "csaway";
 
 export interface TopMarketConfig {
   marketKey: MarketKey;
@@ -16,14 +33,32 @@ export interface TopMarketConfig {
   targetValue: string;
   minConfidence: number;
   title: string;
+  /** Slash command name (no leading "/") — Telegram commands allow only lowercase letters/digits/underscores. */
+  command: string;
 }
 
+// Thresholds set 2026-09-08: 55/45/50 for the first three (over_2_5 runs a
+// naturally lower-confidence read than over_1_5); everything added afterward
+// uses a flat 60% bar per direct instruction, rather than tuning each one
+// individually without real accuracy data to back a different number yet.
 export const TOP_MARKET_CONFIGS: Record<TopMarketSlug, TopMarketConfig> = {
-  over15: { marketKey: "over1_5", targetValue: "yes", minConfidence: 55, title: "Top Over 1.5" },
-  over25: { marketKey: "over2_5", targetValue: "yes", minConfidence: 45, title: "Top Over 2.5" },
-  corners: { marketKey: "over7_5", targetValue: "yes", minConfidence: 50, title: "Top Corners" },
-  "1x": { marketKey: "doubleChance", targetValue: "1X", minConfidence: 60, title: "Top 1X (Home/Draw)" },
-  x2: { marketKey: "doubleChance", targetValue: "X2", minConfidence: 60, title: "Top X2 (Draw/Away)" },
+  over15: { marketKey: "over1_5", targetValue: "yes", minConfidence: 55, title: "Top Over 1.5", command: "topover15" },
+  over25: { marketKey: "over2_5", targetValue: "yes", minConfidence: 45, title: "Top Over 2.5", command: "topover25" },
+  corners: { marketKey: "over7_5", targetValue: "yes", minConfidence: 50, title: "Top Corners", command: "topcorners" },
+  "1x": { marketKey: "doubleChance", targetValue: "1X", minConfidence: 60, title: "Top 1X (Home/Draw)", command: "top1x" },
+  x2: { marketKey: "doubleChance", targetValue: "X2", minConfidence: 60, title: "Top X2 (Draw/Away)", command: "topx2" },
+  ftdraw: { marketKey: "fullTimeDraw", targetValue: "yes", minConfidence: 60, title: "Top FT Draw", command: "topdraw" },
+  "1hhome": { marketKey: "firstHalfOutcome", targetValue: "1", minConfidence: 60, title: "Top 1H Home Win", command: "top1hhome" },
+  "1hdraw": { marketKey: "firstHalfOutcome", targetValue: "X", minConfidence: 60, title: "Top 1H Draw", command: "top1hdraw" },
+  "1haway": { marketKey: "firstHalfOutcome", targetValue: "2", minConfidence: 60, title: "Top 1H Away Win", command: "top1haway" },
+  firsthalf: { marketKey: "highestScoringHalf", targetValue: "1st", minConfidence: 60, title: "Top First Half (Highest Scoring)", command: "topfirsthalf" },
+  secondhalf: { marketKey: "highestScoringHalf", targetValue: "2nd", minConfidence: 60, title: "Top Second Half (Highest Scoring)", command: "topsecondhalf" },
+  evenhalf: { marketKey: "highestScoringHalf", targetValue: "Equal", minConfidence: 60, title: "Top Evenly Split Half", command: "topevenhalf" },
+  winhalfhome: { marketKey: "winEitherHalf", targetValue: "1", minConfidence: 60, title: "Top Win Either Half: Home", command: "topwinhalfhome" },
+  winhalfaway: { marketKey: "winEitherHalf", targetValue: "2", minConfidence: 60, title: "Top Win Either Half: Away", command: "topwinhalfaway" },
+  "1hcorners": { marketKey: "firstHalfOver3_5", targetValue: "yes", minConfidence: 60, title: "Top 1H Corners O3.5", command: "top1hcorners" },
+  cshome: { marketKey: "homeCleanSheet", targetValue: "yes", minConfidence: 60, title: "Top Clean Sheet (Home)", command: "topcshome" },
+  csaway: { marketKey: "awayCleanSheet", targetValue: "yes", minConfidence: 60, title: "Top Clean Sheet (Away)", command: "topcsaway" },
 };
 
 export function isTopMarketSlug(value: string): value is TopMarketSlug {

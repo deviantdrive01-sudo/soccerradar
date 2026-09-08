@@ -8,17 +8,19 @@ import type { MarketKey } from "@/lib/hydrate";
 import { TOP_MARKET_CONFIGS, filterTopMarketPicks, type TopMarketSlug } from "@/lib/top-market-picks";
 
 const COMMAND_LIST = `/predictions - Today's top predictions
-/topover15 - Top Over 1.5 picks
-/topover25 - Top Over 2.5 picks
-/topcorners - Top Corners picks
-/top1x - Top 1X (Home/Draw) picks
-/topx2 - Top X2 (Draw/Away) picks
+/topmarkets - See all curated market categories
 /search <team> - Find a team's predictions
 /mybookings - Your bookings and how they're grading
 /stats - Site-wide prediction accuracy
 /leaderboard - Top public bookings
 /faq - Common questions
 /help - Show this list`;
+
+// Generated from TOP_MARKET_CONFIGS rather than hand-listed, so a new
+// category added there shows up here automatically.
+const TOP_MARKETS_LIST = `📊 Curated market categories:\n\n${Object.values(TOP_MARKET_CONFIGS)
+  .map((c) => `/${c.command} - ${c.title}`)
+  .join("\n")}`;
 
 const WEBSITE_URL = "https://socceradar.site";
 const SIGNUP_URL = `${WEBSITE_URL}/signup`;
@@ -330,6 +332,16 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
   const chatId = message.chat.id;
   const { command, arg } = commandAndArg(message.text);
 
+  // Every /topX command (there are 17 as of 2026-09-08 and growing) is
+  // dispatched generically from TOP_MARKET_CONFIGS rather than as a manual
+  // switch case each — keeps the command list and the router in sync by
+  // construction instead of by remembering to update both.
+  const topMarketEntry = Object.entries(TOP_MARKET_CONFIGS).find(([, config]) => `/${config.command}` === command);
+  if (topMarketEntry) {
+    await sendTopMarketDigest(chatId, topMarketEntry[0] as TopMarketSlug);
+    return;
+  }
+
   let reply: string;
   switch (command) {
     case "/start":
@@ -344,23 +356,11 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
     case "/faq":
       reply = FAQ_TEXT;
       break;
+    case "/topmarkets":
+      reply = TOP_MARKETS_LIST;
+      break;
     case "/predictions":
       await sendPredictionsDigest(chatId);
-      return;
-    case "/topover15":
-      await sendTopMarketDigest(chatId, "over15");
-      return;
-    case "/topover25":
-      await sendTopMarketDigest(chatId, "over25");
-      return;
-    case "/topcorners":
-      await sendTopMarketDigest(chatId, "corners");
-      return;
-    case "/top1x":
-      await sendTopMarketDigest(chatId, "1x");
-      return;
-    case "/topx2":
-      await sendTopMarketDigest(chatId, "x2");
       return;
     case "/search":
       reply = await handleSearch(arg);
