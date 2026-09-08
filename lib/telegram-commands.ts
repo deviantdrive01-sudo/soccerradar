@@ -19,9 +19,9 @@ const COMMAND_LIST = `/predictions - Today's top predictions
 /stats - Site-wide prediction accuracy
 /leaderboard - Top public bookings
 /faq - Common questions
-/help - Show this list
-
-💬 Join the community discussion: ${GROUP_URL}`;
+/website - Open the SoccerRadar website
+/group - Join the community discussion
+/help - Show this list`;
 
 // Generated from TOP_MARKET_CONFIGS rather than hand-listed, so a new
 // category added there shows up here automatically.
@@ -367,6 +367,12 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
       break;
     case "/faq":
       reply = FAQ_TEXT;
+      break;
+    case "/website":
+      reply = `⚽ ${WEBSITE_URL}`;
+      break;
+    case "/group":
+      reply = `💬 ${GROUP_URL}`;
       break;
     case "/topmarkets":
       reply = TOP_MARKETS_LIST;
