@@ -37,12 +37,14 @@ export interface TopMarketConfig {
   command: string;
 }
 
-// Thresholds set 2026-09-08: 55/45/50 for the first three (over_2_5 runs a
-// naturally lower-confidence read than over_1_5); everything added afterward
-// uses a flat 60% bar per direct instruction, rather than tuning each one
-// individually without real accuracy data to back a different number yet.
+// Thresholds set 2026-09-08, over1_5 lowered 55%->50% the same day per the
+// scheduled-broadcast spec ("all over 1.5 from 50%"); over_2_5 stays lower
+// still since it naturally runs a lower-confidence read than over_1_5.
+// Everything added afterward uses a flat 60% bar per direct instruction,
+// rather than tuning each one individually without real accuracy data to
+// back a different number yet.
 export const TOP_MARKET_CONFIGS: Record<TopMarketSlug, TopMarketConfig> = {
-  over15: { marketKey: "over1_5", targetValue: "yes", minConfidence: 55, title: "Top Over 1.5", command: "topover15" },
+  over15: { marketKey: "over1_5", targetValue: "yes", minConfidence: 50, title: "Top Over 1.5", command: "topover15" },
   over25: { marketKey: "over2_5", targetValue: "yes", minConfidence: 45, title: "Top Over 2.5", command: "topover25" },
   corners: { marketKey: "over7_5", targetValue: "yes", minConfidence: 50, title: "Top Corners", command: "topcorners" },
   "1x": { marketKey: "doubleChance", targetValue: "1X", minConfidence: 60, title: "Top 1X (Home/Draw)", command: "top1x" },

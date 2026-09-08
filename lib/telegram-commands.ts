@@ -90,10 +90,16 @@ async function handleLink(chatId: number, code: string | null): Promise<string> 
 
 export type PredictionSummary = Pick<Prediction, "id" | "home_team" | "away_team" | "markets" | "confidence">;
 
-/** One match per entry, each with its own link — Telegram auto-linkifies a bare URL on its own line, no parse_mode needed. */
-export function formatPredictionLines(predictions: PredictionSummary[]): string {
+/**
+ * One match per entry, each with its own link — Telegram auto-linkifies a
+ * bare URL on its own line, no parse_mode needed. showConfidence defaults to
+ * true for the interactive /predictions command; scheduled broadcast call
+ * sites pass false — that content shouldn't surface the model's confidence
+ * number per direct instruction (2026-09-08).
+ */
+export function formatPredictionLines(predictions: PredictionSummary[], { showConfidence = true }: { showConfidence?: boolean } = {}): string {
   return predictions
-    .map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)\n${WEBSITE_URL}/match/${p.id}`)
+    .map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label}${showConfidence ? ` (${p.confidence}%)` : ""}\n${WEBSITE_URL}/match/${p.id}`)
     .join("\n\n");
 }
 

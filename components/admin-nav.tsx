@@ -7,6 +7,7 @@ import { cn } from "cn";
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/leagues", label: "Leagues" },
+  { href: "/admin/matches", label: "Matches" },
   { href: "/admin/ads", label: "Ads" },
   { href: "/admin/banner", label: "Banner" },
   { href: "/admin/users", label: "Users" },

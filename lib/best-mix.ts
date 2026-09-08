@@ -4,16 +4,25 @@ import { MARKET_KEYS, marketConfidence, type MarketKey } from "@/lib/hydrate";
 import { dateKey, todayKey } from "@/lib/date-key";
 import { isPredicted, type Prediction } from "@/lib/supabase/types";
 
-const MIN_CONFIDENCE = 68;
-const PICKS_PER_BOOKING = 7;
-const MIN_TOTAL_PICKS = 3; // not worth publishing a near-empty "mix" on a quiet day
+const MIN_TOTAL_PICKS = 3; // not worth publishing a near-empty mix on a quiet day
 
 const CANDIDATE_MARKET_KEYS = MARKET_KEYS;
 
 const SYSTEM_USERNAME = "SoccerRadarOfficial";
 const SYSTEM_EMAIL = "official+bestmix@socceradar.site";
 
-/** The dedicated account that owns every auto-generated Best Mix booking — created once, reused after. */
+interface GenerateOptions {
+  minConfidence: number;
+  picksPerBooking: number;
+  titlePrefix: string;
+  /** false (Best Mix): chunk every qualifying pick into as many bookings as needed. true (Banger): keep only the top picksPerBooking picks, one booking, drop the rest. */
+  singleBooking: boolean;
+}
+
+const BEST_MIX_OPTIONS: GenerateOptions = { minConfidence: 68, picksPerBooking: 7, titlePrefix: "Best Mix", singleBooking: false };
+const BANGER_OPTIONS: GenerateOptions = { minConfidence: 60, picksPerBooking: 6, titlePrefix: "Today's Banger", singleBooking: true };
+
+/** The dedicated account that owns every auto-generated booking (Best Mix, Today's Banger) — created once, reused after. */
 async function getOrCreateSystemUserId(supabase: ReturnType<typeof createAdminSupabaseClient>): Promise<string> {
   const { data: existing } = await supabase.from("profiles").select("id").eq("username", SYSTEM_USERNAME).maybeSingle();
   if (existing) return existing.id;
@@ -34,8 +43,8 @@ interface QualifyingPick {
   confidence: number;
 }
 
-/** One pick per match — its single highest-confidence market that clears MIN_CONFIDENCE — so a slip is diversified across matches rather than stacked on one. */
-function selectQualifyingPicks(predictions: Prediction[]): QualifyingPick[] {
+/** One pick per match — its single highest-confidence market that clears minConfidence — so a slip is diversified across matches rather than stacked on one. */
+function selectQualifyingPicks(predictions: Prediction[], minConfidence: number): QualifyingPick[] {
   const picks: QualifyingPick[] = [];
 
   for (const p of predictions) {
@@ -47,7 +56,7 @@ function selectQualifyingPicks(predictions: Prediction[]): QualifyingPick[] {
       // Home/Away FT calls are fair game now that fullTimeOutcome exists.
       if (key === "fullTimeOutcome" && p.markets.outcome.code === "X") continue;
       const confidence = marketConfidence(p.markets, key);
-      if (confidence !== null && confidence >= MIN_CONFIDENCE && (!best || confidence > best.confidence)) {
+      if (confidence !== null && confidence >= minConfidence && (!best || confidence > best.confidence)) {
         best = { marketKey: key, confidence };
       }
     }
@@ -75,15 +84,14 @@ export interface GenerateBestMixResult {
 }
 
 /**
- * Scans today's predicted matches for markets at >=68% of their own
- * per-market confidence, one pick per match, and bundles them into one or
- * more public Bookings of up to 7 picks each (splitting into multiple
- * bookings rather than dropping picks past the cap), owned by a dedicated
- * system account. Every call creates fresh bookings — repeated runs the same
- * day are expected as more matches get predicted, and old ones can be
- * deleted from the admin bookings list like any other.
+ * Scans today's predicted matches for markets clearing options.minConfidence,
+ * one pick per match, and bundles them into one or more public Bookings of
+ * up to options.picksPerBooking picks each, owned by a dedicated system
+ * account. Every call creates fresh bookings — repeated runs the same day
+ * are expected as more matches get predicted, and old ones can be deleted
+ * from the admin bookings list like any other.
  */
-export async function generateBestMix(): Promise<GenerateBestMixResult | { error: string }> {
+async function generateAutoBooking(options: GenerateOptions): Promise<GenerateBestMixResult | { error: string }> {
   const supabase = createAdminSupabaseClient();
 
   const now = new Date();
@@ -100,18 +108,18 @@ export async function generateBestMix(): Promise<GenerateBestMixResult | { error
   const today = todayKey();
   const todaysPredictions = (data ?? []).filter((p) => dateKey(p.match_date) === today);
 
-  const qualifying = selectQualifyingPicks(todaysPredictions);
+  const qualifying = selectQualifyingPicks(todaysPredictions, options.minConfidence);
   if (qualifying.length < MIN_TOTAL_PICKS) {
-    return { error: `Only ${qualifying.length} match(es) qualify at ${MIN_CONFIDENCE}%+ today — need at least ${MIN_TOTAL_PICKS}.` };
+    return { error: `Only ${qualifying.length} match(es) qualify at ${options.minConfidence}%+ today — need at least ${MIN_TOTAL_PICKS}.` };
   }
 
   const systemUserId = await getOrCreateSystemUserId(supabase);
   const dateLabel = now.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-  const chunks = chunk(qualifying, PICKS_PER_BOOKING);
+  const chunks = options.singleBooking ? [qualifying.slice(0, options.picksPerBooking)] : chunk(qualifying, options.picksPerBooking);
   const bookings: GeneratedBooking[] = [];
 
   for (const [index, picks] of chunks.entries()) {
-    const title = index === 0 ? `Best Mix · ${dateLabel}` : `Best Mix · ${dateLabel} (${index + 1})`;
+    const title = index === 0 ? `${options.titlePrefix} · ${dateLabel}` : `${options.titlePrefix} · ${dateLabel} (${index + 1})`;
 
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
@@ -134,4 +142,14 @@ export async function generateBestMix(): Promise<GenerateBestMixResult | { error
   }
 
   return { bookings, totalQualifyingMatches: qualifying.length };
+}
+
+/** The existing admin-triggered Best Mix generator — 68%+, chunked into as many 7-pick bookings as qualify. Unchanged behavior. */
+export async function generateBestMix(): Promise<GenerateBestMixResult | { error: string }> {
+  return generateAutoBooking(BEST_MIX_OPTIONS);
+}
+
+/** The scheduled "Today's Banger" broadcast — 60%+, a single booking capped at 6 picks (extras beyond the top 6 are dropped, not chunked into a second booking). */
+export async function generateTodaysBanger(): Promise<GenerateBestMixResult | { error: string }> {
+  return generateAutoBooking(BANGER_OPTIONS);
 }

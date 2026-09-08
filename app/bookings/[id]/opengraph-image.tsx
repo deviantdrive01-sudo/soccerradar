@@ -1,14 +1,14 @@
 import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { parseIdFromParam } from "@/lib/share-slug";
-import { ShareImageTemplate, SHARE_IMAGE_SIZE, SHARE_IMAGE_OPTIONS, resolveAvatarDataUri, type ShareImageItem } from "@/lib/share-image";
+import { ShareImageTemplate, SHARE_IMAGE_SIZE_LARGE, SHARE_IMAGE_OPTIONS_LARGE, resolveAvatarDataUri, type ShareImageItem } from "@/lib/share-image";
 import { MARKET_LABELS, marketPredictionLabel, marketValueLabel } from "@/lib/hydrate";
 import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
 export const alt = "SoccerRadar booking";
-export const size = SHARE_IMAGE_SIZE;
+export const size = SHARE_IMAGE_SIZE_LARGE;
 export const contentType = "image/png";
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
@@ -60,7 +60,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   }
 
   return new ImageResponse(
-    <ShareImageTemplate title={title} ownerLabel={ownerLabel} avatarUrl={avatarUrl} items={items} />,
-    SHARE_IMAGE_OPTIONS,
+    <ShareImageTemplate title={title} ownerLabel={ownerLabel} avatarUrl={avatarUrl} items={items} maxVisible={8} />,
+    SHARE_IMAGE_OPTIONS_LARGE,
   );
 }

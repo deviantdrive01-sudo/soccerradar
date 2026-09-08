@@ -117,6 +117,22 @@ export interface TelegramLink {
   created_at: string;
 }
 
+/**
+ * One row per scheduled Telegram broadcast actually sent — idempotency +
+ * audit trail so a re-run (retry, manual workflow_dispatch) doesn't double-
+ * post. `detail` holds a per-post identifier (a booking id, a prediction id,
+ * or "daily" for the single-shot categories) so match-level categories can
+ * post every qualifying match today while skipping ones already sent. See
+ * supabase/migrations/16_scheduled_broadcasts.sql.
+ */
+export interface TelegramBroadcastLog {
+  id: string;
+  category: string;
+  broadcast_date: string;
+  detail: string | null;
+  created_at: string;
+}
+
 /** One past meeting between these two exact teams, scraped from its own Flashscore match page. */
 export interface H2hMeeting {
   date: string;
@@ -146,6 +162,8 @@ export interface Prediction {
    * generated before this was persisted, or when no H2H history existed. */
   h2h: H2hMeeting[] | null;
   actual_result: ActualResult | null;
+  /** Admin-toggled — surfaces this match in the "Top Match" scheduled Telegram broadcast. */
+  is_featured: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -183,7 +201,7 @@ export interface Database {
       predictions: {
         Row: Row<Prediction>;
         Insert: Row<
-          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result" | "markets" | "confidence" | "summary" | "h2h"> & {
+          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result" | "markets" | "confidence" | "summary" | "h2h" | "is_featured"> & {
             id?: number;
             // Optional so upserts that omit it (e.g. the weekly cron re-fetching a
             // fixture) don't clobber an actual_result already recorded for that match.
@@ -194,6 +212,8 @@ export interface Database {
             confidence?: number | null;
             summary?: string | null;
             h2h?: H2hMeeting[] | null;
+            // Optional — defaults to false in the DB; nothing inserts a featured row directly.
+            is_featured?: boolean;
           }
         >;
         Update: Row<Partial<Omit<Prediction, "id">>>;
@@ -283,6 +303,12 @@ export interface Database {
           }
         >;
         Update: Row<Partial<Omit<TelegramLink, "id" | "user_id" | "created_at">>>;
+        Relationships: [];
+      };
+      telegram_broadcast_log: {
+        Row: Row<TelegramBroadcastLog>;
+        Insert: Row<Omit<TelegramBroadcastLog, "id" | "created_at" | "detail"> & { id?: string; detail?: string | null }>;
+        Update: Row<Partial<Omit<TelegramBroadcastLog, "id" | "created_at">>>;
         Relationships: [];
       };
     };

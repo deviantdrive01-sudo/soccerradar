@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
   }
 
   await sendTelegramPhoto(channel, TOP_PICKS_IMAGE_URL, "⚽ Today's Top Picks");
-  await sendTelegramMessage(channel, formatPredictionLines(predictions));
+  await sendTelegramMessage(channel, formatPredictionLines(predictions, { showConfidence: false }));
 
   return NextResponse.json({ posted: true, count: predictions.length });
 }
