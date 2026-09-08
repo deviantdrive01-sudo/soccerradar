@@ -128,8 +128,21 @@ async function scrapeH2hSections(page: Page, matchId: string): Promise<H2hSectio
   return { headToHead, homeTeamForm, awayTeamForm };
 }
 
-/** Reuses the exact corner-extraction approach proven in update-results.ts. */
-async function extractCorners(page: Page, matchId: string): Promise<{ home: number; away: number } | null> {
+function parseCorners(statsText: string): { home: number; away: number } | null {
+  const cornersMatch = statsText.match(/(\d+)\s*\n\s*Corner kicks\s*\n\s*(\d+)/i);
+  return cornersMatch ? { home: Number(cornersMatch[1]), away: Number(cornersMatch[2]) } : null;
+}
+
+/**
+ * Full-match and 1st-half corner counts for one h2h meeting — same approach
+ * proven in update-results.ts: the Stats tab's URL has "overall" swapped for
+ * "1st-half" for period-specific numbers, confirmed live to differ genuinely
+ * from the full-match total, not just repeat it.
+ */
+async function extractCorners(
+  page: Page,
+  matchId: string,
+): Promise<{ corners: { home: number; away: number } | null; htCorners: { home: number; away: number } | null }> {
   const url = `https://www.flashscore.com/match/football/${matchId}/#/match-summary`;
   try {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -137,11 +150,24 @@ async function extractCorners(page: Page, matchId: string): Promise<{ home: numb
     await page.getByText("Stats", { exact: true }).first().click({ timeout: 5000 });
     await page.waitForTimeout(1800);
     const statsText = await page.evaluate(() => document.body.innerText);
-    const cornersMatch = statsText.match(/(\d+)\s*\n\s*Corner kicks\s*\n\s*(\d+)/i);
-    if (!cornersMatch) return null;
-    return { home: Number(cornersMatch[1]), away: Number(cornersMatch[2]) };
+    const corners = parseCorners(statsText);
+
+    let htCorners: { home: number; away: number } | null = null;
+    const statsUrl = page.url();
+    if (statsUrl.includes("/stats/overall/")) {
+      try {
+        await page.goto(statsUrl.replace("/stats/overall/", "/stats/1st-half/"), { waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForTimeout(1800);
+        const htStatsText = await page.evaluate(() => document.body.innerText);
+        htCorners = parseCorners(htStatsText);
+      } catch {
+        // 1st-half stats view unavailable for this meeting — htCorners stays null, doesn't block the rest.
+      }
+    }
+
+    return { corners, htCorners };
   } catch {
-    return null;
+    return { corners: null, htCorners: null };
   }
 }
 
@@ -180,6 +206,8 @@ Corner-market methodology: weigh head-to-head history for these two specific tea
 - Some headToHead entries may have "corners": null (not available for that match) — ignore those entries for the corner read specifically, and base it only on entries where real corner data is present.
 - Head-to-head history should inform the prediction, not override it outright — still weigh current form, and fall back to current form and team style when head-to-head data is sparse, absent, or no entries have corner data available.
 
+1st-half-corners methodology (ht_over_3_5 specifically): each headToHead entry may also include an "htCorners" field — the real 1st-half-only corner count from that same past meeting, scraped independently from the full-match "corners" figure. Prefer this when present rather than inferring the 1st-half read from the full-match average: a high full-match corner average can still mean a slow 1st half and a corner-heavy 2nd half, so a high full-match total is a *supporting* signal for ht_over_3_5, not a substitute for the actual half-specific number. When htCorners is null for a meeting (unavailable), fall back to weighing that meeting's full-match "corners" figure alongside current form instead, same as the general corner methodology above.
+
 Clean-sheet methodology: each headToHead entry includes the real final score from that past meeting — use it to gauge each side's defensive record against this specific opponent, not just their defensive record in general. If a team has shut the other out in most of the available meetings, treat that as a real signal regardless of current attacking form, since defensive struggles against a particular opponent's style/system tend to recur. Weigh current defensive form alongside it, and fall back to current form alone when head-to-head meetings are sparse or absent.
 
 Outcome/goals methodology: the same real final scores in headToHead that inform clean sheets also apply directly to "o" and "g" — don't rely on current form alone when real history between these two exact teams is available. If these two teams' meetings have consistently produced high or low combined goal counts, weigh that alongside current form for the over/under lines — head-to-head scoring patterns between specific opponents (playing styles, tactical matchups) tend to repeat more than league-average form would suggest. Likewise, if one side has a lopsided head-to-head record against this specific opponent regardless of that side's overall current form, weigh that for "o" too. Still fall back to current form and team quality when head-to-head meetings are sparse, absent, or contradict each other with no clear pattern.
@@ -193,7 +221,7 @@ interface FixtureContext {
   leagueName: string;
   kickoff: string;
   stats: {
-    headToHead: (H2hRow & { corners: { home: number; away: number } | null })[];
+    headToHead: (H2hRow & { corners: { home: number; away: number } | null; htCorners: { home: number; away: number } | null })[];
     homeTeamForm: H2hRow[];
     awayTeamForm: H2hRow[];
   };
@@ -318,8 +346,8 @@ async function main() {
 
       const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
       for (const meeting of h2h.headToHead) {
-        const corners = await extractCorners(page, meeting.mid);
-        headToHeadWithCorners.push({ ...meeting, corners });
+        const { corners, htCorners } = await extractCorners(page, meeting.mid);
+        headToHeadWithCorners.push({ ...meeting, corners, htCorners });
       }
 
       fixtureContexts.push({

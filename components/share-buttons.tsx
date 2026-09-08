@@ -33,8 +33,26 @@ export function TelegramIcon(props: React.SVGProps<SVGSVGElement>) {
 
 const ICON_BUTTON = "inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 hover:bg-muted/60";
 
+/**
+ * A downloadable image is rendered server-side, with no idea which viewer
+ * asked for it — appending the browser's own detected IANA zone lets a
+ * route that cares (e.g. the match-day image's kickoff time) show it in the
+ * viewer's own local time instead of a fixed zone. Harmless for routes that
+ * don't read a "tz" param at all.
+ */
+function withViewerTimeZone(imageUrl: string): string {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const separator = imageUrl.includes("?") ? "&" : "?";
+    return `${imageUrl}${separator}tz=${encodeURIComponent(tz)}`;
+  } catch {
+    return imageUrl;
+  }
+}
+
 export function ShareButtons({ url, title, imageUrl }: { url: string; title: string; imageUrl?: string }) {
   const [copied, setCopied] = useState(false);
+  const downloadUrl = imageUrl ? withViewerTimeZone(imageUrl) : undefined;
 
   async function handleCopyLink() {
     try {
@@ -73,8 +91,8 @@ export function ShareButtons({ url, title, imageUrl }: { url: string; title: str
       <button type="button" onClick={handleCopyLink} aria-label={copied ? "Link copied" : "Copy link"} className={ICON_BUTTON}>
         {copied ? <Check className="size-3.5 text-primary" /> : <Link2 className="size-3.5" />}
       </button>
-      {imageUrl && (
-        <a href={imageUrl} download aria-label="Download image" className={ICON_BUTTON}>
+      {downloadUrl && (
+        <a href={downloadUrl} download aria-label="Download image" className={ICON_BUTTON}>
           <Download className="size-3.5" />
         </a>
       )}

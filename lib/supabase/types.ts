@@ -126,6 +126,8 @@ export interface H2hMeeting {
   homeScore: number;
   awayScore: number;
   corners: { home: number; away: number } | null;
+  /** Absent on meetings scraped before this was added — null when scraped but unavailable for that match. */
+  htCorners?: { home: number; away: number } | null;
 }
 
 export interface Prediction {

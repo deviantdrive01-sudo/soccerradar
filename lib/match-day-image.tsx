@@ -20,8 +20,8 @@ function CrestBadge({ teamName, crestUrl }: { teamName: string; crestUrl: string
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 200,
-        height: 200,
+        width: 240,
+        height: 240,
         borderRadius: "50%",
         backgroundColor: "#ffffff",
         boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
@@ -30,9 +30,9 @@ function CrestBadge({ teamName, crestUrl }: { teamName: string; crestUrl: string
     >
       {crestUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- Satori rendering, not a browser <img>
-        <img src={crestUrl} width={150} height={150} style={{ objectFit: "contain" }} alt="" />
+        <img src={crestUrl} width={180} height={180} style={{ objectFit: "contain" }} alt="" />
       ) : (
-        <span style={{ fontSize: 72, fontWeight: 800, color: "#0a0a0a" }}>{initial(teamName)}</span>
+        <span style={{ fontSize: 86, fontWeight: 800, color: "#0a0a0a" }}>{initial(teamName)}</span>
       )}
     </div>
   );
@@ -67,30 +67,30 @@ export function MatchDayImageTemplate({
         fontFamily: "General Sans",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 64px 0" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "160px 64px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
           <CrestBadge teamName={homeTeam} crestUrl={homeCrestUrl} />
           {/* eslint-disable-next-line @next/next/no-img-element -- Satori rendering, not a browser <img> */}
-          <img src={LOGO_ICON_SVG} width={72} height={72} alt="" />
+          <img src={LOGO_ICON_SVG} width={84} height={84} alt="" />
           <CrestBadge teamName={awayTeam} crestUrl={awayCrestUrl} />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 56, gap: 8 }}>
-          <span style={{ fontSize: 34, fontWeight: 500, color: "#0a0a0a" }}>{leagueLabel}</span>
-          <span style={{ fontSize: 40, fontWeight: 800, color: "#0a0a0a" }}>{kickoffLabel}</span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 56, gap: 10 }}>
+          <span style={{ fontSize: 40, fontWeight: 500, color: "#0a0a0a" }}>{leagueLabel}</span>
+          <span style={{ fontSize: 48, fontWeight: 800, color: "#0a0a0a" }}>{kickoffLabel}</span>
         </div>
       </div>
 
-      <div style={{ display: "flex", padding: "0 48px 56px" }}>
+      <div style={{ display: "flex", padding: "0 40px 8px" }}>
         <span
           style={{
             fontFamily: "General Sans",
-            fontSize: 130,
+            fontSize: 200,
             fontWeight: 700,
             fontStyle: "italic",
             color: YELLOW,
             lineHeight: 1,
-            letterSpacing: -3,
+            letterSpacing: -4,
             textTransform: "uppercase",
           }}
         >
