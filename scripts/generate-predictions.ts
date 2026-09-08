@@ -182,6 +182,8 @@ Corner-market methodology: weigh head-to-head history for these two specific tea
 
 Clean-sheet methodology: each headToHead entry includes the real final score from that past meeting — use it to gauge each side's defensive record against this specific opponent, not just their defensive record in general. If a team has shut the other out in most of the available meetings, treat that as a real signal regardless of current attacking form, since defensive struggles against a particular opponent's style/system tend to recur. Weigh current defensive form alongside it, and fall back to current form alone when head-to-head meetings are sparse or absent.
 
+Outcome/goals methodology: the same real final scores in headToHead that inform clean sheets also apply directly to "o" and "g" — don't rely on current form alone when real history between these two exact teams is available. If these two teams' meetings have consistently produced high or low combined goal counts, weigh that alongside current form for the over/under lines — head-to-head scoring patterns between specific opponents (playing styles, tactical matchups) tend to repeat more than league-average form would suggest. Likewise, if one side has a lopsided head-to-head record against this specific opponent regardless of that side's overall current form, weigh that for "o" too. Still fall back to current form and team quality when head-to-head meetings are sparse, absent, or contradict each other with no clear pattern.
+
 Output strictly valid JSON: an array of objects with exactly those keys, no additional keys, no trailing commentary.`;
 
 interface FixtureContext {

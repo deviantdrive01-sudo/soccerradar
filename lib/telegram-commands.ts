@@ -5,8 +5,12 @@ import { computeAccuracy, accuracyPct } from "@/lib/accuracy";
 import { gradePicks, tallyGraded } from "@/lib/booking-grading";
 import { isPredicted, type Prediction } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
+import { TOP_MARKET_CONFIGS, filterTopMarketPicks, type TopMarketSlug } from "@/lib/top-market-picks";
 
 const COMMAND_LIST = `/predictions - Today's top predictions
+/topover15 - Top Over 1.5 picks (55%+ confidence)
+/topover25 - Top Over 2.5 picks (45%+ confidence)
+/topcorners - Top Corners picks (50%+ confidence)
 /search <team> - Find a team's predictions
 /mybookings - Your bookings and how they're grading
 /stats - Site-wide prediction accuracy
@@ -120,6 +124,40 @@ async function sendPredictionsDigest(chatId: number): Promise<void> {
 
   await sendTelegramPhoto(chatId, TOP_PICKS_IMAGE_URL, "⚽ Today's Top Picks");
   await sendTelegramMessage(chatId, formatPredictionLines(predictions));
+}
+
+/** Same two-message pattern as sendPredictionsDigest, for one of the curated per-market categories (lib/top-market-picks.ts). */
+async function sendTopMarketDigest(chatId: number, slug: TopMarketSlug): Promise<void> {
+  const config = TOP_MARKET_CONFIGS[slug];
+  const supabase = createAdminSupabaseClient();
+  const now = new Date();
+  const dayAhead = new Date(now.getTime() + 24 * 3600 * 1000);
+
+  const [{ data: predictions }, { data: leagues }] = await Promise.all([
+    supabase
+      .from("predictions")
+      .select("*")
+      .not("markets", "is", null)
+      .gte("match_date", now.toISOString())
+      .lte("match_date", dayAhead.toISOString())
+      .limit(40),
+    supabase.from("leagues").select("id, name"),
+  ]);
+  const leagueById = new Map((leagues ?? []).map((l) => [l.id, l.name]));
+
+  const picks = filterTopMarketPicks((predictions ?? []) as Prediction[], leagueById, config);
+  if (picks.length === 0) {
+    await sendTelegramMessage(chatId, `No ${config.title} picks at ${config.minConfidence}%+ confidence right now — check back soon.`);
+    return;
+  }
+
+  const lines = picks
+    .slice(0, 8)
+    .map((p) => `${p.home_team} vs ${p.away_team} — ${p.label} (${p.confidence}%)\n${WEBSITE_URL}/match/${p.id}`)
+    .join("\n\n");
+
+  await sendTelegramPhoto(chatId, `${TOP_PICKS_IMAGE_URL}?market=${slug}`, `⚽ ${config.title}`);
+  await sendTelegramMessage(chatId, lines);
 }
 
 /** Strips characters that would break PostgREST's `.or()`/`.in()` filter syntax — same as app/api/search/route.ts. */
@@ -306,6 +344,15 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
       break;
     case "/predictions":
       await sendPredictionsDigest(chatId);
+      return;
+    case "/topover15":
+      await sendTopMarketDigest(chatId, "over15");
+      return;
+    case "/topover25":
+      await sendTopMarketDigest(chatId, "over25");
+      return;
+    case "/topcorners":
+      await sendTopMarketDigest(chatId, "corners");
       return;
     case "/search":
       reply = await handleSearch(arg);
