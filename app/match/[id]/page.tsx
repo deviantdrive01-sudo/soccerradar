@@ -172,6 +172,7 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
           <ShareButtons
             url={`${SITE_URL}/match/${prediction.id}`}
             title={`${prediction.home_team} vs ${prediction.away_team} prediction — SoccerRadar`}
+            imageUrl={`${SITE_URL}/match/${prediction.id}/match-day-image`}
           />
         </div>
       </div>
