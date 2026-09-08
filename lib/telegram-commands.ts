@@ -15,9 +15,9 @@ const GROUP_URL = "https://t.me/+H6oWa-TxFB8xZmM8";
 const COMMAND_LIST = `/predictions - Today's top predictions
 /topmarkets - See all curated market categories
 /search <team> - Find a team's predictions
-/mybookings - Your bookings and how they're grading
+/mymixes - Your mixes and how they're grading
 /stats - Site-wide prediction accuracy
-/leaderboard - Top public bookings
+/leaderboard - Top public mixes
 /faq - Common questions
 /website - Open the SoccerRadar website
 /group - Join the community discussion
@@ -39,14 +39,14 @@ A: AI-generated football predictions across outcome, goals, corners, clean sheet
 Q: How confident are the predictions?
 A: Each market gets its own confidence score, not one number for the whole match — see a match page on the site for the full breakdown.
 
-Q: What's a Booking?
-A: A custom slip — pick specific markets (like "Over 1.5 Goals") from different matches and combine them into one shareable list.
+Q: What's a Mix?
+A: A custom prediction list — pick specific markets (like "Over 1.5 Goals") from different matches and combine them into one shareable list.
 
 Q: Can I disagree with a prediction?
-A: Yes — when adding a pick to a Booking, you can choose a different outcome than SoccerRadar's own call.
+A: Yes — when adding a pick to a Mix, you can choose a different outcome than SoccerRadar's own call.
 
 Q: Is it free?
-A: Yes, no account needed to browse. An account lets you save bookings, collections, and link Telegram.
+A: Yes, no account needed to browse. An account lets you save mixes, collections, and link Telegram.
 
 Q: How accurate is it really?
 A: Every prediction is graded against the real result at ${WEBSITE_URL}/accuracy — nothing held back.
@@ -91,7 +91,7 @@ async function handleLink(chatId: number, code: string | null): Promise<string> 
 
   if (error) return "Something went wrong linking your account — please try again.";
 
-  return `✅ Linked to @${profile?.username ?? "your account"}! Try /mybookings or /stats.`;
+  return `✅ Linked to @${profile?.username ?? "your account"}! Try /mymixes or /stats.`;
 }
 
 export type PredictionSummary = Pick<Prediction, "id" | "home_team" | "away_team" | "markets" | "confidence">;
@@ -213,7 +213,7 @@ async function findLinkedUserId(chatId: number): Promise<string | null> {
   return data?.user_id ?? null;
 }
 
-async function handleMyBookings(chatId: number): Promise<string> {
+async function handleMyMixes(chatId: number): Promise<string> {
   const userId = await findLinkedUserId(chatId);
   if (!userId) return NOT_LINKED_MESSAGE;
 
@@ -224,7 +224,7 @@ async function handleMyBookings(chatId: number): Promise<string> {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (!bookings || bookings.length === 0) return "You don't have any bookings yet.";
+  if (!bookings || bookings.length === 0) return "You don't have any mixes yet.";
 
   const bookingIds = bookings.map((b) => b.id);
   const { data: items } = await supabase
@@ -247,7 +247,7 @@ async function handleMyBookings(chatId: number): Promise<string> {
     return `${b.title}${record}`;
   });
 
-  return `Your bookings:\n\n${lines.join("\n")}`;
+  return `Your mixes:\n\n${lines.join("\n")}`;
 }
 
 async function handleStats(): Promise<string> {
@@ -308,7 +308,7 @@ async function handleLeaderboard(): Promise<string> {
   const lines = ranked.map(
     (b, i) => `${i + 1}. ${b.title} (@${b.username}) — ${b.tally.correct}/${b.tally.settled} · ${accuracyPct(b.tally.correct, b.tally.settled)}%`,
   );
-  return `Top public bookings:\n\n${lines.join("\n")}\n\n${WEBSITE_URL}/top-bookings`;
+  return `Top public mixes:\n\n${lines.join("\n")}\n\n${WEBSITE_URL}/top-mixes`;
 }
 
 function welcomeText(names?: string[]): string {
@@ -383,8 +383,8 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
     case "/search":
       reply = await handleSearch(arg);
       break;
-    case "/mybookings":
-      reply = await handleMyBookings(chatId);
+    case "/mymixes":
+      reply = await handleMyMixes(chatId);
       break;
     case "/stats":
       reply = await handleStats();

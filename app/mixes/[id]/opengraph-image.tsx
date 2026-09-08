@@ -7,7 +7,7 @@ import { isPredicted } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
-export const alt = "SoccerRadar booking";
+export const alt = "SoccerRadar mix";
 export const size = SHARE_IMAGE_SIZE_LARGE;
 export const contentType = "image/png";
 
@@ -16,7 +16,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const numericId = parseIdFromParam(id);
 
   const supabase = createSupabaseReadClient();
-  let title = "Booking";
+  let title = "Mix";
   let ownerLabel = "a SoccerRadar user";
   let avatarUrl: string | null = null;
   let items: ShareImageItem[] = [];

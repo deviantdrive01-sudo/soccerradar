@@ -11,7 +11,7 @@ const MENU_ITEMS = [
   { href: "/account", label: "Overview" },
   { href: "/account/favorites", label: "My Favorites" },
   { href: "/account/collections", label: "My Collections" },
-  { href: "/account/bookings", label: "My Bookings" },
+  { href: "/account/mixes", label: "My Mixes" },
   { href: "/account/profile", label: "Profile Settings" },
 ];
 

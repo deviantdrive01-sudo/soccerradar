@@ -14,7 +14,7 @@ export default async function AdminBannerPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Banner</h1>
         <p className="text-sm text-muted-foreground">
-          The promo banner shown above the account section (Overview, Favorites, Collections, Bookings, Profile).
+          The promo banner shown above the account section (Overview, Favorites, Collections, Mixes, Profile).
           Upload separate crops for phone and desktop — each is shown only at its matching breakpoint.
         </p>
       </div>

@@ -76,7 +76,7 @@ export function BookingAddButton({
         ref={triggerRef}
         type="button"
         onClick={() => (open ? handleClose() : handleOpen())}
-        aria-label="Add a pick from this match to a booking"
+        aria-label="Add a pick from this match to a mix"
         className={cn(
           "inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-border/60 hover:bg-muted/60",
           className,
@@ -95,7 +95,7 @@ export function BookingAddButton({
               className="fixed z-50 w-64 rounded-md border border-border/60 bg-popover p-2 shadow-lg"
             >
               {!user ? (
-                <p className="p-2 text-[11px] text-muted-foreground">Log in to add picks to a booking.</p>
+                <p className="p-2 text-[11px] text-muted-foreground">Log in to add picks to a mix.</p>
               ) : selectedMarketKey === null ? (
                 <>
                   <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">Pick a market</p>
@@ -143,11 +143,11 @@ export function BookingAddButton({
                   </div>
                   {selectedValue !== null && selectedValue !== marketPredictionValue(markets, selectedMarketKey) && (
                     <p className="mb-1.5 px-1 text-[10px] text-muted-foreground">
-                      SoccerRadar predicts {marketPredictionLabel(markets, selectedMarketKey)} — you&apos;re booking against it.
+                      SoccerRadar predicts {marketPredictionLabel(markets, selectedMarketKey)} — you&apos;re going against it.
                     </p>
                   )}
 
-                  {bookings.length === 0 && <p className="px-1 pb-2 text-[11px] text-muted-foreground">No bookings yet.</p>}
+                  {bookings.length === 0 && <p className="px-1 pb-2 text-[11px] text-muted-foreground">No mixes yet.</p>}
                   <div className="max-h-40 space-y-0.5 overflow-y-auto">
                     {bookings.map((b) => (
                       <label
@@ -168,7 +168,7 @@ export function BookingAddButton({
                     <input
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="New booking"
+                      placeholder="New mix"
                       className="h-7 flex-1 rounded-md border border-border/60 bg-background px-2 text-[11px] outline-none"
                     />
                     <button

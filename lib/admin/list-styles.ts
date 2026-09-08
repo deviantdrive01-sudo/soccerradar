@@ -1,7 +1,7 @@
 /**
  * Shared layout classes for an admin list page's dual layout — stacked
  * cards under the `sm` breakpoint (640px), a table above it. Established by
- * /admin/bookings; every admin list page (bookings, matches, and whatever
+ * /admin/mixes; every admin list page (mixes, matches, and whatever
  * comes next) should build on these instead of re-typing the same classes.
  * Each page still owns its own columns/fields — only the surrounding
  * structure and status-pill styling are shared.

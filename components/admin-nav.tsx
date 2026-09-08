@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { href: "/admin/ads", label: "Ads" },
   { href: "/admin/banner", label: "Banner" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/bookings", label: "Bookings" },
+  { href: "/admin/mixes", label: "Mixes" },
 ];
 
 export function AdminNav() {

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/accuracy", label: "Track Record" },
-  { href: "/top-bookings", label: "Top Bookings" },
+  { href: "/top-mixes", label: "Top Mixes" },
 ] as const;
 
 /** Segmented pill-tab nav (desktop/tablet only — see MobileNavDrawer for the phone equivalent). */

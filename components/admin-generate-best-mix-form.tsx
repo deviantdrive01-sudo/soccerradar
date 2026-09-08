@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { generateBestMixAction } from "@/app/admin/(authed)/bookings/actions";
+import { generateBestMixAction } from "@/app/admin/(authed)/mixes/actions";
 
 const FIELD = "h-8 w-full rounded-md border border-border/60 bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
 const LABEL = "mb-1 block text-xs font-medium text-muted-foreground";
@@ -43,7 +43,7 @@ export function AdminGenerateBestMixForm({ leagues }: { leagues: LeagueOption[] 
         setResult(
           booking
             ? `Created: ${booking.title} (${booking.pickCount} pick${booking.pickCount === 1 ? "" : "s"}, ${outcome.totalQualifyingMatches} qualified)`
-            : "No booking created.",
+            : "No mix created.",
         );
         router.refresh();
       }

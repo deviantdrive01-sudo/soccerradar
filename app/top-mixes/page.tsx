@@ -11,9 +11,9 @@ import type { Prediction } from "@/lib/supabase/types";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Top Bookings",
-  description: `Public bookings from SoccerRadar users, graded against our public, verifiable track record. ${SITE_TAGLINE}`,
-  alternates: { canonical: "/top-bookings" },
+  title: "Top Mixes",
+  description: `Public mixes from SoccerRadar users, graded against our public, verifiable track record. ${SITE_TAGLINE}`,
+  alternates: { canonical: "/top-mixes" },
 };
 
 async function getTopBookings(): Promise<TopBookingEntry[]> {
@@ -72,7 +72,7 @@ async function getTopBookings(): Promise<TopBookingEntry[]> {
       ownerLabel: username ?? "a SoccerRadar user",
       ownerUsername: username,
       ownerAvatarUrl,
-      shareUrl: `/bookings/${buildShareSlug(booking.id, username)}`,
+      shareUrl: `/mixes/${buildShareSlug(booking.id, username)}`,
       pickCount: picks.length,
       settled,
       correct,
@@ -87,13 +87,13 @@ export default async function TopBookingsPage() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Top Bookings</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Top Mixes</h1>
         <p className="text-sm text-muted-foreground">
-          Bookings SoccerRadar users have chosen to make public — graded pick by pick against our public{" "}
+          Mixes SoccerRadar users have chosen to make public — graded pick by pick against our public{" "}
           <a href={`${SITE_URL}/accuracy`} className="underline hover:text-foreground">
             Track Record
           </a>
-          . No cherry-picking, nothing held back. A Booking is a personal prediction list, not a real wager — see our{" "}
+          . No cherry-picking, nothing held back. A Mix is a personal prediction list, not a real wager — see our{" "}
           <a href={`${SITE_URL}/terms`} className="underline hover:text-foreground">
             Terms
           </a>
@@ -103,7 +103,7 @@ export default async function TopBookingsPage() {
 
       {entries.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground">
-          No public bookings yet — publish one from My Bookings to be featured here.
+          No public mixes yet — publish one from My Mixes to be featured here.
         </div>
       ) : (
         <TopBookingsList entries={entries} />

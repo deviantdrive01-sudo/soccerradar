@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useRouter } from "next/navigation";
 import { toggleFavoriteCountry, toggleFavoriteLeague, toggleFavoriteMatch } from "@/app/account/favorites/actions";
 import { createCollection as createCollectionAction, toggleCollectionItem as toggleCollectionItemAction } from "@/app/account/collections/actions";
-import { createBooking as createBookingAction, toggleBookingItem as toggleBookingItemAction } from "@/app/account/bookings/actions";
+import { createBooking as createBookingAction, toggleBookingItem as toggleBookingItemAction } from "@/app/account/mixes/actions";
 import type { MarketKey } from "@/lib/hydrate";
 import type { ProfileRole } from "@/lib/supabase/types";
 

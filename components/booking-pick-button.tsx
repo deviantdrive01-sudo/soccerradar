@@ -81,7 +81,7 @@ export function BookingPickButton({
               className="fixed z-50 w-56 rounded-md border border-border/60 bg-popover p-2 shadow-lg"
             >
               {!user ? (
-                <p className="p-2 text-xs text-muted-foreground">Log in to add picks to a booking.</p>
+                <p className="p-2 text-xs text-muted-foreground">Log in to add picks to a mix.</p>
               ) : (
                 <>
                   <div className="mb-1.5 flex flex-wrap gap-1">
@@ -103,11 +103,11 @@ export function BookingPickButton({
                   </div>
                   {selectedValue !== null && selectedValue !== defaultValue && (
                     <p className="mb-1.5 px-1 text-[10px] text-muted-foreground">
-                      SoccerRadar predicts {marketPredictionLabel(markets, marketKey)} — you&apos;re booking against it.
+                      SoccerRadar predicts {marketPredictionLabel(markets, marketKey)} — you&apos;re going against it.
                     </p>
                   )}
 
-                  {bookings.length === 0 && <p className="px-1 pb-2 text-xs text-muted-foreground">No bookings yet.</p>}
+                  {bookings.length === 0 && <p className="px-1 pb-2 text-xs text-muted-foreground">No mixes yet.</p>}
                   <div className="max-h-40 space-y-0.5 overflow-y-auto">
                     {bookings.map((b) => (
                       <label
@@ -128,7 +128,7 @@ export function BookingPickButton({
                     <input
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="New booking"
+                      placeholder="New mix"
                       className="h-7 flex-1 rounded-md border border-border/60 bg-background px-2 text-xs outline-none"
                     />
                     <button

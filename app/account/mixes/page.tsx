@@ -58,24 +58,24 @@ export default async function BookingsPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Bookings</h1>
+        <h1 className="text-2xl font-bold tracking-tight">My Mixes</h1>
         <p className="text-sm text-muted-foreground">
           Pick a specific market from any match — not the whole prediction — and mix picks from different matches
           into one shareable list for tracking, not a real wager. Experimental, separate from Collections.
         </p>
       </div>
 
-      <AccountCreateForm action={createBooking} placeholder="New booking name" />
+      <AccountCreateForm action={createBooking} placeholder="New mix name" />
 
       {(bookings ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No bookings yet — create one above.</p>
+        <p className="text-sm text-muted-foreground">No mixes yet — create one above.</p>
       ) : (
         <div className="divide-y divide-border/60 rounded-md border border-border/60">
           {(bookings ?? []).map((b) => {
             const winRate = winRateByBooking.get(b.id);
             return (
               <div key={b.id} className="flex items-center justify-between gap-2 px-3 py-2.5">
-                <Link href={`/bookings/${b.id}`} className="min-w-0 flex-1">
+                <Link href={`/mixes/${b.id}`} className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium hover:text-primary hover:underline">{b.title}</div>
                   <div className="text-xs text-muted-foreground">
                     {itemCountByBooking.get(b.id) ?? 0} pick{itemCountByBooking.get(b.id) === 1 ? "" : "s"}

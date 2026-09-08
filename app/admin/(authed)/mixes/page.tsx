@@ -95,10 +95,10 @@ export default async function AdminBookingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Bookings</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Mixes</h1>
         <p className="text-sm text-muted-foreground">
-          {(bookings ?? []).length} booking{(bookings ?? []).length === 1 ? "" : "s"} · {publicCount} public on the
-          Top Bookings directory. Force a booking private to pull it from the directory immediately (reversible —
+          {(bookings ?? []).length} mix{(bookings ?? []).length === 1 ? "" : "es"} · {publicCount} public on the
+          Top Mixes directory. Force a mix private to pull it from the directory immediately (reversible —
           the owner can republish it), or delete it entirely
           {!isSuperAdmin && " (super admin only)"}.
         </p>
@@ -108,7 +108,7 @@ export default async function AdminBookingsPage() {
         <p className="mb-3 text-sm text-muted-foreground">
           Scans today&apos;s predicted matches for the single best market per match (FT Draw excluded), one pick per
           match, ranked by confidence — set your own thresholds below. Publishes the top result as a single public
-          booking; extras beyond your game count are dropped, not split into a second booking. Safe to run again
+          mix; extras beyond your game count are dropped, not split into a second mix. Safe to run again
           later the same day as more matches get predicted.
         </p>
         <AdminGenerateBestMixForm leagues={leagueOptions} />
@@ -124,7 +124,7 @@ export default async function AdminBookingsPage() {
             <div key={booking.id} className={ADMIN_CARD}>
               <div className="flex items-start justify-between gap-2">
                 <Link
-                  href={`/bookings/${buildShareSlug(booking.id, username)}`}
+                  href={`/mixes/${buildShareSlug(booking.id, username)}`}
                   target="_blank"
                   className="min-w-0 truncate font-medium hover:text-primary hover:underline"
                 >
@@ -185,7 +185,7 @@ export default async function AdminBookingsPage() {
         <table className={cn(ADMIN_TABLE, "min-w-[820px]")}>
           <thead>
             <tr className={ADMIN_HEADER_ROW}>
-              <th className={ADMIN_TH_LEFT}>Booking</th>
+              <th className={ADMIN_TH_LEFT}>Mix</th>
               <th className={ADMIN_TH_LEFT}>Owner</th>
               <th className={cn(ADMIN_TH, "text-center")}>Win Rate</th>
               <th className={cn(ADMIN_TH, "text-center")}>Picks</th>
@@ -203,7 +203,7 @@ export default async function AdminBookingsPage() {
                 <tr key={booking.id} className={ADMIN_ROW_BORDER}>
                   <td className={ADMIN_TD}>
                     <Link
-                      href={`/bookings/${buildShareSlug(booking.id, username)}`}
+                      href={`/mixes/${buildShareSlug(booking.id, username)}`}
                       target="_blank"
                       className="font-medium hover:text-primary hover:underline"
                     >

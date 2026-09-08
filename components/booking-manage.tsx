@@ -7,7 +7,7 @@ import { X, CheckCircle2, XCircle } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import { useAccount } from "@/components/account-provider";
 import { ShareButtons } from "@/components/share-buttons";
-import { renameBooking, deleteBooking, toggleBookingItem, setBookingVisibility } from "@/app/account/bookings/actions";
+import { renameBooking, deleteBooking, toggleBookingItem, setBookingVisibility } from "@/app/account/mixes/actions";
 import { marketPredictionLabel, marketPredictionValue, marketValueLabel, MARKET_LABELS } from "@/lib/hydrate";
 import { gradePicks, tallyGraded } from "@/lib/booking-grading";
 import { accuracyPct, pctClass } from "@/lib/accuracy";
@@ -82,9 +82,9 @@ export function BookingManage({
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this booking? This can't be undone.")) return;
+    if (!confirm("Delete this mix? This can't be undone.")) return;
     await deleteBooking(bookingId);
-    router.push("/account/bookings");
+    router.push("/account/mixes");
   }
 
   async function handleRename() {
@@ -97,7 +97,7 @@ export function BookingManage({
   return (
     <div className="space-y-4">
       {isOwner ? (
-        <BackLink fallbackHref="/account/bookings" fallbackLabel="My Bookings" />
+        <BackLink fallbackHref="/account/mixes" fallbackLabel="My Mixes" />
       ) : (
         <BackLink fallbackHref="/" fallbackLabel="All predictions" />
       )}
@@ -153,7 +153,7 @@ export function BookingManage({
                   ? "bg-primary/15 text-primary hover:bg-primary/25"
                   : "border border-border/60 hover:bg-muted",
               )}
-              title={isPublic ? "Listed on Top Bookings — click to make private" : "Not listed on Top Bookings — click to publish"}
+              title={isPublic ? "Listed on Top Mixes — click to make private" : "Not listed on Top Mixes — click to publish"}
             >
               {isPublic ? "Make Private" : "Publish to Public"}
             </button>
@@ -179,7 +179,7 @@ export function BookingManage({
           <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1">
             <ShareButtons
               url={shareUrl}
-              title={`${title} — a SoccerRadar booking by ${ownerLabel}`}
+              title={`${title} — a SoccerRadar mix by ${ownerLabel}`}
               imageUrl={`${shareUrl}/opengraph-image`}
             />
           </div>
@@ -187,7 +187,7 @@ export function BookingManage({
       </div>
 
       {items.length === 0 ? (
-        <div className="py-16 text-center text-sm text-muted-foreground">No picks in this booking.</div>
+        <div className="py-16 text-center text-sm text-muted-foreground">No picks in this mix.</div>
       ) : (
         <div className="divide-y divide-border/60 rounded-md border border-border/60">
           {items.map(({ prediction, marketKey, userValue }) => {

@@ -31,10 +31,10 @@ export interface ScheduledBroadcastResult {
 /** Display metadata for /admin/telegram — the scheduled time is informational only (the real schedule lives in .github/workflows/telegram-broadcasts.yml + vercel.json), kept here so the admin page has one place to read it from. */
 export const SCHEDULED_BROADCAST_INFO: Record<ScheduledBroadcastType, { label: string; scheduledTime: string }> = {
   general: { label: "General Top Picks", scheduledTime: "08:00 UTC" },
-  "top-bookings-1": { label: "Top Booking #1", scheduledTime: "08:30 UTC" },
-  "top-bookings-2": { label: "Top Booking #2", scheduledTime: "09:00 UTC" },
-  "top-bookings-3": { label: "Top Booking #3", scheduledTime: "09:30 UTC" },
-  banger: { label: "Today's Banger", scheduledTime: "10:00 UTC" },
+  "top-bookings-1": { label: "Top Mix #1", scheduledTime: "08:30 UTC" },
+  "top-bookings-2": { label: "Top Mix #2", scheduledTime: "09:00 UTC" },
+  "top-bookings-3": { label: "Top Mix #3", scheduledTime: "09:30 UTC" },
+  banger: { label: "Today's Mix", scheduledTime: "10:00 UTC" },
   corners: { label: "Today's Corners", scheduledTime: "10:30 UTC" },
   over15: { label: "Today's Over 1.5", scheduledTime: "11:00 UTC" },
   international: { label: "International (Champions League)", scheduledTime: "11:30 UTC" },
@@ -217,8 +217,8 @@ async function broadcastTopBooking(supabase: AdminClient, category: "top-booking
   if (!picked) return { posted: 0, reason: "no eligible bookings (need a public booking that's at least 70% unplayed)" };
 
   const slug = buildShareSlug(picked.id, picked.username);
-  await sendTelegramPhoto(channelId(), `${SITE_URL}/bookings/${picked.id}/opengraph-image`, "🏆 Top Booking");
-  await sendTelegramMessage(channelId(), `${picked.title}\n${SITE_URL}/bookings/${slug}`);
+  await sendTelegramPhoto(channelId(), `${SITE_URL}/mixes/${picked.id}/opengraph-image`, "🏆 Top Mix");
+  await sendTelegramMessage(channelId(), `${picked.title}\n${SITE_URL}/mixes/${slug}`);
   await logBroadcast(supabase, category, String(picked.id));
   return { posted: 1 };
 }
@@ -236,8 +236,8 @@ async function broadcastBanger(supabase: AdminClient): Promise<ScheduledBroadcas
   const booking = result.bookings[0];
   if (!booking) return { posted: 0, reason: "no booking created" };
 
-  await sendTelegramPhoto(channelId(), `${SITE_URL}/bookings/${booking.bookingId}/opengraph-image`, "🔥 Today's Banger");
-  await sendTelegramMessage(channelId(), `${booking.title}\n${SITE_URL}/bookings/${booking.bookingId}`);
+  await sendTelegramPhoto(channelId(), `${SITE_URL}/mixes/${booking.bookingId}/opengraph-image`, "🔥 Today's Mix");
+  await sendTelegramMessage(channelId(), `${booking.title}\n${SITE_URL}/mixes/${booking.bookingId}`);
   await logBroadcast(supabase, "banger", String(booking.bookingId));
   return { posted: 1 };
 }

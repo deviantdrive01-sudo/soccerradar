@@ -14,7 +14,7 @@ const LINK_CLASS = "inline-flex items-center gap-1.5 text-sm font-medium text-mu
 
 /**
  * A "back" link that actually goes back to wherever the user came from
- * (Top Bookings, search, My Bookings, anywhere) instead of a guessed fixed
+ * (Top Mixes, search, My Mixes, anywhere) instead of a guessed fixed
  * destination. Falls back to fallbackHref/fallbackLabel for a direct visit
  * with no in-app history to return to, so it's never a dead end.
  */

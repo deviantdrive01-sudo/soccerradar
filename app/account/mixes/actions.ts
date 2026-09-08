@@ -21,7 +21,7 @@ export async function createBooking(title: string): Promise<{ id: number }> {
 
   if (error || !data) throw new Error(error?.message ?? "Could not create booking");
 
-  revalidatePath("/account/bookings");
+  revalidatePath("/account/mixes");
   return { id: data.id };
 }
 
@@ -35,8 +35,8 @@ export async function renameBooking(id: number, title: string): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.from("bookings").update({ title: trimmed }).eq("id", id).eq("user_id", user.userId);
 
-  revalidatePath("/account/bookings");
-  revalidatePath(`/bookings/${id}`);
+  revalidatePath("/account/mixes");
+  revalidatePath(`/mixes/${id}`);
 }
 
 export async function deleteBooking(id: number): Promise<void> {
@@ -46,8 +46,8 @@ export async function deleteBooking(id: number): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.from("bookings").delete().eq("id", id).eq("user_id", user.userId);
 
-  revalidatePath("/account/bookings");
-  revalidatePath(`/bookings/${id}`);
+  revalidatePath("/account/mixes");
+  revalidatePath(`/mixes/${id}`);
 }
 
 export async function setBookingVisibility(id: number, isPublic: boolean): Promise<void> {
@@ -71,9 +71,9 @@ export async function setBookingVisibility(id: number, isPublic: boolean): Promi
     .eq("id", id)
     .eq("user_id", user.userId);
 
-  revalidatePath("/account/bookings");
-  revalidatePath(`/bookings/${id}`);
-  revalidatePath("/top-bookings");
+  revalidatePath("/account/mixes");
+  revalidatePath(`/mixes/${id}`);
+  revalidatePath("/top-mixes");
 }
 
 export async function toggleBookingItem(
@@ -97,13 +97,13 @@ export async function toggleBookingItem(
 
   if (existing) {
     await supabase.from("booking_items").delete().eq("id", existing.id);
-    revalidatePath(`/bookings/${bookingId}`);
+    revalidatePath(`/mixes/${bookingId}`);
     return { added: false };
   }
 
   await supabase
     .from("booking_items")
     .insert({ booking_id: bookingId, prediction_id: predictionId, market_key: marketKey, user_value: userValue ?? null });
-  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath(`/mixes/${bookingId}`);
   return { added: true };
 }

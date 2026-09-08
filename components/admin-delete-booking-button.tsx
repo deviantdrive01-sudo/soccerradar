@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteBookingAdmin } from "@/app/admin/(authed)/bookings/actions";
+import { deleteBookingAdmin } from "@/app/admin/(authed)/mixes/actions";
 
 export function AdminDeleteBookingButton({ bookingId, label }: { bookingId: number; label: string }) {
   const [pending, setPending] = useState(false);

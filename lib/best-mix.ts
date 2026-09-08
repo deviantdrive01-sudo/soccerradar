@@ -12,7 +12,7 @@ const SYSTEM_USERNAME = "SoccerRadarOfficial";
 const SYSTEM_EMAIL = "official+bestmix@socceradar.site";
 
 const BEST_MIX_DEFAULTS = { minConfidence: 68, picksPerBooking: 7, titlePrefix: "Best Mix" };
-const BANGER_DEFAULTS = { minConfidence: 60, picksPerBooking: 6, titlePrefix: "Today's Banger" };
+const BANGER_DEFAULTS = { minConfidence: 60, picksPerBooking: 6, titlePrefix: "Today's Mix" };
 
 /** Admin-supplied overrides for a manual Best Mix generation — every field optional, falling back to BEST_MIX_DEFAULTS. */
 export interface GenerateBestMixParams {
@@ -147,7 +147,7 @@ async function generateAutoBooking(
   return { bookings: [{ bookingId: booking.id, title, pickCount: picks.length }], totalQualifyingMatches: qualifying.length };
 }
 
-/** The admin-triggered Best Mix generator — 68%+/7 picks by default, but every field is overridable from the /admin/bookings form (confidence, pick count, title, preferred leagues). */
+/** The admin-triggered Best Mix generator — 68%+/7 picks by default, but every field is overridable from the /admin/mixes form (confidence, pick count, title, preferred leagues). */
 export async function generateBestMix(params: GenerateBestMixParams = {}): Promise<GenerateBestMixResult | { error: string }> {
   return generateAutoBooking(BEST_MIX_DEFAULTS, params);
 }

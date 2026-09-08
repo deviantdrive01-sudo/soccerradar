@@ -1,6 +1,6 @@
 /**
- * Lets a share permalink read as `/bookings/42-johndoe` instead of just
- * `/bookings/42` — the numeric id stays the authoritative lookup key (Next's
+ * Lets a share permalink read as `/mixes/42-johndoe` instead of just
+ * `/mixes/42` — the numeric id stays the authoritative lookup key (Next's
  * `parseInt` naturally stops at the first non-digit character, so the
  * username suffix is purely cosmetic and old bare-id links keep working
  * unchanged), while the owner's name becomes visible in the URL itself.

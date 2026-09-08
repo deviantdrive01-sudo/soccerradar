@@ -14,7 +14,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: "bottom-nav",
     title: "Get around in one tap",
-    body: "Today's Pick opens quick-filter shortcuts, and Top Bookings and Collections are one tap away — More holds My Bookings, Track Record, and the tour.",
+    body: "Today's Pick opens quick-filter shortcuts, and Top Mixes and Collections are one tap away — More holds My Mixes, Track Record, and the tour.",
   },
   {
     target: "league-sidebar",
@@ -48,8 +48,8 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     target: "booking-button",
-    title: "Add to a Booking",
-    body: "Pick a specific market from this match (like \"Over 1.5\") and add just that pick to a Booking — a custom slip that can mix picks from different matches.",
+    title: "Add to a Mix",
+    body: "Pick a specific market from this match (like \"Over 1.5\") and add just that pick to a Mix — a custom list that combines picks from different matches.",
   },
   {
     target: "track-record",
@@ -59,6 +59,6 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: "account",
     title: "Make it yours",
-    body: "Sign up to save favorite teams and build shareable Collections and Bookings.",
+    body: "Sign up to save favorite teams and build shareable Collections and Mixes.",
   },
 ];

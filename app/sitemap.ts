@@ -46,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const bookingRoutes: MetadataRoute.Sitemap = (bookings ?? []).map((b) => ({
-    url: `${SITE_URL}/bookings/${b.id}`,
+    url: `${SITE_URL}/mixes/${b.id}`,
     lastModified: b.updated_at,
     changeFrequency: "weekly",
     priority: 0.4,

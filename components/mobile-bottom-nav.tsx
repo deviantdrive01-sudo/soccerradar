@@ -30,14 +30,14 @@ type OpenPanel = "todaysPick" | "more" | null;
 /**
  * Site-wide phone tab bar — replaces the old hamburger drawer entirely. The
  * header still keeps its own avatar/community/theme controls. Today's Pick
- * opens the quick-filter shortcuts; Top Bookings and Collections are direct
- * links; More holds everything else (My Bookings, Track Record, the tour).
+ * opens the quick-filter shortcuts; Top Mixes and Collections are direct
+ * links; More holds everything else (My Mixes, Track Record, the tour).
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
 
-  const topBookingsActive = pathname.startsWith("/top-bookings");
+  const topMixesActive = pathname.startsWith("/top-mixes");
   const collectionsActive = pathname.startsWith("/account/collections");
 
   function togglePanel(panel: OpenPanel) {
@@ -74,9 +74,9 @@ export function MobileBottomNav() {
           {openPanel === "more" && (
             <div className={PANEL_CLASS}>
               <nav className="flex flex-col">
-                <Link href="/account/bookings" onClick={() => setOpenPanel(null)} className={PANEL_ROW_CLASS}>
+                <Link href="/account/mixes" onClick={() => setOpenPanel(null)} className={PANEL_ROW_CLASS}>
                   <BookingsIcon className="size-4 shrink-0" />
-                  My Bookings
+                  My Mixes
                 </Link>
                 <Link href="/accuracy" onClick={() => setOpenPanel(null)} className={PANEL_ROW_CLASS}>
                   <BarChart3 className="size-4 shrink-0" />
@@ -114,11 +114,11 @@ export function MobileBottomNav() {
           </span>
         </button>
 
-        <Link href="/top-bookings" className={TAB_CLASS} aria-label="Top Bookings" aria-current={topBookingsActive ? "page" : undefined}>
+        <Link href="/top-mixes" className={TAB_CLASS} aria-label="Top Mixes" aria-current={topMixesActive ? "page" : undefined}>
           <span
             className={cn(
               "flex size-8 items-center justify-center rounded-full",
-              topBookingsActive ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+              topMixesActive ? "bg-primary text-primary-foreground" : "text-muted-foreground",
             )}
           >
             <BookingsIcon className="size-4" />

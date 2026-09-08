@@ -56,17 +56,17 @@ async function getBookingData(id: number) {
   };
 }
 
-export async function generateMetadata({ params }: PageProps<"/bookings/[id]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/mixes/[id]">): Promise<Metadata> {
   const { id } = await params;
   const numericId = parseIdFromParam(id);
-  if (numericId === null) return { title: "Booking not found" };
+  if (numericId === null) return { title: "Mix not found" };
 
   const data = await getBookingData(numericId);
-  if (!data) return { title: "Booking not found" };
+  if (!data) return { title: "Mix not found" };
 
-  const title = `${data.booking.title} — a booking by ${data.ownerLabel}`;
+  const title = `${data.booking.title} — a mix by ${data.ownerLabel}`;
   const description = `${data.picks.length} pick(s) chosen by ${data.ownerLabel} on SoccerRadar.`;
-  const url = `${SITE_URL}/bookings/${buildShareSlug(numericId, data.ownerUsername)}`;
+  const url = `${SITE_URL}/mixes/${buildShareSlug(numericId, data.ownerUsername)}`;
 
   return {
     title,
@@ -78,7 +78,7 @@ export async function generateMetadata({ params }: PageProps<"/bookings/[id]">):
   };
 }
 
-export default async function BookingPage({ params }: PageProps<"/bookings/[id]">) {
+export default async function BookingPage({ params }: PageProps<"/mixes/[id]">) {
   const { id } = await params;
   const numericId = parseIdFromParam(id);
   if (numericId === null) notFound();
@@ -97,7 +97,7 @@ export default async function BookingPage({ params }: PageProps<"/bookings/[id]"
         initialIsPublic={booking.is_public}
         picks={picks}
         leagueById={leagueById}
-        shareUrl={`${SITE_URL}/bookings/${buildShareSlug(booking.id, ownerUsername)}`}
+        shareUrl={`${SITE_URL}/mixes/${buildShareSlug(booking.id, ownerUsername)}`}
       />
     </main>
   );

@@ -18,8 +18,8 @@ export async function forceBookingPrivate(formData: FormData): Promise<void> {
   const supabase = createAdminSupabaseClient();
   await supabase.from("bookings").update({ is_public: false }).eq("id", bookingId);
 
-  revalidatePath("/admin/bookings");
-  revalidatePath("/top-bookings");
+  revalidatePath("/admin/mixes");
+  revalidatePath("/top-mixes");
 }
 
 /** Permanently deleting a booking (and its picks) is super_admin only. */
@@ -30,16 +30,16 @@ export async function deleteBookingAdmin(bookingId: number): Promise<void> {
   const supabase = createAdminSupabaseClient();
   await supabase.from("bookings").delete().eq("id", bookingId);
 
-  revalidatePath("/admin/bookings");
-  revalidatePath("/top-bookings");
+  revalidatePath("/admin/mixes");
+  revalidatePath("/top-mixes");
 }
 
 export async function generateBestMixAction(params: GenerateBestMixParams): Promise<GenerateBestMixResult | { error: string }> {
   await verifySession();
   const result = await generateBestMix(params);
 
-  revalidatePath("/admin/bookings");
-  revalidatePath("/top-bookings");
+  revalidatePath("/admin/mixes");
+  revalidatePath("/top-mixes");
 
   return result;
 }

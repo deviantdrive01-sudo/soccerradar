@@ -111,7 +111,7 @@ export default async function AdminUsersPage() {
                   {collectionCountByUser.get(u.id) ?? 0}
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Bookings</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Mixes</div>
                   {bookingCountByUser.get(u.id) ?? 0}
                 </div>
               </div>
@@ -173,7 +173,7 @@ export default async function AdminUsersPage() {
               <th className="p-2 font-medium">Joined</th>
               <th className="p-2 font-medium text-center">Favorites</th>
               <th className="p-2 font-medium text-center">Collections</th>
-              <th className="p-2 font-medium text-center">Bookings</th>
+              <th className="p-2 font-medium text-center">Mixes</th>
               <th className="p-2 font-medium text-center">Status</th>
               <th className="p-2 font-medium text-right">Actions</th>
             </tr>

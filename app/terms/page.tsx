@@ -63,15 +63,15 @@ export default function TermsOfUsePage() {
         </p>
       </Section>
 
-      <Section title="Bookings and public content">
+      <Section title="Mixes and public content">
         <p>
-          A &ldquo;Booking&rdquo; is a personal list of picks you assemble from our predictions, purely for tracking and
-          sharing — not a real wager, and no money changes hands through it. If you choose to make a Booking or
+          A &ldquo;Mix&rdquo; is a personal list of picks you assemble from our predictions, purely for tracking and
+          sharing — not a real wager, and no money changes hands through it. If you choose to make a Mix or
           Collection public, its title, picks, and your username become visible to other visitors and may appear in
-          site features like the Top Bookings leaderboard.
+          site features like the Top Mixes leaderboard.
         </p>
         <p>
-          Don&apos;t use public content (booking titles, usernames, comments where applicable) for anything abusive,
+          Don&apos;t use public content (mix titles, usernames, comments where applicable) for anything abusive,
           illegal, or misleading. We may remove public content or restrict an account that violates this without
           notice.
         </p>
