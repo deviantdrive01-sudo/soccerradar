@@ -38,11 +38,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     getTeamCrestDataUri(prediction.away_team),
   ]);
 
-  const kickoffLabel = new Date(prediction.match_date).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone,
-  });
+  const kickoff = new Date(prediction.match_date);
+  const dateLabel = kickoff.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone });
+  const timeLabel = kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone });
+  const kickoffLabel = `${dateLabel}, ${timeLabel}`;
 
   return new ImageResponse(
     (

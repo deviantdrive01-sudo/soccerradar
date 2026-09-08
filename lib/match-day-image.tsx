@@ -81,17 +81,18 @@ export function MatchDayImageTemplate({
         </div>
       </div>
 
-      <div style={{ display: "flex", padding: "0 40px 8px" }}>
+      <div style={{ display: "flex", justifyContent: "center", padding: "0 16px 8px" }}>
         <span
           style={{
             fontFamily: "General Sans",
-            fontSize: 200,
+            fontSize: 230,
             fontWeight: 700,
             fontStyle: "italic",
             color: YELLOW,
             lineHeight: 1,
-            letterSpacing: -4,
+            letterSpacing: -6,
             textTransform: "uppercase",
+            textAlign: "center",
           }}
         >
           Match Day
