@@ -68,6 +68,10 @@ export const LEAGUE_SOURCES: LeagueSource[] = [
   { leagueId: 36, leagueName: "Allsvenskan", slug: "sweden/allsvenskan" },
   { leagueId: 37, leagueName: "Challenge League", slug: "switzerland/challenge-league" },
   { leagueId: 38, leagueName: "Champions League", slug: "europe/champions-league" },
+  { leagueId: 41, leagueName: "Veikkausliiga", slug: "finland/veikkausliiga" },
+  { leagueId: 42, leagueName: "EFL Cup", slug: "england/efl-cup" },
+  { leagueId: 43, leagueName: "FA Cup", slug: "england/fa-cup" },
+  { leagueId: 44, leagueName: "Championship", slug: "england/championship" },
 
   // --- Dropped by the user, not yet added to the `leagues` table ---
   // { leagueName: "Cymru Premier (Wales)", slug: "wales/cymru-premier" },
@@ -75,7 +79,6 @@ export const LEAGUE_SOURCES: LeagueSource[] = [
   // { leagueName: "Cymru North (Wales)", slug: "wales/cymru-north" },
   // { leagueName: "La Liga 2 (Spain)", slug: "spain/laliga2" },
   // { leagueName: "Ligue 2 (France)", slug: "france/ligue-2" },
-  // { leagueName: "Championship (England)", slug: "england/championship" },
   // { leagueName: "League One (England)", slug: "england/league-one" },
   // { leagueName: "League Two (England)", slug: "england/league-two" },
   // { leagueName: "Egypt Premier League", slug: "egypt/premier-league" },
