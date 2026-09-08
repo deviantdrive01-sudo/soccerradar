@@ -10,10 +10,9 @@ import { MatchCard } from "@/components/match-card";
 import { PredictionsTable } from "@/components/predictions-table";
 import { ShareButtons } from "@/components/share-buttons";
 import { renameCollection, deleteCollection, toggleCollectionItem } from "@/app/account/collections/actions";
+import { useStoredViewMode, setStoredViewMode } from "@/lib/use-stored-view-mode";
 import { cn } from "cn";
 import type { Prediction } from "@/lib/supabase/types";
-
-type ViewMode = "cards" | "table";
 
 export function CollectionManage({
   collectionId,
@@ -36,8 +35,12 @@ export function CollectionManage({
   const router = useRouter();
   const isOwner = user?.userId === ownerId;
 
-  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
-  const viewMode = viewModeOverride ?? "table";
+  // This view has no mobile-specific default (always table unless overridden),
+  // so it shares the same "desktop" storage bucket the main dashboard uses —
+  // a card/table preference set on one page applies consistently everywhere.
+  const storedViewMode = useStoredViewMode(false);
+  const viewMode = storedViewMode ?? "table";
+  const setViewModeOverride = (v: "cards" | "table") => setStoredViewMode(false, v);
 
   const [items, setItems] = useState(predictions);
   const [title, setTitle] = useState(initialTitle);

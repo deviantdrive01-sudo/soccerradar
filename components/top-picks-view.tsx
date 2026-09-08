@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/components/match-card";
 import { PredictionsTable } from "@/components/predictions-table";
@@ -10,13 +10,13 @@ import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingPickButton } from "@/components/booking-pick-button";
 import { AdSlot } from "@/components/ad-slot";
 import { useIsMobile } from "@/lib/use-is-mobile";
+import { useStoredViewMode, setStoredViewMode } from "@/lib/use-stored-view-mode";
 import { cn } from "cn";
 import type { MarketFilter } from "@/components/market-filter";
 import type { MarketKey } from "@/lib/hydrate";
 import { isPredicted } from "@/lib/supabase/types";
 import type { Prediction } from "@/lib/supabase/types";
 
-type ViewMode = "cards" | "table";
 const CARD_AD_INTERVAL = 6; // these collections run shorter than the full dashboard list
 const MAX_CARD_ADS = 1;
 
@@ -36,9 +36,10 @@ export function TopPicksView({
   shareUrl: string;
   shareTitle: string;
 }) {
-  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
   const isMobile = useIsMobile();
-  const viewMode = viewModeOverride ?? (isMobile ? "cards" : "table");
+  const storedViewMode = useStoredViewMode(isMobile);
+  const viewMode = storedViewMode ?? (isMobile ? "cards" : "table");
+  const setViewModeOverride = (v: "cards" | "table") => setStoredViewMode(isMobile, v);
 
   const toolbar = (
     <div className="flex flex-wrap items-center justify-between gap-3">

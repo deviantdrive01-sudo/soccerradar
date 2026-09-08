@@ -20,6 +20,7 @@ import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingAddButton } from "@/components/booking-add-button";
 import { useAccount } from "@/components/account-provider";
 import { useIsMobile } from "@/lib/use-is-mobile";
+import { useStoredViewMode, setStoredViewMode, type ViewMode } from "@/lib/use-stored-view-mode";
 import { X } from "lucide-react";
 import { DraggableLeagueFab } from "@/components/draggable-league-fab";
 import { cn } from "cn";
@@ -27,7 +28,6 @@ import { isPredicted } from "@/lib/supabase/types";
 import type { League, Prediction } from "@/lib/supabase/types";
 
 const ALL_DATES = "all";
-type ViewMode = "cards" | "table";
 const CARD_AD_INTERVAL = 20; // roughly every 6-7 grid rows on the 3-column desktop layout
 const MAX_CARD_ADS = 2; // cap total in-feed ads regardless of how long the list gets
 
@@ -76,10 +76,14 @@ export function PredictionDashboard({
   const activeDate = searchParams.get("date") ?? defaultActiveDate(availableDates);
   const marketFilter = (searchParams.get("market") as MarketFilter | null) ?? "all";
   // Cards by default on mobile (the table needs horizontal scrolling there),
-  // table by default on larger screens; once someone picks a view
-  // explicitly via the toggle, that choice sticks regardless of screen size.
+  // table by default on larger screens; once someone picks a view explicitly
+  // via the toggle, that choice is remembered per device class (lib/use-
+  // stored-view-mode.ts) so it persists across visits instead of resetting
+  // to the responsive default every time — the URL param still wins when
+  // present, for a shared/bookmarked link with an explicit ?view=.
   const isMobile = useIsMobile();
-  const viewMode = (searchParams.get("view") as ViewMode | null) ?? (isMobile ? "cards" : "table");
+  const storedViewMode = useStoredViewMode(isMobile);
+  const viewMode = (searchParams.get("view") as ViewMode | null) ?? storedViewMode ?? (isMobile ? "cards" : "table");
 
   const updateParam = useCallback(
     (key: string, value: string, defaultValue: string) => {
@@ -121,7 +125,10 @@ export function PredictionDashboard({
   // setting it, and `viewMode` falls straight back to the responsive default,
   // making that choice silently un-clickable on mobile.
   const setViewModeOverride = useCallback(
-    (v: ViewMode) => updateParam("view", v, isMobile ? "cards" : "table"),
+    (v: ViewMode) => {
+      setStoredViewMode(isMobile, v);
+      updateParam("view", v, isMobile ? "cards" : "table");
+    },
     [updateParam, isMobile],
   );
 
