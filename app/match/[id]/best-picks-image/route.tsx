@@ -3,9 +3,10 @@ import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { getTeamCrestDataUri } from "@/lib/team-crest";
 import { isPredicted } from "@/lib/supabase/types";
-import { MARKET_KEYS, MARKET_LABELS, marketConfidence, marketPredictionLabel } from "@/lib/hydrate";
+import { MARKET_KEYS, marketConfidence, marketPredictionLabel, MARKET_LABELS } from "@/lib/hydrate";
 import {
   MatchBestPicksImageTemplate,
+  MARKET_DESCRIPTIONS,
   BEST_PICKS_IMAGE_WIDTH,
   BEST_PICKS_IMAGE_OPTIONS_FONTS,
   bestPicksImageHeight,
@@ -49,13 +50,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const markets = prediction.markets;
   const picks: BestPickRow[] = MARKET_KEYS.map((key) => ({
-    label: MARKET_LABELS[key],
-    value: marketPredictionLabel(markets, key),
+    title: `${MARKET_LABELS[key]}: ${marketPredictionLabel(markets, key)}`,
+    subtitle: MARKET_DESCRIPTIONS[key],
     confidence: marketConfidence(markets, key),
   }))
     .filter((p) => p.confidence !== null && p.confidence >= MIN_CONFIDENCE)
     .sort((a, b) => b.confidence! - a.confidence!)
-    .map((p) => ({ label: p.label, value: p.value }));
+    .map((p) => ({ title: p.title, subtitle: p.subtitle }));
 
   const kickoff = new Date(prediction.match_date);
   const dateLabel = kickoff.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone });
