@@ -10,9 +10,36 @@ const COMMAND_LIST = `/predictions - Today's top predictions
 /mybookings - Your bookings and how they're grading
 /stats - Site-wide prediction accuracy
 /leaderboard - Top public bookings
+/faq - Common questions
 /help - Show this list`;
 
 const WEBSITE_URL = "https://socceradar.site";
+const SIGNUP_URL = `${WEBSITE_URL}/signup`;
+const LINK_URL = `${WEBSITE_URL}/account/telegram`;
+
+const NOT_LINKED_MESSAGE = `Don't have a SoccerRadar account yet? Create one free: ${SIGNUP_URL}\n\nAlready have one? Link it here: ${LINK_URL}`;
+
+const FAQ_TEXT = `❓ FAQ
+
+Q: What is SoccerRadar?
+A: AI-generated football predictions across outcome, goals, corners, clean sheets and more — with every call graded publicly against what actually happened.
+
+Q: How confident are the predictions?
+A: Each market gets its own confidence score, not one number for the whole match — see a match page on the site for the full breakdown.
+
+Q: What's a Booking?
+A: A custom slip — pick specific markets (like "Over 1.5 Goals") from different matches and combine them into one shareable list.
+
+Q: Can I disagree with a prediction?
+A: Yes — when adding a pick to a Booking, you can choose a different outcome than SoccerRadar's own call.
+
+Q: Is it free?
+A: Yes, no account needed to browse. An account lets you save bookings, collections, and link Telegram.
+
+Q: How accurate is it really?
+A: Every prediction is graded against the real result at ${WEBSITE_URL}/accuracy — nothing held back.
+
+Don't have an account yet? ${SIGNUP_URL}`;
 
 function commandAndArg(text: string): { command: string; arg: string | null } {
   const trimmed = text.trim();
@@ -81,7 +108,7 @@ async function findLinkedUserId(chatId: number): Promise<string | null> {
 
 async function handleMyBookings(chatId: number): Promise<string> {
   const userId = await findLinkedUserId(chatId);
-  if (!userId) return `Link your account first: ${WEBSITE_URL}/account/telegram`;
+  if (!userId) return NOT_LINKED_MESSAGE;
 
   const supabase = createAdminSupabaseClient();
   const { data: bookings } = await supabase
@@ -177,19 +204,23 @@ async function handleLeaderboard(): Promise<string> {
   return `Top public bookings:\n\n${lines.join("\n")}\n\n${WEBSITE_URL}/top-bookings`;
 }
 
+function welcomeText(names?: string[]): string {
+  const heading = names && names.length > 0 ? `Welcome, ${names.join(", ")}!` : "Welcome to SoccerRadar!";
+  return `${heading}
+You've just joined 10K+ football enthusiasts who predict smarter every day.
+
+Here's what you can do right now:
+
+${COMMAND_LIST}
+
+Don't have an account yet? Create one free: ${SIGNUP_URL}`;
+}
+
 async function handleNewChatMembers(chatId: number, members: TelegramUser[]): Promise<void> {
   const names = members.filter((m) => !m.is_bot).map((m) => m.first_name);
   if (names.length === 0) return; // only the bot itself joined — nothing to greet
 
-  const greeting =
-    names.length === 1
-      ? `Welcome, ${names[0]}! 👋`
-      : `Welcome, ${names.join(", ")}! 👋`;
-
-  await sendTelegramMessage(
-    chatId,
-    `${greeting} This is the SoccerRadar Discussion Group — chat about today's matches here.\n\n${COMMAND_LIST}\n\nLink your account: ${WEBSITE_URL}/account/telegram`,
-  );
+  await sendTelegramMessage(chatId, welcomeText(names));
 }
 
 export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void> {
@@ -209,13 +240,16 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
   let reply: string;
   switch (command) {
     case "/start":
-      reply = arg ? await handleLink(chatId, arg) : `Welcome to SoccerRadar!\n\n${COMMAND_LIST}\n\nLink your account: ${WEBSITE_URL}/account/telegram`;
+      reply = arg ? await handleLink(chatId, arg) : welcomeText();
       break;
     case "/link":
       reply = await handleLink(chatId, arg);
       break;
     case "/help":
       reply = COMMAND_LIST;
+      break;
+    case "/faq":
+      reply = FAQ_TEXT;
       break;
     case "/predictions":
       reply = await handlePredictions();
