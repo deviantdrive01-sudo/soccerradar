@@ -11,6 +11,7 @@ import { BookingPickButton } from "@/components/booking-pick-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import {
   isDrawOrOver2_5,
+  isX2AndOver1_5,
   marketConfidence,
   marketPredictionLabel,
   settledMarketTally,
@@ -273,8 +274,42 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
               predictionId={prediction.id}
               marketKey="drawOrOver2_5" markets={markets}
             />
+            <YesNoBadge
+              label="2X & O1.5"
+              value={isX2AndOver1_5(markets)}
+              predictionId={prediction.id}
+              marketKey="x2AndOver1_5" markets={markets}
+            />
+            {markets.bothTeamsToScore !== undefined && (
+              <YesNoBadge
+                label="BTTS"
+                value={markets.bothTeamsToScore}
+                predictionId={prediction.id}
+                marketKey="bothTeamsToScore" markets={markets}
+              />
+            )}
           </div>
         </div>
+
+        {markets.teamGoals && (
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Team Goals O1.5</div>
+            <div className="flex flex-wrap gap-1.5">
+              <YesNoBadge
+                label={prediction.home_team}
+                value={markets.teamGoals.home}
+                predictionId={prediction.id}
+                marketKey="homeGoalsOver1_5" markets={markets}
+              />
+              <YesNoBadge
+                label={prediction.away_team}
+                value={markets.teamGoals.away}
+                predictionId={prediction.id}
+                marketKey="awayGoalsOver1_5" markets={markets}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Corners</div>
@@ -288,6 +323,26 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
             />
           </div>
         </div>
+
+        {markets.teamCorners && (
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Team Corners O4.5</div>
+            <div className="flex flex-wrap gap-1.5">
+              <YesNoBadge
+                label={prediction.home_team}
+                value={markets.teamCorners.home}
+                predictionId={prediction.id}
+                marketKey="homeCornersOver4_5" markets={markets}
+              />
+              <YesNoBadge
+                label={prediction.away_team}
+                value={markets.teamCorners.away}
+                predictionId={prediction.id}
+                marketKey="awayCornersOver4_5" markets={markets}
+              />
+            </div>
+          </div>
+        )}
 
         {markets.cleanSheets && (
           <div className="space-y-1.5">

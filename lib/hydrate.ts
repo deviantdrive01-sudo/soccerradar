@@ -32,6 +32,11 @@ export interface MarketConfidences {
   c3: number;
   csh: number;
   csa: number;
+  tch: number; // home team corners over 4.5
+  tca: number; // away team corners over 4.5
+  tgh: number; // home team goals over 1.5
+  tga: number; // away team goals over 1.5
+  btts: number; // both teams to score
 }
 
 /** Exact shape Claude must return, per match, in the compact response. */
@@ -44,6 +49,9 @@ export interface CompactPrediction {
   g: [0 | 1, 0 | 1]; // [over_1_5, over_2_5]
   c: [0 | 1, 0 | 1, 0 | 1]; // [over_7_5, over_8_5, ht_over_3_5]
   cs: [0 | 1, 0 | 1]; // [home_clean_sheet, away_clean_sheet]
+  tc: [0 | 1, 0 | 1]; // [home_corners_over_4_5, away_corners_over_4_5]
+  tg: [0 | 1, 0 | 1]; // [home_goals_over_1_5, away_goals_over_1_5]
+  btts: 0 | 1; // both teams to score
   mc: MarketConfidences;
   conf: number; // 1-100, overall confidence across the whole prediction set
   sum: string;
@@ -69,6 +77,16 @@ export interface HydratedMarkets {
     home: boolean;
     away: boolean;
   };
+  /** Optional: absent on predictions generated before these markets existed. */
+  teamCorners?: {
+    home: boolean;
+    away: boolean;
+  };
+  teamGoals?: {
+    home: boolean;
+    away: boolean;
+  };
+  bothTeamsToScore?: boolean;
   /** Optional: absent on predictions generated before per-market confidence existed. */
   confidence?: MarketConfidences;
 }
@@ -119,6 +137,15 @@ export function hydrateMarkets(compact: CompactPrediction): HydratedMarkets {
       home: compact.cs[0] === 1,
       away: compact.cs[1] === 1,
     },
+    teamCorners: {
+      home: compact.tc[0] === 1,
+      away: compact.tc[1] === 1,
+    },
+    teamGoals: {
+      home: compact.tg[0] === 1,
+      away: compact.tg[1] === 1,
+    },
+    bothTeamsToScore: compact.btts === 1,
     confidence: compact.mc,
   };
 }
@@ -145,6 +172,17 @@ export function isDrawOrOver2_5(markets: HydratedMarkets): boolean {
 /** Full-time draw — derived from the same underlying full-time pick, so it can never disagree with it. */
 export function isFullTimeDraw(markets: HydratedMarkets): boolean {
   return markets.outcome.code === "X";
+}
+
+/**
+ * "2X & Over 1.5" combo — the model's own outcome pick isn't a home win
+ * (i.e. draw or away, the "X2" double chance side) AND total goals are
+ * predicted over 1.5. An AND of two independent existing predictions, same
+ * derivation approach as isDrawOrOver2_5 (an OR of two), just the other
+ * boolean operator.
+ */
+export function isX2AndOver1_5(markets: HydratedMarkets): boolean {
+  return markets.outcome.code !== "1" && markets.goals.over1_5;
 }
 
 /**
@@ -223,6 +261,15 @@ export interface ActualMarkets {
     home: boolean;
     away: boolean;
   };
+  teamCorners?: {
+    home: boolean;
+    away: boolean;
+  };
+  teamGoals?: {
+    home: boolean;
+    away: boolean;
+  };
+  bothTeamsToScore?: boolean;
 }
 
 export interface ActualResult {
@@ -270,6 +317,15 @@ export function deriveActualResult(raw: RawMatchResult): ActualResult {
         home: raw.finalScore.away === 0,
         away: raw.finalScore.home === 0,
       },
+      teamCorners: {
+        home: raw.corners.home > 4.5,
+        away: raw.corners.away > 4.5,
+      },
+      teamGoals: {
+        home: raw.finalScore.home > 1.5,
+        away: raw.finalScore.away > 1.5,
+      },
+      bothTeamsToScore: raw.finalScore.home > 0 && raw.finalScore.away > 0,
     },
   };
 }
@@ -280,6 +336,10 @@ export function isActualDrawOrOver2_5(actual: ActualMarkets): boolean {
 
 export function isActualFullTimeDraw(actual: ActualMarkets): boolean {
   return actual.outcome.code === "X";
+}
+
+export function isActualX2AndOver1_5(actual: ActualMarkets): boolean {
+  return actual.outcome.code !== "1" && actual.goals.over1_5;
 }
 
 function isActualHomeWinsEitherHalf(actual: ActualMarkets): boolean {
@@ -310,7 +370,13 @@ export type MarketKey =
   | "firstHalfOver3_5"
   | "doubleChance"
   | "homeCleanSheet"
-  | "awayCleanSheet";
+  | "awayCleanSheet"
+  | "homeCornersOver4_5"
+  | "awayCornersOver4_5"
+  | "homeGoalsOver1_5"
+  | "awayGoalsOver1_5"
+  | "bothTeamsToScore"
+  | "x2AndOver1_5";
 
 /**
  * Actively offered/tracked markets — drives booking pickers, the accuracy
@@ -339,6 +405,12 @@ export const MARKET_KEYS: MarketKey[] = [
   "doubleChance",
   "homeCleanSheet",
   "awayCleanSheet",
+  "homeCornersOver4_5",
+  "awayCornersOver4_5",
+  "homeGoalsOver1_5",
+  "awayGoalsOver1_5",
+  "bothTeamsToScore",
+  "x2AndOver1_5",
 ];
 
 /**
@@ -373,6 +445,12 @@ export const MARKET_LABELS: Record<MarketKey, string> = {
   doubleChance: "Double Chance",
   homeCleanSheet: "Clean Sheet (Home)",
   awayCleanSheet: "Clean Sheet (Away)",
+  homeCornersOver4_5: "Home Corners O4.5",
+  awayCornersOver4_5: "Away Corners O4.5",
+  homeGoalsOver1_5: "Home Goals O1.5",
+  awayGoalsOver1_5: "Away Goals O1.5",
+  bothTeamsToScore: "BTTS",
+  x2AndOver1_5: "2X & Over 1.5",
 };
 
 /** Was this one market's prediction right? null when the actual or predicted value isn't known. */
@@ -420,6 +498,24 @@ export function isMarketCorrect(
       return !predicted.cleanSheets || !actual.cleanSheets
         ? null
         : predicted.cleanSheets.away === actual.cleanSheets.away;
+    case "homeCornersOver4_5":
+      return !predicted.teamCorners || !actual.teamCorners
+        ? null
+        : predicted.teamCorners.home === actual.teamCorners.home;
+    case "awayCornersOver4_5":
+      return !predicted.teamCorners || !actual.teamCorners
+        ? null
+        : predicted.teamCorners.away === actual.teamCorners.away;
+    case "homeGoalsOver1_5":
+      return !predicted.teamGoals || !actual.teamGoals ? null : predicted.teamGoals.home === actual.teamGoals.home;
+    case "awayGoalsOver1_5":
+      return !predicted.teamGoals || !actual.teamGoals ? null : predicted.teamGoals.away === actual.teamGoals.away;
+    case "bothTeamsToScore":
+      return predicted.bothTeamsToScore === undefined || actual.bothTeamsToScore === undefined
+        ? null
+        : predicted.bothTeamsToScore === actual.bothTeamsToScore;
+    case "x2AndOver1_5":
+      return isX2AndOver1_5(predicted) === isActualX2AndOver1_5(actual);
   }
 }
 
@@ -469,6 +565,22 @@ export function marketConfidence(predicted: HydratedMarkets, key: MarketKey): nu
       return mc.csh;
     case "awayCleanSheet":
       return mc.csa;
+    case "homeCornersOver4_5":
+      return mc.tch;
+    case "awayCornersOver4_5":
+      return mc.tca;
+    case "homeGoalsOver1_5":
+      return mc.tgh;
+    case "awayGoalsOver1_5":
+      return mc.tga;
+    case "bothTeamsToScore":
+      return mc.btts;
+    case "x2AndOver1_5":
+      // AND combo — bounded by the weaker of the two legs. "Not home" isn't
+      // its own asked number, so mc.o (confidence in the model's own
+      // outcome pick) stands in for it, same approximation drawOrOver2_5 uses.
+      if (predicted.outcome.code === "1") return mc.o;
+      return Math.min(mc.o, mc.g1);
   }
 }
 
@@ -515,6 +627,18 @@ export function marketPredictionLabel(predicted: HydratedMarkets, key: MarketKey
       return predicted.cleanSheets ? (predicted.cleanSheets.home ? "Yes" : "No") : "–";
     case "awayCleanSheet":
       return predicted.cleanSheets ? (predicted.cleanSheets.away ? "Yes" : "No") : "–";
+    case "homeCornersOver4_5":
+      return predicted.teamCorners ? (predicted.teamCorners.home ? "Yes" : "No") : "–";
+    case "awayCornersOver4_5":
+      return predicted.teamCorners ? (predicted.teamCorners.away ? "Yes" : "No") : "–";
+    case "homeGoalsOver1_5":
+      return predicted.teamGoals ? (predicted.teamGoals.home ? "Yes" : "No") : "–";
+    case "awayGoalsOver1_5":
+      return predicted.teamGoals ? (predicted.teamGoals.away ? "Yes" : "No") : "–";
+    case "bothTeamsToScore":
+      return predicted.bothTeamsToScore === undefined ? "–" : predicted.bothTeamsToScore ? "Yes" : "No";
+    case "x2AndOver1_5":
+      return isX2AndOver1_5(predicted) ? "Yes" : "No";
   }
 }
 
@@ -608,6 +732,18 @@ export function marketPredictionValue(predicted: HydratedMarkets, key: MarketKey
       return predicted.cleanSheets ? (predicted.cleanSheets.home ? "yes" : "no") : null;
     case "awayCleanSheet":
       return predicted.cleanSheets ? (predicted.cleanSheets.away ? "yes" : "no") : null;
+    case "homeCornersOver4_5":
+      return predicted.teamCorners ? (predicted.teamCorners.home ? "yes" : "no") : null;
+    case "awayCornersOver4_5":
+      return predicted.teamCorners ? (predicted.teamCorners.away ? "yes" : "no") : null;
+    case "homeGoalsOver1_5":
+      return predicted.teamGoals ? (predicted.teamGoals.home ? "yes" : "no") : null;
+    case "awayGoalsOver1_5":
+      return predicted.teamGoals ? (predicted.teamGoals.away ? "yes" : "no") : null;
+    case "bothTeamsToScore":
+      return predicted.bothTeamsToScore === undefined ? null : predicted.bothTeamsToScore ? "yes" : "no";
+    case "x2AndOver1_5":
+      return isX2AndOver1_5(predicted) ? "yes" : "no";
   }
 }
 
@@ -653,6 +789,18 @@ export function actualMarketValue(actual: ActualMarkets, key: MarketKey): string
       return actual.cleanSheets ? (actual.cleanSheets.home ? "yes" : "no") : null;
     case "awayCleanSheet":
       return actual.cleanSheets ? (actual.cleanSheets.away ? "yes" : "no") : null;
+    case "homeCornersOver4_5":
+      return actual.teamCorners ? (actual.teamCorners.home ? "yes" : "no") : null;
+    case "awayCornersOver4_5":
+      return actual.teamCorners ? (actual.teamCorners.away ? "yes" : "no") : null;
+    case "homeGoalsOver1_5":
+      return actual.teamGoals ? (actual.teamGoals.home ? "yes" : "no") : null;
+    case "awayGoalsOver1_5":
+      return actual.teamGoals ? (actual.teamGoals.away ? "yes" : "no") : null;
+    case "bothTeamsToScore":
+      return actual.bothTeamsToScore === undefined ? null : actual.bothTeamsToScore ? "yes" : "no";
+    case "x2AndOver1_5":
+      return isActualX2AndOver1_5(actual) ? "yes" : "no";
   }
 }
 
@@ -676,7 +824,7 @@ export function isPickCorrect(
   return isMarketCorrect(predicted, actual, key);
 }
 
-const MARKET_CONFIDENCE_KEYS = ["o", "ht", "h2", "sh", "g1", "g2", "c1", "c3", "csh", "csa"] as const;
+const MARKET_CONFIDENCE_KEYS = ["o", "ht", "h2", "sh", "g1", "g2", "c1", "c3", "csh", "csa", "tch", "tca", "tgh", "tga", "btts"] as const;
 
 function isMarketConfidences(value: unknown): value is MarketConfidences {
   if (!value || typeof value !== "object") return false;
@@ -699,6 +847,11 @@ export function isCompactPrediction(value: unknown): value is CompactPrediction 
     v.c.length === 3 &&
     Array.isArray(v.cs) &&
     v.cs.length === 2 &&
+    Array.isArray(v.tc) &&
+    v.tc.length === 2 &&
+    Array.isArray(v.tg) &&
+    v.tg.length === 2 &&
+    (v.btts === 0 || v.btts === 1) &&
     isMarketConfidences(v.mc) &&
     typeof v.conf === "number" &&
     typeof v.sum === "string"

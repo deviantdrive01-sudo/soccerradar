@@ -58,6 +58,9 @@ Each array element must have EXACTLY these keys:
 - "g": [over_1_5, over_2_5] each 0 or 1, whether total goals will exceed that line
 - "c": [over_7_5, over_8_5, ht_over_3_5] each 0 or 1, corner count over that line (last value is first-half corners over 3.5)
 - "cs": [home_clean_sheet, away_clean_sheet] each 0 or 1, whether that side will concede zero goals
+- "tc": [home_corners_over_4_5, away_corners_over_4_5] each 0 or 1, whether that side's OWN corner count (not the match total) will exceed 4.5
+- "tg": [home_goals_over_1_5, away_goals_over_1_5] each 0 or 1, whether that side's OWN goals scored (not the match total) will exceed 1.5
+- "btts": 0 or 1, whether both teams will score at least one goal each
 - "mc": independent integer confidence scores 1-100, one per market below — these are NOT all the same number, since your certainty genuinely varies market to market (e.g. very sure on the outcome but unsure on corners is normal and expected):
   - "o": confidence in the "o" pick
   - "ht": confidence in the "ht" pick
@@ -69,6 +72,11 @@ Each array element must have EXACTLY these keys:
   - "c3": confidence in the ht_over_3_5 corners pick
   - "csh": confidence in the home_clean_sheet pick
   - "csa": confidence in the away_clean_sheet pick
+  - "tch": confidence in the home team's own over_4_5 corners pick
+  - "tca": confidence in the away team's own over_4_5 corners pick
+  - "tgh": confidence in the home team's own over_1_5 goals pick
+  - "tga": confidence in the away team's own over_1_5 goals pick
+  - "btts": confidence in the "btts" pick
 - "conf": integer confidence score 1-100 for this prediction set overall
 - "sum": one short sentence (max ~25 words) of tactical reasoning
 
@@ -83,6 +91,12 @@ Corner-market methodology: weigh head-to-head history for these two specific tea
 Clean-sheet methodology: each headToHead entry includes the real final score from that past meeting — use it to gauge each side's defensive record against this specific opponent, not just their defensive record in general. If a team has shut the other out in most of the available meetings, treat that as a real signal regardless of current attacking form, since defensive struggles against a particular opponent's style/system tend to recur. Weigh current defensive form alongside it, and fall back to current form alone when head-to-head meetings are sparse or absent.
 
 Outcome/goals methodology: the same real final scores in headToHead that inform clean sheets also apply directly to "o" and "g" — don't rely on current form alone when real history between these two exact teams is available. If these two teams' meetings have consistently produced high or low combined goal counts, weigh that alongside current form for the over/under lines — head-to-head scoring patterns between specific opponents (playing styles, tactical matchups) tend to repeat more than league-average form would suggest. Likewise, if one side has a lopsided head-to-head record against this specific opponent regardless of that side's overall current form, weigh that for "o" too. Still fall back to current form and team quality when head-to-head meetings are sparse, absent, or contradict each other with no clear pattern.
+
+Team-specific corners methodology ("tc"): the same headToHead "corners" field used for the match-total corner markets gives each side's own historical split — weigh each team's own corner-taking tendency against this specific opponent (a possession-dominant side facing a deep-defending opponent tends to rack up its own corners regardless of the match total), not just whether the combined total ran high. A team can be on the winning side of the total-corners read while still not clearing its own 4.5 line individually, so predict "tc" from each side's own figures, not by splitting the match-total prediction in half.
+
+Team-specific goals methodology ("tg"): use each side's own scored-goals column from headToHead (not the combined total already used for "g") — a side that has repeatedly scored 2+ against this specific opponent is a real signal for its own "tg" pick even in a fixture where the combined total looks tight (e.g. games settled 2-1, 3-2). Fall back to that side's current scoring form when head-to-head is sparse.
+
+Both Teams To Score methodology ("btts"): derive this from how many of the available headToHead meetings had both sides score — a defensively sound side doesn't have to concede for "btts" to hit if the other side has a reliable scoring record against them specifically, so weigh each side's own attacking read against this opponent, not just the aggregate goal total. This is genuinely independent of "g"/"tg" — a match can be predicted over 2.5 total goals while btts is "no" (one side scoring 3+, the other nil), or under 1.5 while btts is "yes" is impossible by definition (mutually exclusive with over_1_5 being 0), so keep "btts" and "g"[0] (over_1_5) logically consistent: btts=1 requires at least 2 total goals, so over_1_5 must also be 1 whenever btts is 1.
 
 Output strictly valid JSON: an array of objects with exactly those keys, no additional keys, no trailing commentary.`;
 
@@ -136,10 +150,10 @@ async function predictBatch(
 
   const response = await client.messages.create({
     model,
-    // Bumped from 400/fixture: adding per-market confidence ("mc", 10 extra
-    // numbers) and the clean-sheet market meaningfully grew the per-fixture
-    // JSON output.
-    max_tokens: 600 * batch.length,
+    // Bumped from 600/fixture (2026-09-08): team corners/goals/BTTS ("tc",
+    // "tg", "btts") plus their 5 new "mc" confidence numbers grew the
+    // per-fixture JSON output further.
+    max_tokens: 750 * batch.length,
     // This model defaults to adaptive extended thinking, which can consume
     // the entire max_tokens budget on internal reasoning and leave nothing
     // for the actual JSON output (confirmed in practice: stop_reason
