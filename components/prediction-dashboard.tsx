@@ -4,6 +4,7 @@ import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { MatchCard } from "@/components/match-card";
@@ -65,6 +66,21 @@ export function PredictionDashboard({
     }
     return Array.from(seen, ([key, label]) => ({ key, label }));
   }, [sortedPredictions]);
+
+  // Tabs read forward from today (today itself labeled plainly rather than
+  // its weekday/date) — anything before today is history, not something to
+  // lead with, so it moves into a separate on-demand dropdown instead of
+  // competing for space in the primary tab row.
+  const { upcomingDates, pastDates } = useMemo(() => {
+    const today = todayKey();
+    const upcoming: { key: string; label: string }[] = [];
+    const past: { key: string; label: string }[] = [];
+    for (const d of availableDates) {
+      const label = d.key === today ? "Today" : d.label;
+      (d.key >= today ? upcoming : past).push({ key: d.key, label });
+    }
+    return { upcomingDates: upcoming, pastDates: past };
+  }, [availableDates]);
 
   // Filter/view state lives in the URL (not local useState) so browser back
   // navigation from a match/booking/collection page restores exactly what
@@ -233,7 +249,7 @@ export function PredictionDashboard({
                 <ScrollArea className="max-w-[calc(100vw-2rem)]">
                   <TabsList>
                     {availableDates.length > 1 && <TabsTrigger value={ALL_DATES}>All Dates</TabsTrigger>}
-                    {availableDates.map((date) => (
+                    {upcomingDates.map((date) => (
                       <TabsTrigger key={date.key} value={date.key}>
                         {date.label}
                       </TabsTrigger>
@@ -242,6 +258,24 @@ export function PredictionDashboard({
                   <ScrollBar orientation="horizontal" />
                 </ScrollArea>
               </Tabs>
+
+              {/* Past days are history, not the primary view — tucked into
+                  an on-demand dropdown instead of a tab so "today onward"
+                  is what the row leads with. */}
+              {pastDates.length > 0 && (
+                <Select value={pastDates.some((d) => d.key === activeDate) ? activeDate : ""} onValueChange={setActiveDate}>
+                  <SelectTrigger size="sm" className="h-8 w-auto text-xs">
+                    <SelectValue placeholder="Past days" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pastDates.map((date) => (
+                      <SelectItem key={date.key} value={date.key}>
+                        {date.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           )}
 
