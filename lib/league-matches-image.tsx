@@ -126,19 +126,19 @@ export function LeagueMatchesImageTemplate({
                 borderTop: index === 0 ? "none" : "1px solid rgba(255,255,255,0.14)",
               }}
             >
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: 30,
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  textTransform: "uppercase",
-                  textAlign: "right",
-                  paddingRight: 20,
-                }}
-              >
-                {match.homeTeam}
-              </span>
+              <div style={{ display: "flex", flex: 1, justifyContent: "flex-end", paddingRight: 20 }}>
+                <span
+                  style={{
+                    fontSize: 30,
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    textTransform: "uppercase",
+                    textAlign: "right",
+                  }}
+                >
+                  {match.homeTeam}
+                </span>
+              </div>
               <SmallCrest teamName={match.homeTeam} crestUrl={match.homeCrestUrl} />
               <div
                 style={{
@@ -154,19 +154,18 @@ export function LeagueMatchesImageTemplate({
                 <span style={{ fontSize: 24, fontWeight: 800, color: YELLOW }}>VS</span>
               </div>
               <SmallCrest teamName={match.awayTeam} crestUrl={match.awayCrestUrl} />
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: 30,
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  textTransform: "uppercase",
-                  textAlign: "left",
-                  paddingLeft: 20,
-                }}
-              >
-                {match.awayTeam}
-              </span>
+              <div style={{ display: "flex", flex: 1, justifyContent: "flex-start", paddingLeft: 20 }}>
+                <span
+                  style={{
+                    fontSize: 30,
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {match.awayTeam}
+                </span>
+              </div>
             </div>
           ))}
         </div>
