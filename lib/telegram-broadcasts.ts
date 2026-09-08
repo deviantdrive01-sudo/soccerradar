@@ -9,9 +9,11 @@ import { buildShareSlug } from "@/lib/share-slug";
 import { generateTodaysBanger } from "@/lib/best-mix";
 import { todayKey } from "@/lib/date-key";
 import { SITE_URL } from "@/lib/site";
+import { formatPredictionLines, type PredictionSummary } from "@/lib/telegram-commands";
 import type { MarketKey } from "@/lib/hydrate";
 
 export type ScheduledBroadcastType =
+  | "general"
   | "top-bookings-1"
   | "top-bookings-2"
   | "top-bookings-3"
@@ -25,6 +27,19 @@ export interface ScheduledBroadcastResult {
   posted: number;
   reason?: string;
 }
+
+/** Display metadata for /admin/telegram — the scheduled time is informational only (the real schedule lives in .github/workflows/telegram-broadcasts.yml + vercel.json), kept here so the admin page has one place to read it from. */
+export const SCHEDULED_BROADCAST_INFO: Record<ScheduledBroadcastType, { label: string; scheduledTime: string }> = {
+  general: { label: "General Top Picks", scheduledTime: "08:00 UTC" },
+  "top-bookings-1": { label: "Top Booking #1", scheduledTime: "08:30 UTC" },
+  "top-bookings-2": { label: "Top Booking #2", scheduledTime: "09:00 UTC" },
+  "top-bookings-3": { label: "Top Booking #3", scheduledTime: "09:30 UTC" },
+  banger: { label: "Today's Banger", scheduledTime: "10:00 UTC" },
+  corners: { label: "Today's Corners", scheduledTime: "10:30 UTC" },
+  over15: { label: "Today's Over 1.5", scheduledTime: "11:00 UTC" },
+  international: { label: "International (Champions League)", scheduledTime: "11:30 UTC" },
+  "top-match": { label: "Top Match", scheduledTime: "12:00 UTC" },
+};
 
 function channelId(): string {
   const channel = process.env.TELEGRAM_CHANNEL_CHAT_ID;
@@ -75,6 +90,34 @@ function formatMatchTopPicks(p: Prediction, leagueLabel: string): string {
   const lines = ranked.length > 0 ? ranked.map((m) => `${m.label}: ${m.value}`).join("\n") : `FT: ${markets.outcome.label}`;
 
   return `⚽ ${p.home_team} vs ${p.away_team}\n${leagueLabel}\n\n${lines}\n\n${SITE_URL}/match/${p.id}`;
+}
+
+// ---------------------------------------------------------------------------
+// General — the original digest (today's top predictions by blanket
+// confidence), unchanged since before the rest of this schedule existed.
+// ---------------------------------------------------------------------------
+
+async function broadcastGeneral(supabase: AdminClient): Promise<ScheduledBroadcastResult> {
+  if (await alreadyLoggedToday(supabase, "general")) return { posted: 0, reason: "already sent today" };
+
+  const now = new Date();
+  const dayAhead = new Date(now.getTime() + 24 * 3600 * 1000);
+  const { data } = await supabase
+    .from("predictions")
+    .select("id, home_team, away_team, markets, confidence")
+    .not("markets", "is", null)
+    .gte("match_date", now.toISOString())
+    .lte("match_date", dayAhead.toISOString())
+    .order("confidence", { ascending: false })
+    .limit(8);
+
+  const predictions = (data ?? []) as PredictionSummary[];
+  if (predictions.length === 0) return { posted: 0, reason: "no upcoming predictions" };
+
+  await sendTelegramPhoto(channelId(), TOP_PICKS_IMAGE_URL, "⚽ Today's Top Picks");
+  await sendTelegramMessage(channelId(), formatPredictionLines(predictions, { showConfidence: false }));
+  await logBroadcast(supabase, "general", "daily");
+  return { posted: predictions.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -295,6 +338,8 @@ async function broadcastTopMatch(supabase: AdminClient): Promise<ScheduledBroadc
 export async function runScheduledBroadcast(type: ScheduledBroadcastType): Promise<ScheduledBroadcastResult> {
   const supabase = createAdminSupabaseClient();
   switch (type) {
+    case "general":
+      return broadcastGeneral(supabase);
     case "top-bookings-1":
       return broadcastTopBooking(supabase, "top-bookings-1");
     case "top-bookings-2":

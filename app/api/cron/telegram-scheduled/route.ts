@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const VALID_TYPES: ScheduledBroadcastType[] = [
+  "general",
   "top-bookings-1",
   "top-bookings-2",
   "top-bookings-3",
@@ -25,7 +26,7 @@ function isAuthorized(req: NextRequest): boolean {
   return header === `Bearer ${process.env.CRON_SECRET}`;
 }
 
-/** One route for all 8 scheduled broadcast slots (see lib/telegram-broadcasts.ts) — driven by .github/workflows/telegram-broadcasts.yml since this project's Vercel Hobby plan caps native cron at 2 jobs, once/day each. */
+/** One route for every scheduled broadcast type (see lib/telegram-broadcasts.ts) — the 8 GitHub-Actions-driven slots plus "general" (also reachable via the dedicated /api/cron/telegram-broadcast route on its own Vercel Cron entry) — driven by .github/workflows/telegram-broadcasts.yml since this project's Vercel Hobby plan caps native cron at 2 jobs, once/day each. */
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

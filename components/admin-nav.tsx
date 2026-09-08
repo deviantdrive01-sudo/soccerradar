@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/leagues", label: "Leagues" },
   { href: "/admin/matches", label: "Matches" },
+  { href: "/admin/telegram", label: "Telegram" },
   { href: "/admin/ads", label: "Ads" },
   { href: "/admin/banner", label: "Banner" },
   { href: "/admin/users", label: "Users" },
