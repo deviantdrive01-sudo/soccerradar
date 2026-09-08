@@ -4,11 +4,23 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { forceBookingPrivate } from "./actions";
 import { AdminDeleteBookingButton } from "@/components/admin-delete-booking-button";
 import { AdminGenerateBestMixButton } from "@/components/admin-generate-best-mix-button";
+import { AdminStatusBadge } from "@/components/admin-status-badge";
 import { Avatar } from "@/components/avatar";
 import { buildShareSlug } from "@/lib/share-slug";
 import { gradePicks, tallyGraded } from "@/lib/booking-grading";
 import { accuracyPct, pctClass } from "@/lib/accuracy";
 import { cn } from "@/lib/utils";
+import {
+  ADMIN_MOBILE_LIST,
+  ADMIN_CARD,
+  ADMIN_TABLE_WRAPPER,
+  ADMIN_TABLE,
+  ADMIN_TH,
+  ADMIN_TH_LEFT,
+  ADMIN_TD,
+  ADMIN_ROW_BORDER,
+  ADMIN_HEADER_ROW,
+} from "@/lib/admin/list-styles";
 import type { MarketKey } from "@/lib/hydrate";
 import type { Prediction } from "@/lib/supabase/types";
 
@@ -94,13 +106,13 @@ export default async function AdminBookingsPage() {
       </div>
 
       {/* Phone: stacked cards — the table below needs 820px+ to read without horizontal scrolling. */}
-      <div className="space-y-3 sm:hidden">
+      <div className={ADMIN_MOBILE_LIST}>
         {(bookings ?? []).map((booking) => {
           const username = usernameById.get(booking.user_id) ?? null;
           const avatarUrl = avatarById.get(booking.user_id) ?? null;
           const winRate = winRateByOwner.get(booking.user_id);
           return (
-            <div key={booking.id} className="space-y-3 rounded-md border border-border/60 p-3">
+            <div key={booking.id} className={ADMIN_CARD}>
               <div className="flex items-start justify-between gap-2">
                 <Link
                   href={`/bookings/${buildShareSlug(booking.id, username)}`}
@@ -109,15 +121,9 @@ export default async function AdminBookingsPage() {
                 >
                   {booking.title}
                 </Link>
-                {booking.is_public ? (
-                  <span className="shrink-0 rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    Public
-                  </span>
-                ) : (
-                  <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    Private
-                  </span>
-                )}
+                <div className="shrink-0">
+                  <AdminStatusBadge active={booking.is_public} activeLabel="Public" inactiveLabel="Private" />
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -166,17 +172,17 @@ export default async function AdminBookingsPage() {
       </div>
 
       {/* sm+: table */}
-      <div className="hidden overflow-x-auto rounded-md border border-border/60 sm:block">
-        <table className="w-full min-w-[820px] text-sm">
+      <div className={ADMIN_TABLE_WRAPPER}>
+        <table className={cn(ADMIN_TABLE, "min-w-[820px]")}>
           <thead>
-            <tr className="border-b border-border/60 text-left text-muted-foreground">
-              <th className="p-2 font-medium">Booking</th>
-              <th className="p-2 font-medium">Owner</th>
-              <th className="p-2 font-medium text-center">Win Rate</th>
-              <th className="p-2 font-medium text-center">Picks</th>
-              <th className="p-2 font-medium">Created</th>
-              <th className="p-2 font-medium text-center">Status</th>
-              <th className="p-2 font-medium text-right">Actions</th>
+            <tr className={ADMIN_HEADER_ROW}>
+              <th className={ADMIN_TH_LEFT}>Booking</th>
+              <th className={ADMIN_TH_LEFT}>Owner</th>
+              <th className={cn(ADMIN_TH, "text-center")}>Win Rate</th>
+              <th className={cn(ADMIN_TH, "text-center")}>Picks</th>
+              <th className={ADMIN_TH_LEFT}>Created</th>
+              <th className={cn(ADMIN_TH, "text-center")}>Status</th>
+              <th className={cn(ADMIN_TH, "text-right")}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -185,8 +191,8 @@ export default async function AdminBookingsPage() {
               const avatarUrl = avatarById.get(booking.user_id) ?? null;
               const winRate = winRateByOwner.get(booking.user_id);
               return (
-                <tr key={booking.id} className="border-b border-border/60 last:border-0">
-                  <td className="p-2">
+                <tr key={booking.id} className={ADMIN_ROW_BORDER}>
+                  <td className={ADMIN_TD}>
                     <Link
                       href={`/bookings/${buildShareSlug(booking.id, username)}`}
                       target="_blank"
@@ -195,13 +201,13 @@ export default async function AdminBookingsPage() {
                       {booking.title}
                     </Link>
                   </td>
-                  <td className="p-2">
+                  <td className={ADMIN_TD}>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Avatar avatarUrl={avatarUrl} username={username} size="size-6" textSize="text-[10px]" />
                       <span>{username ?? "—"}</span>
                     </div>
                   </td>
-                  <td className="p-2 text-center">
+                  <td className={cn(ADMIN_TD, "text-center")}>
                     {winRate && winRate.settled > 0 ? (
                       <span className={cn("font-medium", pctClass(accuracyPct(winRate.correct, winRate.settled), winRate.settled))}>
                         {accuracyPct(winRate.correct, winRate.settled)}%{" "}
@@ -213,22 +219,14 @@ export default async function AdminBookingsPage() {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="p-2 text-center">{itemCountByBooking.get(booking.id) ?? 0}</td>
-                  <td className="p-2 whitespace-nowrap text-muted-foreground">
+                  <td className={cn(ADMIN_TD, "text-center")}>{itemCountByBooking.get(booking.id) ?? 0}</td>
+                  <td className={cn(ADMIN_TD, "whitespace-nowrap text-muted-foreground")}>
                     {new Date(booking.created_at).toLocaleDateString("en-GB")}
                   </td>
-                  <td className="p-2 text-center">
-                    {booking.is_public ? (
-                      <span className="rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
-                        Public
-                      </span>
-                    ) : (
-                      <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        Private
-                      </span>
-                    )}
+                  <td className={cn(ADMIN_TD, "text-center")}>
+                    <AdminStatusBadge active={booking.is_public} activeLabel="Public" inactiveLabel="Private" />
                   </td>
-                  <td className="p-2">
+                  <td className={ADMIN_TD}>
                     <div className="flex items-center justify-end gap-1.5">
                       {booking.is_public && (
                         <form action={forceBookingPrivate}>

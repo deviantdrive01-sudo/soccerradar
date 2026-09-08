@@ -1,7 +1,30 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { AdminFeatureMatchToggle } from "@/components/admin-feature-match-toggle";
+import { cn } from "@/lib/utils";
+import {
+  ADMIN_MOBILE_LIST,
+  ADMIN_CARD,
+  ADMIN_TABLE_WRAPPER,
+  ADMIN_TABLE,
+  ADMIN_TH,
+  ADMIN_TH_LEFT,
+  ADMIN_TD,
+  ADMIN_ROW_BORDER,
+  ADMIN_HEADER_ROW,
+} from "@/lib/admin/list-styles";
 
 export const dynamic = "force-dynamic";
+
+function kickoffLabel(matchDate: string): string {
+  return new Date(matchDate).toLocaleString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+}
 
 export default async function AdminMatchesPage() {
   const supabase = createAdminSupabaseClient();
@@ -20,46 +43,72 @@ export default async function AdminMatchesPage() {
   ]);
 
   const leagueById = new Map((leagues ?? []).map((l) => [l.id, `${l.country} · ${l.name}`]));
+  const featuredCount = (predictions ?? []).filter((p) => p.is_featured).length;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Matches</h1>
         <p className="text-sm text-muted-foreground">
-          Predicted matches over the next 48h. Mark a match &ldquo;Featured&rdquo; to include it in the scheduled
-          &ldquo;Top Match&rdquo; Telegram broadcast — any number of matches can be featured on a given day.
+          {(predictions ?? []).length} predicted match{(predictions ?? []).length === 1 ? "" : "es"} over the next
+          48h · {featuredCount} featured. Mark a match &ldquo;Featured&rdquo; to include it in the scheduled &ldquo;Top
+          Match&rdquo; Telegram broadcast — any number of matches can be featured on a given day.
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border/60">
-        <table className="w-full min-w-[640px] text-sm">
+      {/* Phone: stacked cards — the table below needs 640px+ to read without horizontal scrolling. */}
+      <div className={ADMIN_MOBILE_LIST}>
+        {(predictions ?? []).map((p) => (
+          <div key={p.id} className={ADMIN_CARD}>
+            <div className="flex items-start justify-between gap-2">
+              <span className="min-w-0 truncate font-medium">
+                {p.home_team} <span className="text-muted-foreground">vs</span> {p.away_team}
+              </span>
+              <div className="shrink-0">
+                <AdminFeatureMatchToggle predictionId={p.id} initialFeatured={p.is_featured} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">League</div>
+                <span className="text-muted-foreground">{leagueById.get(p.league_id) ?? "—"}</span>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Kickoff (UTC)</div>
+                <span className="text-muted-foreground">{kickoffLabel(p.match_date)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+        {(predictions ?? []).length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">No predicted matches in the next 48h.</p>
+        )}
+      </div>
+
+      {/* sm+: table */}
+      <div className={ADMIN_TABLE_WRAPPER}>
+        <table className={cn(ADMIN_TABLE, "min-w-[640px]")}>
           <thead>
-            <tr className="border-b border-border/60 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <th className="px-3 py-2">Match</th>
-              <th className="px-3 py-2">League</th>
-              <th className="px-3 py-2">Kickoff (UTC)</th>
-              <th className="px-3 py-2 text-right">Feature</th>
+            <tr className={ADMIN_HEADER_ROW}>
+              <th className={ADMIN_TH_LEFT}>Match</th>
+              <th className={ADMIN_TH_LEFT}>League</th>
+              <th className={ADMIN_TH_LEFT}>Kickoff (UTC)</th>
+              <th className={cn(ADMIN_TH, "text-right")}>Feature</th>
             </tr>
           </thead>
           <tbody>
             {(predictions ?? []).map((p) => (
-              <tr key={p.id} className="border-b border-border/60 last:border-0">
-                <td className="px-3 py-2 font-medium">
+              <tr key={p.id} className={ADMIN_ROW_BORDER}>
+                <td className={cn(ADMIN_TD, "font-medium")}>
                   {p.home_team} <span className="text-muted-foreground">vs</span> {p.away_team}
                 </td>
-                <td className="px-3 py-2 text-muted-foreground">{leagueById.get(p.league_id) ?? "—"}</td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {new Date(p.match_date).toLocaleString("en-GB", {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: "UTC",
-                  })}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <AdminFeatureMatchToggle predictionId={p.id} initialFeatured={p.is_featured} />
+                <td className={cn(ADMIN_TD, "text-muted-foreground")}>{leagueById.get(p.league_id) ?? "—"}</td>
+                <td className={cn(ADMIN_TD, "whitespace-nowrap text-muted-foreground")}>{kickoffLabel(p.match_date)}</td>
+                <td className={ADMIN_TD}>
+                  <div className="flex items-center justify-end">
+                    <AdminFeatureMatchToggle predictionId={p.id} initialFeatured={p.is_featured} />
+                  </div>
                 </td>
               </tr>
             ))}

@@ -18,6 +18,7 @@ import { dateKey, dateLabel, todayKey } from "@/lib/date-key";
 import { QUICK_FILTER_OPTIONS } from "@/lib/quick-filter";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingAddButton } from "@/components/booking-add-button";
+import { LeagueMatchesDownloadButton } from "@/components/league-matches-download-button";
 import { useAccount } from "@/components/account-provider";
 import { useIsMobile } from "@/lib/use-is-mobile";
 import { useStoredViewMode, setStoredViewMode, type ViewMode } from "@/lib/use-stored-view-mode";
@@ -303,9 +304,12 @@ export function PredictionDashboard({
             <div className="space-y-6">
               {visiblePredictionsByLeague.map((group) => (
                 <div key={group.leagueId} className="space-y-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {group.leagueName}
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group.leagueName}
+                    </h3>
+                    <LeagueMatchesDownloadButton predictionIds={group.predictions.map((p) => p.id)} />
+                  </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {group.predictions.map((prediction) => {
                       const index = globalIndexById.get(prediction.id) ?? 0;

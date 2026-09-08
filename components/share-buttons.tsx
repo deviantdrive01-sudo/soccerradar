@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Download, Link2 } from "lucide-react";
+import { withViewerTimeZone } from "@/lib/viewer-timezone";
 
 function openShareWindow(url: string) {
   window.open(url, "_blank", "noopener,noreferrer,width=600,height=500");
@@ -32,23 +33,6 @@ export function TelegramIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 const ICON_BUTTON = "inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 hover:bg-muted/60";
-
-/**
- * A downloadable image is rendered server-side, with no idea which viewer
- * asked for it — appending the browser's own detected IANA zone lets a
- * route that cares (e.g. the match-day image's kickoff time) show it in the
- * viewer's own local time instead of a fixed zone. Harmless for routes that
- * don't read a "tz" param at all.
- */
-function withViewerTimeZone(imageUrl: string): string {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const separator = imageUrl.includes("?") ? "&" : "?";
-    return `${imageUrl}${separator}tz=${encodeURIComponent(tz)}`;
-  } catch {
-    return imageUrl;
-  }
-}
 
 export function ShareButtons({ url, title, imageUrl }: { url: string; title: string; imageUrl?: string }) {
   const [copied, setCopied] = useState(false);

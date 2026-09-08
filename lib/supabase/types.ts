@@ -133,6 +133,18 @@ export interface TelegramBroadcastLog {
   created_at: string;
 }
 
+/**
+ * A team's crest, cached after its first API-Football lookup (lib/team-crest.ts)
+ * so every later render reuses this row instead of hitting the API again —
+ * `data_uri` is the already-inlined base64 image, ready to drop straight into
+ * a Satori render with no further fetch. See supabase/migrations/17_team_crests.sql.
+ */
+export interface TeamCrest {
+  team_name: string;
+  data_uri: string;
+  updated_at: string;
+}
+
 /** One past meeting between these two exact teams, scraped from its own Flashscore match page. */
 export interface H2hMeeting {
   date: string;
@@ -309,6 +321,12 @@ export interface Database {
         Row: Row<TelegramBroadcastLog>;
         Insert: Row<Omit<TelegramBroadcastLog, "id" | "created_at" | "detail"> & { id?: string; detail?: string | null }>;
         Update: Row<Partial<Omit<TelegramBroadcastLog, "id" | "created_at">>>;
+        Relationships: [];
+      };
+      team_crests: {
+        Row: Row<TeamCrest>;
+        Insert: Row<Omit<TeamCrest, "updated_at"> & { updated_at?: string }>;
+        Update: Row<Partial<TeamCrest>>;
         Relationships: [];
       };
     };

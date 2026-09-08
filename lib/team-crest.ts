@@ -1,4 +1,5 @@
 import "server-only";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 const API_FOOTBALL_BASE_URL = "https://v3.football.api-sports.io";
 
@@ -56,10 +57,20 @@ async function findTeamLogoUrl(teamName: string): Promise<string | null> {
  * Resolves a team's crest to an inlined base64 data URI (Satori's remote
  * `<img src>` fetching is unreliable — same reasoning as
  * resolveAvatarDataUri in lib/share-image.tsx) via API-Football's team
- * search. Returns null on any failure so the caller can fall back to a
- * text/initials treatment rather than a broken image.
+ * search. Checks the team_crests cache table first — a team is only ever
+ * resolved via the API once, every later render (for any match/league
+ * image) reuses the cached row instead of re-hitting API-Football. Returns
+ * null on any failure so the caller can fall back to a text/initials
+ * treatment rather than a broken image; a failure is never cached, so a
+ * transient API/lookup miss gets retried on the next render instead of
+ * permanently sticking a team with no crest.
  */
 export async function getTeamCrestDataUri(teamName: string): Promise<string | null> {
+  const supabase = createAdminSupabaseClient();
+
+  const { data: cached } = await supabase.from("team_crests").select("data_uri").eq("team_name", teamName).maybeSingle();
+  if (cached) return cached.data_uri;
+
   const logoUrl = await findTeamLogoUrl(teamName);
   if (!logoUrl) return null;
 
@@ -68,7 +79,11 @@ export async function getTeamCrestDataUri(teamName: string): Promise<string | nu
     if (!res.ok) return null;
     const contentType = res.headers.get("content-type") ?? "image/png";
     const buffer = Buffer.from(await res.arrayBuffer());
-    return `data:${contentType};base64,${buffer.toString("base64")}`;
+    const dataUri = `data:${contentType};base64,${buffer.toString("base64")}`;
+
+    await supabase.from("team_crests").upsert({ team_name: teamName, data_uri: dataUri });
+
+    return dataUri;
   } catch {
     return null;
   }

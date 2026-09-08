@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AdSlot } from "@/components/ad-slot";
+import { LeagueMatchesDownloadButton } from "@/components/league-matches-download-button";
 import { cn } from "cn";
 import { isDrawOrOver2_5, isMarketCorrect, MARKET_KEYS, winEitherHalfCode } from "@/lib/hydrate";
 import { isPredicted } from "@/lib/supabase/types";
@@ -105,7 +106,10 @@ export function PredictionsTable({
                 colSpan={columnCount}
                 className="bg-muted/40 px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-foreground"
               >
-                {group.leagueName}
+                <div className="flex items-center gap-1.5">
+                  <span>{group.leagueName}</span>
+                  <LeagueMatchesDownloadButton predictionIds={group.rows.map((p) => p.id)} />
+                </div>
               </TableCell>
             </TableRow>
             {group.rows.map((prediction) => {
