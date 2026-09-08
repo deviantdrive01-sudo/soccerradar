@@ -8,9 +8,11 @@ import type { MarketKey } from "@/lib/hydrate";
 import { TOP_MARKET_CONFIGS, filterTopMarketPicks, type TopMarketSlug } from "@/lib/top-market-picks";
 
 const COMMAND_LIST = `/predictions - Today's top predictions
-/topover15 - Top Over 1.5 picks (55%+ confidence)
-/topover25 - Top Over 2.5 picks (45%+ confidence)
-/topcorners - Top Corners picks (50%+ confidence)
+/topover15 - Top Over 1.5 picks
+/topover25 - Top Over 2.5 picks
+/topcorners - Top Corners picks
+/top1x - Top 1X (Home/Draw) picks
+/topx2 - Top X2 (Draw/Away) picks
 /search <team> - Find a team's predictions
 /mybookings - Your bookings and how they're grading
 /stats - Site-wide prediction accuracy
@@ -353,6 +355,12 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
       return;
     case "/topcorners":
       await sendTopMarketDigest(chatId, "corners");
+      return;
+    case "/top1x":
+      await sendTopMarketDigest(chatId, "1x");
+      return;
+    case "/topx2":
+      await sendTopMarketDigest(chatId, "x2");
       return;
     case "/search":
       reply = await handleSearch(arg);

@@ -8,18 +8,22 @@ import { isPredicted, type Prediction } from "@/lib/supabase/types";
  * clears the bar for that specific market. Thresholds set 2026-09-08: lower
  * for over_2_5 since it's typically a lower-confidence read than over_1_5.
  */
-export type TopMarketSlug = "over15" | "over25" | "corners";
+export type TopMarketSlug = "over15" | "over25" | "corners" | "1x" | "x2";
 
 export interface TopMarketConfig {
   marketKey: MarketKey;
+  /** The specific value marketPredictionValue() must return for this pick to qualify — "yes" for boolean markets, a specific code (e.g. "1X") for categorical ones like doubleChance. */
+  targetValue: string;
   minConfidence: number;
   title: string;
 }
 
 export const TOP_MARKET_CONFIGS: Record<TopMarketSlug, TopMarketConfig> = {
-  over15: { marketKey: "over1_5", minConfidence: 55, title: "Top Over 1.5" },
-  over25: { marketKey: "over2_5", minConfidence: 45, title: "Top Over 2.5" },
-  corners: { marketKey: "over7_5", minConfidence: 50, title: "Top Corners" },
+  over15: { marketKey: "over1_5", targetValue: "yes", minConfidence: 55, title: "Top Over 1.5" },
+  over25: { marketKey: "over2_5", targetValue: "yes", minConfidence: 45, title: "Top Over 2.5" },
+  corners: { marketKey: "over7_5", targetValue: "yes", minConfidence: 50, title: "Top Corners" },
+  "1x": { marketKey: "doubleChance", targetValue: "1X", minConfidence: 60, title: "Top 1X (Home/Draw)" },
+  x2: { marketKey: "doubleChance", targetValue: "X2", minConfidence: 60, title: "Top X2 (Draw/Away)" },
 };
 
 export function isTopMarketSlug(value: string): value is TopMarketSlug {
@@ -35,14 +39,14 @@ export interface FilteredPick {
   confidence: number;
 }
 
-/** Keeps only predictions where this market's own call is "yes" and its own confidence clears the bar, ranked by that confidence — not the row's overall confidence. */
+/** Keeps only predictions where this market's own call matches the target value and its own confidence clears the bar, ranked by that confidence — not the row's overall confidence. */
 export function filterTopMarketPicks(predictions: Prediction[], leagueById: Map<number, string>, config: TopMarketConfig): FilteredPick[] {
   return predictions
     .map((p) => {
       if (!isPredicted(p)) return null;
       const value = marketPredictionValue(p.markets, config.marketKey);
       const confidence = marketConfidence(p.markets, config.marketKey);
-      if (value !== "yes" || confidence === null || confidence < config.minConfidence) return null;
+      if (value !== config.targetValue || confidence === null || confidence < config.minConfidence) return null;
       return {
         id: p.id,
         home_team: p.home_team,

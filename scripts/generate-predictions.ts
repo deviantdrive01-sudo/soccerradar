@@ -35,7 +35,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
-const MAX_H2H_MEETINGS = 3; // capped to bound the extra scraping this adds per fixture
+const MAX_H2H_MEETINGS = 4; // bumped from 3 (2026-09-08) for a slightly larger sample to benchmark corner/goals reads against — still capped to bound the extra scraping this adds per fixture
 const MAX_PENDING_PER_RUN = 60; // bounds Claude spend per run
 const BATCH_SIZE = 8;
 const DEFAULT_MODEL = "claude-sonnet-5";
