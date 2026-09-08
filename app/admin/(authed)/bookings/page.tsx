@@ -3,6 +3,7 @@ import { verifySession } from "@/lib/admin/dal";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { forceBookingPrivate } from "./actions";
 import { AdminDeleteBookingButton } from "@/components/admin-delete-booking-button";
+import { AdminGenerateBestMixButton } from "@/components/admin-generate-best-mix-button";
 import { Avatar } from "@/components/avatar";
 import { buildShareSlug } from "@/lib/share-slug";
 import { gradePicks, tallyGraded } from "@/lib/booking-grading";
@@ -81,6 +82,15 @@ export default async function AdminBookingsPage() {
           the owner can republish it), or delete it entirely
           {!isSuperAdmin && " (super admin only)"}.
         </p>
+      </div>
+
+      <div className="rounded-md border border-border/60 p-4">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Scans today&apos;s predicted matches for the single best market per match at 68%+ confidence, and bundles
+          them into public bookings of up to 7 picks each (splitting into more than one if more than 7 matches
+          qualify). Safe to run again later the same day as more matches get predicted.
+        </p>
+        <AdminGenerateBestMixButton />
       </div>
 
       {/* Phone: stacked cards — the table below needs 820px+ to read without horizontal scrolling. */}
