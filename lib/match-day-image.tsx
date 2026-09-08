@@ -38,6 +38,28 @@ function CrestBadge({ teamName, crestUrl }: { teamName: string; crestUrl: string
   );
 }
 
+function TeamColumn({ teamName, crestUrl }: { teamName: string; crestUrl: string | null }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 320 }}>
+      <CrestBadge teamName={teamName} crestUrl={crestUrl} />
+      <span
+        style={{
+          marginTop: 22,
+          fontSize: 34,
+          fontWeight: 700,
+          color: "#0a0a0a",
+          textAlign: "center",
+          lineHeight: 1.15,
+          textTransform: "uppercase",
+          letterSpacing: -0.5,
+        }}
+      >
+        {teamName}
+      </span>
+    </div>
+  );
+}
+
 /** Downloadable "match day" announcement graphic for a single fixture — distinct from ShareImageTemplate's list-of-matches layout. */
 export function MatchDayImageTemplate({
   homeTeam,
@@ -67,15 +89,15 @@ export function MatchDayImageTemplate({
         fontFamily: "General Sans",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "160px 64px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
-          <CrestBadge teamName={homeTeam} crestUrl={homeCrestUrl} />
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "140px 64px 0" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 24 }}>
+          <TeamColumn teamName={homeTeam} crestUrl={homeCrestUrl} />
           {/* eslint-disable-next-line @next/next/no-img-element -- Satori rendering, not a browser <img> */}
-          <img src={LOGO_ICON_SVG} width={84} height={84} alt="" />
-          <CrestBadge teamName={awayTeam} crestUrl={awayCrestUrl} />
+          <img src={LOGO_ICON_SVG} width={84} height={84} style={{ marginTop: 78 }} alt="" />
+          <TeamColumn teamName={awayTeam} crestUrl={awayCrestUrl} />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 56, gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40, gap: 10 }}>
           <span style={{ fontSize: 40, fontWeight: 500, color: "#0a0a0a" }}>{leagueLabel}</span>
           <span style={{ fontSize: 48, fontWeight: 800, color: "#0a0a0a" }}>{kickoffLabel}</span>
         </div>
