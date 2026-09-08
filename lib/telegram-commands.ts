@@ -7,6 +7,7 @@ import { isPredicted, type Prediction } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 
 const COMMAND_LIST = `/predictions - Today's top predictions
+/search <team> - Find a team's predictions
 /mybookings - Your bookings and how they're grading
 /stats - Site-wide prediction accuracy
 /leaderboard - Top public bookings
@@ -98,6 +99,38 @@ async function handlePredictions(): Promise<string> {
 
   const lines = predictions.map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)`);
   return `Today's top picks:\n\n${lines.join("\n")}\n\nFull analysis: ${WEBSITE_URL}`;
+}
+
+/** Strips characters that would break PostgREST's `.or()`/`.in()` filter syntax — same as app/api/search/route.ts. */
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(/[,()%]/g, "").trim();
+}
+
+async function handleSearch(query: string | null): Promise<string> {
+  const q = query ? sanitizeSearchTerm(query) : "";
+  if (q.length === 0) return "Send this as `/search <team name>`, e.g. `/search Arsenal`.";
+
+  const supabase = createAdminSupabaseClient();
+
+  const { data: matchingLeagues } = await supabase.from("leagues").select("id").or(`name.ilike.%${q}%,country.ilike.%${q}%`);
+  const leagueIds = (matchingLeagues ?? []).map((l) => l.id);
+
+  const orClauses = [`home_team.ilike.%${q}%`, `away_team.ilike.%${q}%`];
+  if (leagueIds.length > 0) orClauses.push(`league_id.in.(${leagueIds.join(",")})`);
+
+  const { data } = await supabase
+    .from("predictions")
+    .select("home_team, away_team, markets, confidence, match_date")
+    .or(orClauses.join(","))
+    .not("markets", "is", null)
+    .order("match_date", { ascending: true })
+    .limit(8);
+
+  const predictions = (data ?? []) as Pick<Prediction, "home_team" | "away_team" | "markets" | "confidence" | "match_date">[];
+  if (predictions.length === 0) return `No predictions found for "${q}".`;
+
+  const lines = predictions.map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)`);
+  return `Results for "${q}":\n\n${lines.join("\n")}\n\nFull analysis: ${WEBSITE_URL}`;
 }
 
 async function findLinkedUserId(chatId: number): Promise<string | null> {
@@ -253,6 +286,9 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
       break;
     case "/predictions":
       reply = await handlePredictions();
+      break;
+    case "/search":
+      reply = await handleSearch(arg);
       break;
     case "/mybookings":
       reply = await handleMyBookings(chatId);
