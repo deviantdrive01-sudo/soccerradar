@@ -9,6 +9,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { BookingPickButton } from "@/components/booking-pick-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
+import { MatchBestPicksDownloadButton } from "@/components/match-best-picks-download-button";
 import {
   isDrawOrOver2_5,
   isX2AndOver1_5,
@@ -363,6 +364,14 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
             </div>
           </div>
         )}
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Best Picks</div>
+            <p className="text-xs text-muted-foreground">Every market for this match clearing 50%+ confidence, as one shareable image.</p>
+          </div>
+          <MatchBestPicksDownloadButton predictionId={prediction.id} />
+        </div>
 
         {prediction.h2h && prediction.h2h.length > 0 && (
           <div className="space-y-1.5 border-t border-border/60 pt-3">
