@@ -7,6 +7,11 @@ import { isPredicted, type Prediction } from "@/lib/supabase/types";
 import type { MarketKey } from "@/lib/hydrate";
 import { TOP_MARKET_CONFIGS, filterTopMarketPicks, type TopMarketSlug } from "@/lib/top-market-picks";
 
+const WEBSITE_URL = "https://socceradar.site";
+const SIGNUP_URL = `${WEBSITE_URL}/signup`;
+const LINK_URL = `${WEBSITE_URL}/account/telegram`;
+const GROUP_URL = "https://t.me/+H6oWa-TxFB8xZmM8";
+
 const COMMAND_LIST = `/predictions - Today's top predictions
 /topmarkets - See all curated market categories
 /search <team> - Find a team's predictions
@@ -14,17 +19,15 @@ const COMMAND_LIST = `/predictions - Today's top predictions
 /stats - Site-wide prediction accuracy
 /leaderboard - Top public bookings
 /faq - Common questions
-/help - Show this list`;
+/help - Show this list
+
+💬 Join the community discussion: ${GROUP_URL}`;
 
 // Generated from TOP_MARKET_CONFIGS rather than hand-listed, so a new
 // category added there shows up here automatically.
 const TOP_MARKETS_LIST = `📊 Curated market categories:\n\n${Object.values(TOP_MARKET_CONFIGS)
   .map((c) => `/${c.command} - ${c.title}`)
   .join("\n")}`;
-
-const WEBSITE_URL = "https://socceradar.site";
-const SIGNUP_URL = `${WEBSITE_URL}/signup`;
-const LINK_URL = `${WEBSITE_URL}/account/telegram`;
 
 const NOT_LINKED_MESSAGE = `Don't have a SoccerRadar account yet? Create one free: ${SIGNUP_URL}\n\nAlready have one? Link it here: ${LINK_URL}`;
 
@@ -47,6 +50,9 @@ A: Yes, no account needed to browse. An account lets you save bookings, collecti
 
 Q: How accurate is it really?
 A: Every prediction is graded against the real result at ${WEBSITE_URL}/accuracy — nothing held back.
+
+Q: Where do people actually discuss picks?
+A: The community group: ${GROUP_URL}
 
 Don't have an account yet? ${SIGNUP_URL}`;
 
