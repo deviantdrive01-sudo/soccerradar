@@ -2,10 +2,12 @@ name: Update match results
 
 on:
   schedule:
-    # Every 2 hours, on the :12 to avoid the top-of-hour congestion most
+    # Every hour, on the :12 to avoid the top-of-hour congestion most
     # scheduled workflows pile onto. GitHub may delay a run by a few minutes
-    # under load; that's fine here, results aren't time-critical.
-    - cron: "12 */2 * * *"
+    # under load; that's fine here, results aren't time-critical. Bumped
+    # from every 2 hours (2026-09-08) so a finished match's result lands
+    # sooner instead of waiting up to 2h.
+    - cron: "12 * * * *"
   workflow_dispatch: {}
 
 concurrency:
