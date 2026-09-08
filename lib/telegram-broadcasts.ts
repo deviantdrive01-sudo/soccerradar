@@ -121,17 +121,24 @@ async function broadcastGeneral(supabase: AdminClient): Promise<ScheduledBroadca
 }
 
 // ---------------------------------------------------------------------------
-// Top Bookings — weighted-random pick from public bookings with a real win
-// rate, one per slot, excluding whatever the earlier slots today already
-// picked so the trio doesn't repeat.
+// Top Bookings — weighted-random pick from public bookings that are still
+// mostly actionable, one per slot, excluding whatever the earlier slots
+// today already picked so the trio doesn't repeat.
 // ---------------------------------------------------------------------------
 
-const MIN_SETTLED_FOR_WIN_RATE = 3;
+// A booking's picks must be at least this unplayed to qualify — this is a
+// "here's something worth following" post, not a retrospective, so a
+// booking whose matches have mostly already kicked off is disqualified
+// outright regardless of win rate (2026-09-08 fix: the old logic required
+// 3+ settled picks to even be a candidate, which inverted the intent and
+// meant only already-finished bookings could ever get selected).
+const MIN_UNPLAYED_FRACTION = 0.7;
 
 interface BookingCandidate {
   id: number;
   title: string;
   username: string | null;
+  /** Settled-picks win rate, or a neutral 0.5 when nothing has settled yet (the common case now that mostly-unplayed bookings are the target). */
   winRate: number;
 }
 
@@ -171,14 +178,17 @@ async function loadBookingCandidates(supabase: AdminClient): Promise<BookingCand
       })
       .filter((p): p is { prediction: Prediction; marketKey: MarketKey; userValue: string | null } => p !== null);
 
+    if (picks.length === 0) continue;
+    const unplayedCount = picks.filter((p) => p.prediction.actual_result === null).length;
+    if (unplayedCount / picks.length < MIN_UNPLAYED_FRACTION) continue;
+
     const { settled, correct } = tallyGraded(gradePicks(picks));
-    if (settled < MIN_SETTLED_FOR_WIN_RATE) continue;
 
     candidates.push({
       id: booking.id,
       title: booking.title,
       username: usernameById.get(booking.user_id) ?? null,
-      winRate: correct / settled,
+      winRate: settled > 0 ? correct / settled : 0.5,
     });
   }
 
@@ -204,7 +214,7 @@ async function broadcastTopBooking(supabase: AdminClient, category: "top-booking
   const candidates = (await loadBookingCandidates(supabase)).filter((c) => !excludeIds.has(c.id));
 
   const picked = weightedRandomPick(candidates);
-  if (!picked) return { posted: 0, reason: "no eligible bookings (need public bookings with 3+ settled picks)" };
+  if (!picked) return { posted: 0, reason: "no eligible bookings (need a public booking that's at least 70% unplayed)" };
 
   const slug = buildShareSlug(picked.id, picked.username);
   await sendTelegramPhoto(channelId(), `${SITE_URL}/bookings/${picked.id}/opengraph-image`, "🏆 Top Booking");
