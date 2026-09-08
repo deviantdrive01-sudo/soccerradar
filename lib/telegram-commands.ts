@@ -80,6 +80,15 @@ async function handleLink(chatId: number, code: string | null): Promise<string> 
   return `✅ Linked to @${profile?.username ?? "your account"}! Try /mybookings or /stats.`;
 }
 
+export type PredictionSummary = Pick<Prediction, "id" | "home_team" | "away_team" | "markets" | "confidence">;
+
+/** One match per entry, each with its own link — Telegram auto-linkifies a bare URL on its own line, no parse_mode needed. */
+export function formatPredictionLines(predictions: PredictionSummary[]): string {
+  return predictions
+    .map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)\n${WEBSITE_URL}/match/${p.id}`)
+    .join("\n\n");
+}
+
 async function handlePredictions(): Promise<string> {
   const supabase = createAdminSupabaseClient();
   const now = new Date();
@@ -87,18 +96,17 @@ async function handlePredictions(): Promise<string> {
 
   const { data } = await supabase
     .from("predictions")
-    .select("home_team, away_team, markets, confidence")
+    .select("id, home_team, away_team, markets, confidence")
     .not("markets", "is", null)
     .gte("match_date", now.toISOString())
     .lte("match_date", dayAhead.toISOString())
     .order("confidence", { ascending: false })
     .limit(8);
 
-  const predictions = (data ?? []) as Pick<Prediction, "home_team" | "away_team" | "markets" | "confidence">[];
+  const predictions = (data ?? []) as PredictionSummary[];
   if (predictions.length === 0) return "No upcoming predictions in the next 24h yet — check back soon.";
 
-  const lines = predictions.map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)`);
-  return `Today's top picks:\n\n${lines.join("\n")}\n\nFull analysis: ${WEBSITE_URL}`;
+  return `Today's top picks:\n\n${formatPredictionLines(predictions)}`;
 }
 
 /** Strips characters that would break PostgREST's `.or()`/`.in()` filter syntax — same as app/api/search/route.ts. */
@@ -120,17 +128,16 @@ async function handleSearch(query: string | null): Promise<string> {
 
   const { data } = await supabase
     .from("predictions")
-    .select("home_team, away_team, markets, confidence, match_date")
+    .select("id, home_team, away_team, markets, confidence")
     .or(orClauses.join(","))
     .not("markets", "is", null)
     .order("match_date", { ascending: true })
     .limit(8);
 
-  const predictions = (data ?? []) as Pick<Prediction, "home_team" | "away_team" | "markets" | "confidence" | "match_date">[];
+  const predictions = (data ?? []) as PredictionSummary[];
   if (predictions.length === 0) return `No predictions found for "${q}".`;
 
-  const lines = predictions.map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)`);
-  return `Results for "${q}":\n\n${lines.join("\n")}\n\nFull analysis: ${WEBSITE_URL}`;
+  return `Results for "${q}":\n\n${formatPredictionLines(predictions)}`;
 }
 
 async function findLinkedUserId(chatId: number): Promise<string | null> {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
-import type { Prediction } from "@/lib/supabase/types";
+import { formatPredictionLines, type PredictionSummary } from "@/lib/telegram-commands";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from("predictions")
-    .select("home_team, away_team, markets, confidence")
+    .select("id, home_team, away_team, markets, confidence")
     .not("markets", "is", null)
     .gte("match_date", now.toISOString())
     .lte("match_date", dayAhead.toISOString())
@@ -39,13 +39,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const predictions = (data ?? []) as Pick<Prediction, "home_team" | "away_team" | "markets" | "confidence">[];
+  const predictions = (data ?? []) as PredictionSummary[];
   if (predictions.length === 0) {
     return NextResponse.json({ posted: false, reason: "no upcoming predictions" });
   }
 
-  const lines = predictions.map((p) => `${p.home_team} vs ${p.away_team} — ${p.markets!.outcome.label} (${p.confidence}%)`);
-  const text = `⚽ Today's top picks:\n\n${lines.join("\n")}\n\nFull analysis: https://socceradar.site`;
+  const text = `⚽ Today's top picks:\n\n${formatPredictionLines(predictions)}`;
 
   await sendTelegramMessage(channel, text);
 
