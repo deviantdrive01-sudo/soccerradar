@@ -86,9 +86,9 @@ export default async function AdminBookingsPage() {
 
       <div className="rounded-md border border-border/60 p-4">
         <p className="mb-3 text-sm text-muted-foreground">
-          Scans today&apos;s predicted matches for the single best market per match at 68%+ confidence, and bundles
-          them into public bookings of up to 7 picks each (splitting into more than one if more than 7 matches
-          qualify). Safe to run again later the same day as more matches get predicted.
+          Scans today&apos;s predicted matches for the single best market per match at 68%+ confidence (FT Draw
+          excluded), and bundles them into public bookings of up to 7 picks each (splitting into more than one if
+          more than 7 matches qualify). Safe to run again later the same day as more matches get predicted.
         </p>
         <AdminGenerateBestMixButton />
       </div>
