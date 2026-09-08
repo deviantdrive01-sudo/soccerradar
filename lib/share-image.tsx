@@ -22,6 +22,15 @@ export const SHARE_IMAGE_OPTIONS = {
   ],
 };
 
+/**
+ * Taller variant for a caller showing more than the standard 4 rows (pair
+ * with `maxVisible` on ShareImageTemplate) — e.g. the Telegram bot's top-picks
+ * image, which shows up to 8. Reuses the same already-loaded font buffers
+ * rather than re-reading the files.
+ */
+export const SHARE_IMAGE_SIZE_LARGE = { width: 1244, height: 2080 };
+export const SHARE_IMAGE_OPTIONS_LARGE = { ...SHARE_IMAGE_SIZE_LARGE, fonts: SHARE_IMAGE_OPTIONS.fonts };
+
 // Same mark as app/icon.svg, recolored for the dark background (yellow
 // badge / black mark, matching the "dark chrome" yellow used elsewhere —
 // e.g. components/all-leagues-badge.tsx's dark variant).
@@ -88,13 +97,16 @@ export function ShareImageTemplate({
   ownerLabel,
   avatarUrl,
   items,
+  maxVisible = MAX_VISIBLE,
 }: {
   title: string;
   ownerLabel: string;
   avatarUrl?: string | null;
   items: ShareImageItem[];
+  /** Defaults to the 1550px-canvas-tuned 4 — pass a higher value together with a taller `size`/options (see SHARE_IMAGE_OPTIONS_LARGE) for a caller with more vertical room. */
+  maxVisible?: number;
 }) {
-  const visible = items.slice(0, MAX_VISIBLE);
+  const visible = items.slice(0, maxVisible);
   const remaining = items.length - visible.length;
   const dateLabel = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
 
