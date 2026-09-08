@@ -140,19 +140,19 @@ export function LeagueMatchesImageTemplate({
                 {match.homeTeam}
               </span>
               <SmallCrest teamName={match.homeTeam} crestUrl={match.homeCrestUrl} />
-              <span
+              <div
                 style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
                   width: 70,
                   flexShrink: 0,
-                  textAlign: "center",
-                  fontSize: 24,
-                  fontWeight: 800,
-                  color: YELLOW,
-                  margin: "0 16px",
+                  marginLeft: 16,
+                  marginRight: 16,
                 }}
               >
-                VS
-              </span>
+                <span style={{ fontSize: 24, fontWeight: 800, color: YELLOW }}>VS</span>
+              </div>
               <SmallCrest teamName={match.awayTeam} crestUrl={match.awayCrestUrl} />
               <span
                 style={{
