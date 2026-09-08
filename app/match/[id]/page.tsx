@@ -11,7 +11,6 @@ import { BookingPickButton } from "@/components/booking-pick-button";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import {
   isDrawOrOver2_5,
-  isFullTimeDraw,
   marketConfidence,
   marketPredictionLabel,
   settledMarketTally,
@@ -224,7 +223,13 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
         <div className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Outcome</div>
           <div className="flex flex-wrap gap-1.5">
-            <YesNoBadge label="FT Draw" value={isFullTimeDraw(markets)} predictionId={prediction.id} marketKey="fullTimeDraw" markets={markets} />
+            <span className="inline-flex items-center gap-1">
+              <Badge variant="secondary" className="font-medium">
+                FT: {markets.outcome.label}
+                <ConfidenceSuffix markets={markets} marketKey="fullTimeOutcome" />
+              </Badge>
+              <BookingPickButton predictionId={prediction.id} marketKey="fullTimeOutcome" markets={markets} />
+            </span>
             <span className="inline-flex items-center gap-1">
               <Badge variant="secondary" className="font-medium">
                 1H: {markets.firstHalfOutcome.label}

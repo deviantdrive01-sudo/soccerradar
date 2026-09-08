@@ -7,7 +7,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { isDrawOrOver2_5, isFullTimeDraw, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
+import { isDrawOrOver2_5, settledMarketTally, summarizeSettledMarkets, winEitherHalfCode } from "@/lib/hydrate";
 import { SettledMarketBadges } from "@/components/settled-market-badges";
 import { CollectionPickerButton } from "@/components/collection-picker-button";
 import { isPredicted } from "@/lib/supabase/types";
@@ -157,7 +157,9 @@ export function MatchCard({
           <div className="flex flex-wrap gap-1">
             {showFtDraw && (
               <>
-                <PickBadge label="FTD" value={isFullTimeDraw(markets)} />
+                <Badge variant="secondary" className={PICK}>
+                  FT {markets.outcome.code}
+                </Badge>
                 <Badge variant="secondary" className={PICK}>
                   1H {markets.firstHalfOutcome.code}
                 </Badge>

@@ -8,8 +8,7 @@ const MIN_CONFIDENCE = 68;
 const PICKS_PER_BOOKING = 7;
 const MIN_TOTAL_PICKS = 3; // not worth publishing a near-empty "mix" on a quiet day
 
-// FT Draw excluded from the candidate pool per direct instruction (2026-09-08).
-const CANDIDATE_MARKET_KEYS = MARKET_KEYS.filter((key) => key !== "fullTimeDraw");
+const CANDIDATE_MARKET_KEYS = MARKET_KEYS;
 
 const SYSTEM_USERNAME = "SoccerRadarOfficial";
 const SYSTEM_EMAIL = "official+bestmix@socceradar.site";
@@ -43,6 +42,10 @@ function selectQualifyingPicks(predictions: Prediction[]): QualifyingPick[] {
     if (!isPredicted(p)) continue;
     let best: { marketKey: MarketKey; confidence: number } | null = null;
     for (const key of CANDIDATE_MARKET_KEYS) {
+      // FT Draw calls excluded from the candidate pool per direct instruction
+      // (2026-09-08) — draws are the least reliable of the three FT results.
+      // Home/Away FT calls are fair game now that fullTimeOutcome exists.
+      if (key === "fullTimeOutcome" && p.markets.outcome.code === "X") continue;
       const confidence = marketConfidence(p.markets, key);
       if (confidence !== null && confidence >= MIN_CONFIDENCE && (!best || confidence > best.confidence)) {
         best = { marketKey: key, confidence };

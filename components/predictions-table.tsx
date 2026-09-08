@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { AdSlot } from "@/components/ad-slot";
 import { cn } from "cn";
-import { isDrawOrOver2_5, isFullTimeDraw, isMarketCorrect, MARKET_KEYS, winEitherHalfCode } from "@/lib/hydrate";
+import { isDrawOrOver2_5, isMarketCorrect, MARKET_KEYS, winEitherHalfCode } from "@/lib/hydrate";
 import { isPredicted } from "@/lib/supabase/types";
 import type { Prediction } from "@/lib/supabase/types";
 import type { MarketFilter } from "@/components/market-filter";
@@ -85,7 +85,7 @@ export function PredictionsTable({
             <TableHead className={CELL}>Match</TableHead>
             <TableHead className={cn(CELL, "text-center")}>Kickoff</TableHead>
             {showResult && <TableHead className={CELL}>Result</TableHead>}
-            {showFtDraw && <TableHead className={cn(CELL, "text-center")}>FT Draw</TableHead>}
+            {showFtDraw && <TableHead className={cn(CELL, "text-center")}>FT</TableHead>}
             {showFtDraw && <TableHead className={cn(CELL, "text-center")}>1H</TableHead>}
             {showHighestHalf && <TableHead className={CELL}>Top Half</TableHead>}
             {showWinEitherHalf && <TableHead className={cn(CELL, "text-center")}>Win E/H</TableHead>}
@@ -156,8 +156,8 @@ export function PredictionsTable({
                     </TableCell>
                   )}
                   {showFtDraw && (
-                    <TableCell className={cn(CELL, "text-center")}>
-                      <YesNo value={m ? isFullTimeDraw(m) : null} />
+                    <TableCell className={cn(CELL, "text-center text-muted-foreground")}>
+                      {m ? m.outcome.code : "–"}
                     </TableCell>
                   )}
                   {showFtDraw && (

@@ -47,7 +47,7 @@ export const TOP_MARKET_CONFIGS: Record<TopMarketSlug, TopMarketConfig> = {
   corners: { marketKey: "over7_5", targetValue: "yes", minConfidence: 50, title: "Top Corners", command: "topcorners" },
   "1x": { marketKey: "doubleChance", targetValue: "1X", minConfidence: 60, title: "Top 1X (Home/Draw)", command: "top1x" },
   x2: { marketKey: "doubleChance", targetValue: "X2", minConfidence: 60, title: "Top X2 (Draw/Away)", command: "topx2" },
-  ftdraw: { marketKey: "fullTimeDraw", targetValue: "yes", minConfidence: 60, title: "Top FT Draw", command: "topdraw" },
+  ftdraw: { marketKey: "fullTimeOutcome", targetValue: "X", minConfidence: 60, title: "Top FT Draw", command: "topdraw" },
   "1hhome": { marketKey: "firstHalfOutcome", targetValue: "1", minConfidence: 60, title: "Top 1H Home Win", command: "top1hhome" },
   "1hdraw": { marketKey: "firstHalfOutcome", targetValue: "X", minConfidence: 60, title: "Top 1H Draw", command: "top1hdraw" },
   "1haway": { marketKey: "firstHalfOutcome", targetValue: "2", minConfidence: 60, title: "Top 1H Away Win", command: "top1haway" },

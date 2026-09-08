@@ -298,6 +298,7 @@ export function actualWinEitherHalfCode(actual: ActualMarkets): WinEitherHalfCod
 
 export type MarketKey =
   | "fullTimeDraw"
+  | "fullTimeOutcome"
   | "firstHalfOutcome"
   | "winEitherHalf"
   | "highestScoringHalf"
@@ -316,12 +317,17 @@ export type MarketKey =
  * page, and settled-match summaries. "over8_5" was pulled from this list
  * (2026-09-07): it settled at 42% across 167 matches, worse than a coin
  * flip, while over7_5 held at 54% — so corners stayed, that one line didn't.
- * It stays in the MarketKey type (below) and every decode function keeps
- * handling it so already-published bookings referencing it keep rendering
- * correctly; it just isn't offered for new picks or shown anywhere new.
+ * "fullTimeDraw" (a bare "will it be a draw" yes/no) was replaced here by
+ * "fullTimeOutcome" (2026-09-08) — the model already predicts the full
+ * Home/Draw/Away result, so the market now shows that instead of collapsing
+ * it to a binary draw call, matching how firstHalfOutcome already works.
+ * Both retired keys stay in the MarketKey type (below) and every decode
+ * function keeps handling them so already-published bookings and the
+ * standalone "FT Draw" quick-filter/collection keep working correctly; they
+ * just aren't offered as a fresh booking pick or shown in any new UI.
  */
 export const MARKET_KEYS: MarketKey[] = [
-  "fullTimeDraw",
+  "fullTimeOutcome",
   "firstHalfOutcome",
   "winEitherHalf",
   "highestScoringHalf",
@@ -354,6 +360,7 @@ function isDoubleChanceCorrect(selection: string, outcomeCode: OutcomeCode): boo
 
 export const MARKET_LABELS: Record<MarketKey, string> = {
   fullTimeDraw: "FT Draw",
+  fullTimeOutcome: "FT Result",
   firstHalfOutcome: "1H Outcome",
   winEitherHalf: "Win Either Half",
   highestScoringHalf: "Highest Half",
@@ -377,6 +384,8 @@ export function isMarketCorrect(
   switch (key) {
     case "fullTimeDraw":
       return isFullTimeDraw(predicted) === isActualFullTimeDraw(actual);
+    case "fullTimeOutcome":
+      return predicted.outcome.code === actual.outcome.code;
     case "firstHalfOutcome":
       return predicted.firstHalfOutcome.code === actual.firstHalfOutcome.code;
     case "winEitherHalf": {
@@ -428,6 +437,7 @@ export function marketConfidence(predicted: HydratedMarkets, key: MarketKey): nu
   if (!mc) return null;
   switch (key) {
     case "fullTimeDraw":
+    case "fullTimeOutcome":
     case "doubleChance":
       return mc.o;
     case "firstHalfOutcome":
@@ -475,6 +485,8 @@ export function marketPredictionLabel(predicted: HydratedMarkets, key: MarketKey
   switch (key) {
     case "fullTimeDraw":
       return isFullTimeDraw(predicted) ? "Yes" : "No";
+    case "fullTimeOutcome":
+      return predicted.outcome.label;
     case "firstHalfOutcome":
       return predicted.firstHalfOutcome.label;
     case "winEitherHalf": {
@@ -520,6 +532,7 @@ const YES_NO_OPTIONS: MarketOption[] = [
 /** The selectable sides for a market, for a booking pick's "which side" UI — in SoccerRadar's own predicted order first (Home/Draw/Away, not alphabetical). */
 export function marketOptions(key: MarketKey): MarketOption[] {
   switch (key) {
+    case "fullTimeOutcome":
     case "firstHalfOutcome":
       return [
         { value: "1", label: "Home" },
@@ -564,6 +577,8 @@ export function marketPredictionValue(predicted: HydratedMarkets, key: MarketKey
   switch (key) {
     case "fullTimeDraw":
       return isFullTimeDraw(predicted) ? "yes" : "no";
+    case "fullTimeOutcome":
+      return predicted.outcome.code;
     case "firstHalfOutcome":
       return predicted.firstHalfOutcome.code;
     case "winEitherHalf":
@@ -612,6 +627,8 @@ export function actualMarketValue(actual: ActualMarkets, key: MarketKey): string
   switch (key) {
     case "fullTimeDraw":
       return isActualFullTimeDraw(actual) ? "yes" : "no";
+    case "fullTimeOutcome":
+      return actual.outcome.code;
     case "firstHalfOutcome":
       return actual.firstHalfOutcome.code;
     case "winEitherHalf":
