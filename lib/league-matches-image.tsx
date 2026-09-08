@@ -148,6 +148,7 @@ export function LeagueMatchesImageTemplate({
                   fontSize: 24,
                   fontWeight: 800,
                   color: YELLOW,
+                  margin: "0 16px",
                 }}
               >
                 VS
