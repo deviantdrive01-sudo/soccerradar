@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { sendTelegramMessage, type TelegramUpdate, type TelegramUser } from "@/lib/telegram";
+import { sendTelegramMessage, sendTelegramPhoto, type TelegramUpdate, type TelegramUser } from "@/lib/telegram";
 import { computeAccuracy, accuracyPct } from "@/lib/accuracy";
 import { gradePicks, tallyGraded } from "@/lib/booking-grading";
 import { isPredicted, type Prediction } from "@/lib/supabase/types";
@@ -89,7 +89,16 @@ export function formatPredictionLines(predictions: PredictionSummary[]): string 
     .join("\n\n");
 }
 
-async function handlePredictions(): Promise<string> {
+const TOP_PICKS_IMAGE_URL = `${WEBSITE_URL}/api/telegram/top-picks-image`;
+
+/**
+ * Sends the branded top-picks image (same ShareImageTemplate used for
+ * bookings/collections/top-picks share previews) as a photo, then the full
+ * list as a follow-up text message. Two messages rather than one photo+caption
+ * so the text list isn't constrained by Telegram's much shorter (1024-char)
+ * caption limit.
+ */
+async function sendPredictionsDigest(chatId: number): Promise<void> {
   const supabase = createAdminSupabaseClient();
   const now = new Date();
   const dayAhead = new Date(now.getTime() + 24 * 3600 * 1000);
@@ -104,9 +113,13 @@ async function handlePredictions(): Promise<string> {
     .limit(8);
 
   const predictions = (data ?? []) as PredictionSummary[];
-  if (predictions.length === 0) return "No upcoming predictions in the next 24h yet — check back soon.";
+  if (predictions.length === 0) {
+    await sendTelegramMessage(chatId, "No upcoming predictions in the next 24h yet — check back soon.");
+    return;
+  }
 
-  return `Today's top picks:\n\n${formatPredictionLines(predictions)}`;
+  await sendTelegramPhoto(chatId, TOP_PICKS_IMAGE_URL, "⚽ Today's Top Picks");
+  await sendTelegramMessage(chatId, formatPredictionLines(predictions));
 }
 
 /** Strips characters that would break PostgREST's `.or()`/`.in()` filter syntax — same as app/api/search/route.ts. */
@@ -292,8 +305,8 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
       reply = FAQ_TEXT;
       break;
     case "/predictions":
-      reply = await handlePredictions();
-      break;
+      await sendPredictionsDigest(chatId);
+      return;
     case "/search":
       reply = await handleSearch(arg);
       break;

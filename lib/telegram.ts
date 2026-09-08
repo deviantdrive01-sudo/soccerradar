@@ -43,6 +43,20 @@ export async function sendTelegramMessage(chatId: number | string, text: string)
   }
 }
 
+/** Sends a photo by URL (Telegram fetches it itself — no need to pipe image bytes through this server) with an optional caption. */
+export async function sendTelegramPhoto(chatId: number | string, photoUrl: string, caption?: string): Promise<void> {
+  const res = await fetch(`${TELEGRAM_API_BASE}/bot${botToken()}/sendPhoto`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, photo: photoUrl, caption }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Telegram sendPhoto failed: ${res.status} ${body}`);
+  }
+}
+
 /** The bot's own @username — used to build the t.me deep link for account linking. */
 export async function getBotUsername(): Promise<string> {
   const res = await fetch(`${TELEGRAM_API_BASE}/bot${botToken()}/getMe`);
