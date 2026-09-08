@@ -42,32 +42,40 @@ jobs:
     steps:
       - name: Top Bookings #1
         if: github.event.schedule == '30 8 * * *' || github.event.inputs.target == 'top-bookings-1'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-bookings-1"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-bookings-1"
 
       - name: Top Bookings #2
         if: github.event.schedule == '0 9 * * *' || github.event.inputs.target == 'top-bookings-2'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-bookings-2"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-bookings-2"
 
       - name: Top Bookings #3
         if: github.event.schedule == '30 9 * * *' || github.event.inputs.target == 'top-bookings-3'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-bookings-3"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-bookings-3"
 
       - name: Today's Banger
         if: github.event.schedule == '0 10 * * *' || github.event.inputs.target == 'banger'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=banger"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=banger"
 
       - name: Today's Corners
         if: github.event.schedule == '30 10 * * *' || github.event.inputs.target == 'corners'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=corners"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=corners"
 
       - name: Today's Over 1.5
         if: github.event.schedule == '0 11 * * *' || github.event.inputs.target == 'over15'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=over15"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=over15"
 
       - name: International (Champions League)
         if: github.event.schedule == '30 11 * * *' || github.event.inputs.target == 'international'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=international"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=international"
 
       - name: Top Match
         if: github.event.schedule == '0 12 * * *' || github.event.inputs.target == 'top-match'
-        run: curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-match"
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://socceradar.site/api/cron/telegram-scheduled?type=top-match"
