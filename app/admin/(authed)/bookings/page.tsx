@@ -3,7 +3,7 @@ import { verifySession } from "@/lib/admin/dal";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { forceBookingPrivate } from "./actions";
 import { AdminDeleteBookingButton } from "@/components/admin-delete-booking-button";
-import { AdminGenerateBestMixButton } from "@/components/admin-generate-best-mix-button";
+import { AdminGenerateBestMixForm } from "@/components/admin-generate-best-mix-form";
 import { AdminStatusBadge } from "@/components/admin-status-badge";
 import { Avatar } from "@/components/avatar";
 import { buildShareSlug } from "@/lib/share-slug";
@@ -35,6 +35,14 @@ export default async function AdminBookingsPage() {
     .from("bookings")
     .select("id, user_id, title, is_public, created_at")
     .order("created_at", { ascending: false });
+
+  const { data: leagueRows } = await supabase
+    .from("leagues")
+    .select("id, name, country")
+    .eq("is_active", true)
+    .order("country", { ascending: true })
+    .order("name", { ascending: true });
+  const leagueOptions = (leagueRows ?? []).map((l) => ({ id: l.id, label: `${l.country} · ${l.name}` }));
 
   const bookingIds = (bookings ?? []).map((b) => b.id);
   const userIds = [...new Set((bookings ?? []).map((b) => b.user_id))];
@@ -98,11 +106,12 @@ export default async function AdminBookingsPage() {
 
       <div className="rounded-md border border-border/60 p-4">
         <p className="mb-3 text-sm text-muted-foreground">
-          Scans today&apos;s predicted matches for the single best market per match at 68%+ confidence (FT Draw
-          excluded), and bundles them into public bookings of up to 7 picks each (splitting into more than one if
-          more than 7 matches qualify). Safe to run again later the same day as more matches get predicted.
+          Scans today&apos;s predicted matches for the single best market per match (FT Draw excluded), one pick per
+          match, ranked by confidence — set your own thresholds below. Publishes the top result as a single public
+          booking; extras beyond your game count are dropped, not split into a second booking. Safe to run again
+          later the same day as more matches get predicted.
         </p>
-        <AdminGenerateBestMixButton />
+        <AdminGenerateBestMixForm leagues={leagueOptions} />
       </div>
 
       {/* Phone: stacked cards — the table below needs 820px+ to read without horizontal scrolling. */}

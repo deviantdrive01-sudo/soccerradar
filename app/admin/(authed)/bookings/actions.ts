@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/admin/dal";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { generateBestMix, type GenerateBestMixResult } from "@/lib/best-mix";
+import { generateBestMix, type GenerateBestMixParams, type GenerateBestMixResult } from "@/lib/best-mix";
 
 /**
  * Any admin can pull a booking out of the public Top Bookings directory —
@@ -34,9 +34,9 @@ export async function deleteBookingAdmin(bookingId: number): Promise<void> {
   revalidatePath("/top-bookings");
 }
 
-export async function generateBestMixAction(): Promise<GenerateBestMixResult | { error: string }> {
+export async function generateBestMixAction(params: GenerateBestMixParams): Promise<GenerateBestMixResult | { error: string }> {
   await verifySession();
-  const result = await generateBestMix();
+  const result = await generateBestMix(params);
 
   revalidatePath("/admin/bookings");
   revalidatePath("/top-bookings");
