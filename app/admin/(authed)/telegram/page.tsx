@@ -55,7 +55,36 @@ export default async function AdminTelegramPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border/60">
+      {/* Phone: stacked cards */}
+      <div className="space-y-3 sm:hidden">
+        {ORDER.map((type) => {
+          const info = SCHEDULED_BROADCAST_INFO[type];
+          const status = todaysStatus.get(type);
+          return (
+            <div key={type} className="space-y-2 rounded-md border border-border/60 p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-medium">{info.label}</div>
+                  <div className="text-xs text-muted-foreground">{info.scheduledTime}</div>
+                </div>
+                <AdminTelegramTriggerButton type={type} />
+              </div>
+              <div className="border-t border-border/60 pt-2 text-xs">
+                {status ? (
+                  <span className="text-primary">
+                    Sent{status.count > 1 ? ` ${status.count}×` : ""} · last {timeLabel(status.lastAt)}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Not sent yet</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* sm+: table */}
+      <div className="hidden overflow-x-auto rounded-md border border-border/60 sm:block">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-border/60 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -94,7 +123,33 @@ export default async function AdminTelegramPage() {
 
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent activity</h2>
-        <div className="overflow-x-auto rounded-md border border-border/60">
+
+        {/* Phone: stacked cards */}
+        <div className="space-y-2 sm:hidden">
+          {(logRows ?? []).map((row, i) => (
+            <div key={i} className="rounded-md border border-border/60 p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-medium">
+                  {SCHEDULED_BROADCAST_INFO[row.category as ScheduledBroadcastType]?.label ?? row.category}
+                </div>
+                <div className="shrink-0 text-xs text-muted-foreground">
+                  {new Date(row.created_at).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short", timeZone: "UTC" })}
+                </div>
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {row.detail ?? "—"} · {row.broadcast_date}
+              </div>
+            </div>
+          ))}
+          {(logRows ?? []).length === 0 && (
+            <div className="rounded-md border border-border/60 px-3 py-6 text-center text-sm text-muted-foreground">
+              Nothing sent yet.
+            </div>
+          )}
+        </div>
+
+        {/* sm+: table */}
+        <div className="hidden overflow-x-auto rounded-md border border-border/60 sm:block">
           <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-border/60 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
