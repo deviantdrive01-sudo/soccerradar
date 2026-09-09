@@ -26,6 +26,20 @@ export interface SiteSettings {
   updated_at: string;
 }
 
+/**
+ * Per-template style config for the downloadable-image templates (Match
+ * Day, League Matches, Outcomes/Best Picks) — admin-editable from
+ * /admin/templates. id is a fixed slug (TemplateId in lib/template-settings.ts),
+ * not an auto-increment. See supabase/migrations/18_template_settings.sql.
+ */
+export interface TemplateSettingsRow {
+  id: string;
+  background_url: string;
+  accent_color: string;
+  wordmark_text: string;
+  updated_at: string;
+}
+
 export type AdEventType = "impression" | "click";
 
 export interface AdEvent {
@@ -327,6 +341,12 @@ export interface Database {
         Row: Row<TeamCrest>;
         Insert: Row<Omit<TeamCrest, "updated_at"> & { updated_at?: string }>;
         Update: Row<Partial<TeamCrest>>;
+        Relationships: [];
+      };
+      template_settings: {
+        Row: Row<TemplateSettingsRow>;
+        Insert: Row<Omit<TemplateSettingsRow, "updated_at"> & { updated_at?: string }>;
+        Update: Row<Partial<Omit<TemplateSettingsRow, "id">>>;
         Relationships: [];
       };
     };

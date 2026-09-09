@@ -1,13 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
-import { SHARE_IMAGE_OPTIONS, LOGO_ICON_SVG, YELLOW } from "@/lib/share-image";
+import { SHARE_IMAGE_OPTIONS, LOGO_ICON_SVG } from "@/lib/share-image";
 
 export const MATCH_DAY_IMAGE_SIZE = { width: 1400, height: 1400 };
 export const MATCH_DAY_IMAGE_OPTIONS = { ...MATCH_DAY_IMAGE_SIZE, fonts: SHARE_IMAGE_OPTIONS.fonts };
-
-const BACKGROUND_JPEG = `data:image/jpeg;base64,${fs
-  .readFileSync(path.join(process.cwd(), "public", "match-day-background.jpg"))
-  .toString("base64")}`;
 
 function initial(label: string): string {
   return (label.trim()[0] ?? "?").toUpperCase();
@@ -60,7 +54,7 @@ function TeamColumn({ teamName, crestUrl }: { teamName: string; crestUrl: string
   );
 }
 
-/** Downloadable "match day" announcement graphic for a single fixture — distinct from ShareImageTemplate's list-of-matches layout. */
+/** Downloadable "match day" announcement graphic for a single fixture — distinct from ShareImageTemplate's list-of-matches layout. Background/accent/wordmark come from the admin-editable template_settings row (see lib/template-settings.ts) rather than being hardcoded. */
 export function MatchDayImageTemplate({
   homeTeam,
   awayTeam,
@@ -68,6 +62,9 @@ export function MatchDayImageTemplate({
   awayCrestUrl,
   leagueLabel,
   kickoffLabel,
+  backgroundUrl,
+  accentColor,
+  wordmarkText,
 }: {
   homeTeam: string;
   awayTeam: string;
@@ -75,6 +72,9 @@ export function MatchDayImageTemplate({
   awayCrestUrl: string | null;
   leagueLabel: string;
   kickoffLabel: string;
+  backgroundUrl: string;
+  accentColor: string;
+  wordmarkText: string;
 }) {
   return (
     <div
@@ -84,7 +84,7 @@ export function MatchDayImageTemplate({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        backgroundImage: `url(${BACKGROUND_JPEG})`,
+        backgroundImage: `url(${backgroundUrl})`,
         backgroundSize: "cover",
         fontFamily: "General Sans",
       }}
@@ -110,14 +110,14 @@ export function MatchDayImageTemplate({
             fontSize: 230,
             fontWeight: 700,
             fontStyle: "italic",
-            color: YELLOW,
+            color: accentColor,
             lineHeight: 1,
             letterSpacing: -6,
             textTransform: "uppercase",
             textAlign: "center",
           }}
         >
-          Match Day
+          {wordmarkText}
         </span>
       </div>
     </div>

@@ -1,6 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import { SHARE_IMAGE_OPTIONS, LOGO_ICON_SVG, YELLOW } from "@/lib/share-image";
+import { SHARE_IMAGE_OPTIONS, LOGO_ICON_SVG } from "@/lib/share-image";
 
 export const LEAGUE_MATCHES_IMAGE_WIDTH = 1200;
 export const LEAGUE_MATCHES_MAX_VISIBLE = 8;
@@ -16,10 +14,6 @@ export function leagueMatchesImageHeight(rowCount: number): number {
 }
 
 export const LEAGUE_MATCHES_IMAGE_OPTIONS_FONTS = SHARE_IMAGE_OPTIONS.fonts;
-
-const BACKGROUND_JPEG = `data:image/jpeg;base64,${fs
-  .readFileSync(path.join(process.cwd(), "public", "league-matches-background.jpg"))
-  .toString("base64")}`;
 
 function initial(label: string): string {
   return (label.trim()[0] ?? "?").toUpperCase();
@@ -56,13 +50,16 @@ export interface LeagueMatchesImageMatch {
   awayCrestUrl: string | null;
 }
 
-/** Downloadable "matchday" fixture-list graphic for one league — every visible match as a row inside one card, distinct from MatchDayImageTemplate's single-fixture layout. */
+/** Downloadable "matchday" fixture-list graphic for one league — every visible match as a row inside one card, distinct from MatchDayImageTemplate's single-fixture layout. Background/accent/wordmark come from the admin-editable template_settings row (see lib/template-settings.ts) rather than being hardcoded. */
 export function LeagueMatchesImageTemplate({
   leagueLabel,
   dateLabel,
   timeLabel,
   matches,
   moreCount,
+  backgroundUrl,
+  accentColor,
+  wordmarkText,
 }: {
   leagueLabel: string;
   dateLabel: string;
@@ -70,6 +67,9 @@ export function LeagueMatchesImageTemplate({
   timeLabel: string | null;
   matches: LeagueMatchesImageMatch[];
   moreCount: number;
+  backgroundUrl: string;
+  accentColor: string;
+  wordmarkText: string;
 }) {
   return (
     <div
@@ -78,7 +78,7 @@ export function LeagueMatchesImageTemplate({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundImage: `url(${BACKGROUND_JPEG})`,
+        backgroundImage: `url(${backgroundUrl})`,
         backgroundSize: "cover",
         fontFamily: "General Sans",
       }}
@@ -90,14 +90,14 @@ export function LeagueMatchesImageTemplate({
             fontSize: 140,
             fontWeight: 700,
             fontStyle: "italic",
-            color: YELLOW,
+            color: accentColor,
             lineHeight: 1,
             letterSpacing: -4,
             textTransform: "uppercase",
             textAlign: "center",
           }}
         >
-          Matchday
+          {wordmarkText}
         </span>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 24, gap: 8 }}>
@@ -151,7 +151,7 @@ export function LeagueMatchesImageTemplate({
                   marginRight: 16,
                 }}
               >
-                <span style={{ fontSize: 24, fontWeight: 800, color: YELLOW }}>VS</span>
+                <span style={{ fontSize: 24, fontWeight: 800, color: accentColor }}>VS</span>
               </div>
               <SmallCrest teamName={match.awayTeam} crestUrl={match.awayCrestUrl} />
               <div style={{ display: "flex", flex: 1, justifyContent: "flex-start", paddingLeft: 20 }}>

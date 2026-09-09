@@ -12,6 +12,7 @@ import {
   bestPicksImageHeight,
   type BestPickRow,
 } from "@/lib/match-best-picks-image";
+import { getTemplateSettings, resolveTemplateBackground } from "@/lib/template-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -43,10 +44,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { data: league } = await supabase.from("leagues").select("name, country").eq("id", prediction.league_id).maybeSingle();
 
-  const [homeCrestUrl, awayCrestUrl] = await Promise.all([
+  const [homeCrestUrl, awayCrestUrl, templateSettings] = await Promise.all([
     getTeamCrestDataUri(prediction.home_team),
     getTeamCrestDataUri(prediction.away_team),
+    getTemplateSettings("best_picks"),
   ]);
+  const backgroundUrl = await resolveTemplateBackground("best_picks", templateSettings.backgroundUrl);
 
   const markets = prediction.markets;
   const picks: BestPickRow[] = MARKET_KEYS.map((key) => ({
@@ -72,6 +75,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         leagueLabel={league ? `${league.country} · ${league.name}` : ""}
         kickoffLabel={`${dateLabel}, ${timeLabel}`}
         picks={picks}
+        backgroundUrl={backgroundUrl}
+        accentColor={templateSettings.accentColor}
+        wordmarkText={templateSettings.wordmarkText}
       />
     ),
     { width: BEST_PICKS_IMAGE_WIDTH, height: bestPicksImageHeight(picks.length), fonts: BEST_PICKS_IMAGE_OPTIONS_FONTS },

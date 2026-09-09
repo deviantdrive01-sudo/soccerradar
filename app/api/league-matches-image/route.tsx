@@ -12,6 +12,7 @@ import {
   leagueMatchesImageHeight,
   type LeagueMatchesImageMatch,
 } from "@/lib/league-matches-image";
+import { getTemplateSettings, resolveTemplateBackground } from "@/lib/template-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,11 @@ export async function GET(req: NextRequest) {
   const visible = rows.slice(0, LEAGUE_MATCHES_MAX_VISIBLE);
   const moreCount = rows.length - visible.length;
 
-  const crestUrls = await Promise.all(
-    visible.flatMap((r) => [getTeamCrestDataUri(r.home_team), getTeamCrestDataUri(r.away_team)]),
-  );
+  const [crestUrls, templateSettings] = await Promise.all([
+    Promise.all(visible.flatMap((r) => [getTeamCrestDataUri(r.home_team), getTeamCrestDataUri(r.away_team)])),
+    getTemplateSettings("league_matches"),
+  ]);
+  const backgroundUrl = await resolveTemplateBackground("league_matches", templateSettings.backgroundUrl);
 
   const matches: LeagueMatchesImageMatch[] = visible.map((r, i) => ({
     homeTeam: r.home_team,
@@ -81,6 +84,9 @@ export async function GET(req: NextRequest) {
         timeLabel={headerTimeLabel}
         matches={matches}
         moreCount={moreCount}
+        backgroundUrl={backgroundUrl}
+        accentColor={templateSettings.accentColor}
+        wordmarkText={templateSettings.wordmarkText}
       />
     ),
     { width: LEAGUE_MATCHES_IMAGE_WIDTH, height: leagueMatchesImageHeight(visible.length), fonts: LEAGUE_MATCHES_IMAGE_OPTIONS_FONTS },

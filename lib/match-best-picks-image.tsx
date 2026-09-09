@@ -1,6 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import { SHARE_IMAGE_OPTIONS, LOGO_ICON_SVG, YELLOW } from "@/lib/share-image";
+import { SHARE_IMAGE_OPTIONS, LOGO_ICON_SVG } from "@/lib/share-image";
 import type { MarketKey } from "@/lib/hydrate";
 
 export const BEST_PICKS_IMAGE_WIDTH = 1200;
@@ -17,10 +15,6 @@ export function bestPicksImageHeight(pickCount: number): number {
 }
 
 export const BEST_PICKS_IMAGE_OPTIONS_FONTS = SHARE_IMAGE_OPTIONS.fonts;
-
-const BACKGROUND_JPEG = `data:image/jpeg;base64,${fs
-  .readFileSync(path.join(process.cwd(), "public", "best-picks-background.jpg"))
-  .toString("base64")}`;
 
 /** Short plain-language category name for each market — the dimmer second line under each pick's bold title. */
 export const MARKET_DESCRIPTIONS: Record<MarketKey, string> = {
@@ -80,7 +74,7 @@ export interface BestPickRow {
   subtitle: string;
 }
 
-/** Downloadable "every market clearing the bar for this match" graphic — light header (crests, names, league, kickoff) over the top of a background photo that fades to a dark stadium shot by the bottom, a branded card with a timeline-style pick list, and an "OUTCOMES" wordmark closing it out. */
+/** Downloadable "every market clearing the bar for this match" graphic — light header (crests, names, league, kickoff) over the top of a background photo that fades to a dark stadium shot by the bottom, a branded card with a timeline-style pick list, and a wordmark closing it out. Background/accent/wordmark come from the admin-editable template_settings row (see lib/template-settings.ts) rather than being hardcoded. */
 export function MatchBestPicksImageTemplate({
   homeTeam,
   awayTeam,
@@ -89,6 +83,9 @@ export function MatchBestPicksImageTemplate({
   leagueLabel,
   kickoffLabel,
   picks,
+  backgroundUrl,
+  accentColor,
+  wordmarkText,
 }: {
   homeTeam: string;
   awayTeam: string;
@@ -97,6 +94,9 @@ export function MatchBestPicksImageTemplate({
   leagueLabel: string;
   kickoffLabel: string;
   picks: BestPickRow[];
+  backgroundUrl: string;
+  accentColor: string;
+  wordmarkText: string;
 }) {
   return (
     <div
@@ -105,7 +105,7 @@ export function MatchBestPicksImageTemplate({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundImage: `url(${BACKGROUND_JPEG})`,
+        backgroundImage: `url(${backgroundUrl})`,
         backgroundSize: "cover",
         fontFamily: "General Sans",
       }}
@@ -130,7 +130,7 @@ export function MatchBestPicksImageTemplate({
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", padding: "36px 56px 0" }}>
+      <div style={{ display: "flex", flexDirection: "column", padding: "36px 144px 0" }}>
         <div
           style={{
             display: "flex",
@@ -158,7 +158,7 @@ export function MatchBestPicksImageTemplate({
                       width: 14,
                       height: 14,
                       borderRadius: "50%",
-                      border: `2px solid ${YELLOW}`,
+                      border: `2px solid ${accentColor}`,
                       backgroundColor: "rgba(10,10,10,0.92)",
                       marginTop: 8,
                       flexShrink: 0,
@@ -180,16 +180,16 @@ export function MatchBestPicksImageTemplate({
         <span
           style={{
             fontFamily: "General Sans",
-            fontSize: 118,
+            fontSize: 176,
             fontWeight: 700,
             fontStyle: "italic",
-            color: YELLOW,
+            color: accentColor,
             lineHeight: 1,
-            letterSpacing: -3,
+            letterSpacing: -6,
             textTransform: "uppercase",
           }}
         >
-          Outcomes
+          {wordmarkText}
         </span>
       </div>
     </div>

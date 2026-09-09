@@ -3,6 +3,7 @@ import { ImageResponse } from "next/og";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { MatchDayImageTemplate, MATCH_DAY_IMAGE_OPTIONS } from "@/lib/match-day-image";
 import { getTeamCrestDataUri } from "@/lib/team-crest";
+import { getTemplateSettings, resolveTemplateBackground } from "@/lib/template-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +34,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { data: league } = await supabase.from("leagues").select("name, country").eq("id", prediction.league_id).maybeSingle();
 
-  const [homeCrestUrl, awayCrestUrl] = await Promise.all([
+  const [homeCrestUrl, awayCrestUrl, templateSettings] = await Promise.all([
     getTeamCrestDataUri(prediction.home_team),
     getTeamCrestDataUri(prediction.away_team),
+    getTemplateSettings("match_day"),
   ]);
+  const backgroundUrl = await resolveTemplateBackground("match_day", templateSettings.backgroundUrl);
 
   const kickoff = new Date(prediction.match_date);
   const dateLabel = kickoff.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone });
@@ -52,6 +55,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         awayCrestUrl={awayCrestUrl}
         leagueLabel={league ? `${league.country} · ${league.name}` : ""}
         kickoffLabel={kickoffLabel}
+        backgroundUrl={backgroundUrl}
+        accentColor={templateSettings.accentColor}
+        wordmarkText={templateSettings.wordmarkText}
       />
     ),
     MATCH_DAY_IMAGE_OPTIONS,
