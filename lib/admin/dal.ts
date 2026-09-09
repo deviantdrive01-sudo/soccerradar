@@ -20,11 +20,17 @@ export const verifySession = cache(async () => {
     redirect("/admin/login");
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("role, username, avatar_url").eq("id", user.id).single();
 
   if (profile?.role !== "admin" && profile?.role !== "super_admin") {
     redirect("/admin/login");
   }
 
-  return { userId: user.id, email: user.email ?? null, role: profile.role as ProfileRole };
+  return {
+    userId: user.id,
+    email: user.email ?? null,
+    role: profile.role as ProfileRole,
+    username: profile.username,
+    avatarUrl: profile.avatar_url,
+  };
 });

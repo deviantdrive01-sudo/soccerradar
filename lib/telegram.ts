@@ -66,3 +66,24 @@ export async function getBotUsername(): Promise<string> {
   if (typeof username !== "string") throw new Error("Telegram getMe returned no username");
   return username;
 }
+
+/**
+ * Live subscriber count for the announcement channel — not cached locally
+ * (Telegram is the source of truth), so a missing env var or a failed
+ * request just means "unknown" rather than something worth crashing a page
+ * over. Used by the admin overview's Telegram stat card.
+ */
+export async function getChannelMemberCount(): Promise<number | null> {
+  const channel = process.env.TELEGRAM_CHANNEL_CHAT_ID;
+  if (!channel) return null;
+  try {
+    const res = await fetch(`${TELEGRAM_API_BASE}/bot${botToken()}/getChatMemberCount?chat_id=${encodeURIComponent(channel)}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return typeof json?.result === "number" ? json.result : null;
+  } catch {
+    return null;
+  }
+}
