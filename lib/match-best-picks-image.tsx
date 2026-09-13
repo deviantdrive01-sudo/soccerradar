@@ -38,6 +38,7 @@ export const MARKET_DESCRIPTIONS: Record<MarketKey, string> = {
   awayGoalsOver1_5: "Away Team Goals Over 1.5",
   bothTeamsToScore: "Both Teams to Score",
   x2AndOver1_5: "Draw/Away & Over 1.5 Goals",
+  totalShotsOver22_5: "Total Match Shots Over 22.5",
 };
 
 function initial(label: string): string {

@@ -5,6 +5,7 @@ import {
   isCompactPrediction,
   type HydratedPrediction,
 } from "@/lib/hydrate";
+import type { ApiFootballPredictionContext } from "@/lib/supabase/types";
 
 /**
  * Recent-form / head-to-head stats bundle passed to Claude as analysis
@@ -43,6 +44,8 @@ export interface FixtureContext {
   leagueName: string;
   kickoff: string; // ISO date
   stats: FixtureStatsContext;
+  /** Extra context from API-Football's /predictions, for curated leagues (leagues.use_api_football) — see lib/api-football-context.ts. Null when not curated or no confident fixture match was found. */
+  apiFootball?: ApiFootballPredictionContext | null;
 }
 
 const SYSTEM_PROMPT = `You are a football (soccer) prediction analyst for SoccerRadar.
@@ -61,6 +64,7 @@ Each array element must have EXACTLY these keys:
 - "tc": [home_corners_over_4_5, away_corners_over_4_5] each 0 or 1, whether that side's OWN corner count (not the match total) will exceed 4.5
 - "tg": [home_goals_over_1_5, away_goals_over_1_5] each 0 or 1, whether that side's OWN goals scored (not the match total) will exceed 1.5
 - "btts": 0 or 1, whether both teams will score at least one goal each
+- "s": 0 or 1, whether combined total shots (both teams) will exceed 22.5
 - "mc": independent integer confidence scores 1-100, one per market below — these are NOT all the same number, since your certainty genuinely varies market to market (e.g. very sure on the outcome but unsure on corners is normal and expected):
   - "o": confidence in the "o" pick
   - "ht": confidence in the "ht" pick
@@ -77,6 +81,7 @@ Each array element must have EXACTLY these keys:
   - "tgh": confidence in the home team's own over_1_5 goals pick
   - "tga": confidence in the away team's own over_1_5 goals pick
   - "btts": confidence in the "btts" pick
+  - "s1": confidence in the "s" pick
 - "conf": integer confidence score 1-100 for this prediction set overall
 - "sum": one short sentence (max ~25 words) of tactical reasoning
 
@@ -97,6 +102,14 @@ Team-specific corners methodology ("tc"): the same headToHead "corners" field us
 Team-specific goals methodology ("tg"): use each side's own scored-goals column from headToHead (not the combined total already used for "g") — a side that has repeatedly scored 2+ against this specific opponent is a real signal for its own "tg" pick even in a fixture where the combined total looks tight (e.g. games settled 2-1, 3-2). Fall back to that side's current scoring form when head-to-head is sparse.
 
 Both Teams To Score methodology ("btts"): derive this from how many of the available headToHead meetings had both sides score — a defensively sound side doesn't have to concede for "btts" to hit if the other side has a reliable scoring record against them specifically, so weigh each side's own attacking read against this opponent, not just the aggregate goal total. This is genuinely independent of "g"/"tg" — a match can be predicted over 2.5 total goals while btts is "no" (one side scoring 3+, the other nil), or under 1.5 while btts is "yes" is impossible by definition (mutually exclusive with over_1_5 being 0), so keep "btts" and "g"[0] (over_1_5) logically consistent: btts=1 requires at least 2 total goals, so over_1_5 must also be 1 whenever btts is 1.
+
+Total Shots methodology ("s"): predict whether combined total shots (both teams, on target and off) will exceed 22.5. When "externalComparison" is present, its "h2h" entries may include a "totalShots" field — the real combined shot count from that specific past meeting (only available when that meeting's own match-stats had coverage, so some entries will have it and others won't even on curated leagues) — when present, weigh these the same way real corner counts are weighed for corners: consistently high or low shot counts between these two specific teams is a stronger signal than generic form. When "externalComparison" is absent, or none of its "h2h" entries have "totalShots" data, fall back to each team's attacking output and shot-volume tendencies from "stats" and general judgment — the same fallback already used for corners when no real corner data is available.
+
+External comparison data methodology: some fixtures include an "externalComparison" object — independent statistical data (season-long form, scoring/conceding averages, clean-sheet and failed-to-score rates, a poisson-based goal-distribution comparison, and up to 10 historical meetings) from a separate, structured statistics provider, covering a longer window than the "stats" data above. Treat it as a second, independent evidence source to weigh alongside — not instead of — "stats", sharpening the same picks rather than introducing a competing view: it carries no outcome opinion of its own for you to reconcile against.
+- "comparison"'s home/away percentage splits (form, attack, defense, poisson) — when they clearly agree with each other, that's a stronger signal for "o"/"g"/"tg" than either source alone; when they diverge from "stats", favor whichever source has the more specific, recent evidence for that particular market (e.g. "stats.headToHead"'s real corner counts remain authoritative for corner markets — "externalComparison" has no corner data at all).
+- "teams.home"/"teams.away"'s season-long form/goals/clean-sheet rates are a longer-window sanity check against "stats"' last-5 reads — lean toward the season-long figure when a team's last-5 sample looks like a short hot/cold streak against its broader season.
+- "h2h" (up to 10 meetings vs. "stats.headToHead"'s ~4) can corroborate or weaken an outcome/goals/BTTS read — a pattern holding across 10 meetings is stronger than across 4 — but has no corner data, so keep using "stats.headToHead" alone for "c"/"tc". Its entries' "totalShots" field is the primary evidence for "s" (see Total Shots methodology above) — this is the one field "stats.headToHead" never carries.
+- "externalComparison" is null for most fixtures (only curated leagues have it) — its absence is routine, not a problem; rely on "stats" alone as today.
 
 Output strictly valid JSON: an array of objects with exactly those keys, no additional keys, no trailing commentary.`;
 
@@ -146,6 +159,7 @@ async function predictBatch(
     home: fixture.homeTeam,
     away: fixture.awayTeam,
     stats: fixture.stats,
+    externalComparison: fixture.apiFootball ?? null,
   }));
 
   const response = await client.messages.create({

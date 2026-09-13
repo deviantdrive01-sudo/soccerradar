@@ -37,6 +37,7 @@ export interface MarketConfidences {
   tgh: number; // home team goals over 1.5
   tga: number; // away team goals over 1.5
   btts: number; // both teams to score
+  s1: number; // total shots over 22.5
 }
 
 /** Exact shape Claude must return, per match, in the compact response. */
@@ -52,6 +53,7 @@ export interface CompactPrediction {
   tc: [0 | 1, 0 | 1]; // [home_corners_over_4_5, away_corners_over_4_5]
   tg: [0 | 1, 0 | 1]; // [home_goals_over_1_5, away_goals_over_1_5]
   btts: 0 | 1; // both teams to score
+  s: 0 | 1; // total shots over 22.5
   mc: MarketConfidences;
   conf: number; // 1-100, overall confidence across the whole prediction set
   sum: string;
@@ -87,6 +89,8 @@ export interface HydratedMarkets {
     away: boolean;
   };
   bothTeamsToScore?: boolean;
+  /** Optional: absent on predictions generated before this market existed. */
+  shots?: { over22_5: boolean };
   /** Optional: absent on predictions generated before per-market confidence existed. */
   confidence?: MarketConfidences;
 }
@@ -146,6 +150,7 @@ export function hydrateMarkets(compact: CompactPrediction): HydratedMarkets {
       away: compact.tg[1] === 1,
     },
     bothTeamsToScore: compact.btts === 1,
+    shots: { over22_5: compact.s === 1 },
     confidence: compact.mc,
   };
 }
@@ -239,6 +244,8 @@ export interface RawMatchResult {
   corners: { home: number; away: number };
   /** Not every source reports first-half corners — omit when unknown. */
   htCorners?: { home: number; away: number } | null;
+  /** Not every source reports shots — omit when unknown. */
+  shots?: { home: number; away: number } | null;
 }
 
 export interface ActualMarkets {
@@ -270,6 +277,8 @@ export interface ActualMarkets {
     away: boolean;
   };
   bothTeamsToScore?: boolean;
+  /** Absent on results derived before this market existed, or when shots weren't available for this match. */
+  shots?: { over22_5: boolean };
 }
 
 export interface ActualResult {
@@ -296,6 +305,7 @@ export function deriveActualResult(raw: RawMatchResult): ActualResult {
 
   const totalCorners = raw.corners.home + raw.corners.away;
   const htCornersTotal = raw.htCorners ? raw.htCorners.home + raw.htCorners.away : null;
+  const totalShots = raw.shots ? raw.shots.home + raw.shots.away : null;
 
   return {
     raw,
@@ -326,6 +336,7 @@ export function deriveActualResult(raw: RawMatchResult): ActualResult {
         away: raw.finalScore.away > 1.5,
       },
       bothTeamsToScore: raw.finalScore.home > 0 && raw.finalScore.away > 0,
+      ...(totalShots === null ? {} : { shots: { over22_5: totalShots > 22.5 } }),
     },
   };
 }
@@ -376,7 +387,8 @@ export type MarketKey =
   | "homeGoalsOver1_5"
   | "awayGoalsOver1_5"
   | "bothTeamsToScore"
-  | "x2AndOver1_5";
+  | "x2AndOver1_5"
+  | "totalShotsOver22_5";
 
 /**
  * Actively offered/tracked markets — drives booking pickers, the accuracy
@@ -411,6 +423,7 @@ export const MARKET_KEYS: MarketKey[] = [
   "awayGoalsOver1_5",
   "bothTeamsToScore",
   "x2AndOver1_5",
+  "totalShotsOver22_5",
 ];
 
 /**
@@ -451,6 +464,7 @@ export const MARKET_LABELS: Record<MarketKey, string> = {
   awayGoalsOver1_5: "Away Goals O1.5",
   bothTeamsToScore: "BTTS",
   x2AndOver1_5: "2X & Over 1.5",
+  totalShotsOver22_5: "Shots O22.5",
 };
 
 /** Was this one market's prediction right? null when the actual or predicted value isn't known. */
@@ -516,6 +530,8 @@ export function isMarketCorrect(
         : predicted.bothTeamsToScore === actual.bothTeamsToScore;
     case "x2AndOver1_5":
       return isX2AndOver1_5(predicted) === isActualX2AndOver1_5(actual);
+    case "totalShotsOver22_5":
+      return !predicted.shots || !actual.shots ? null : predicted.shots.over22_5 === actual.shots.over22_5;
   }
 }
 
@@ -581,6 +597,8 @@ export function marketConfidence(predicted: HydratedMarkets, key: MarketKey): nu
       // outcome pick) stands in for it, same approximation drawOrOver2_5 uses.
       if (predicted.outcome.code === "1") return mc.o;
       return Math.min(mc.o, mc.g1);
+    case "totalShotsOver22_5":
+      return mc.s1;
   }
 }
 
@@ -639,6 +657,8 @@ export function marketPredictionLabel(predicted: HydratedMarkets, key: MarketKey
       return predicted.bothTeamsToScore === undefined ? "–" : predicted.bothTeamsToScore ? "Yes" : "No";
     case "x2AndOver1_5":
       return isX2AndOver1_5(predicted) ? "Yes" : "No";
+    case "totalShotsOver22_5":
+      return predicted.shots ? (predicted.shots.over22_5 ? "Yes" : "No") : "–";
   }
 }
 
@@ -744,6 +764,8 @@ export function marketPredictionValue(predicted: HydratedMarkets, key: MarketKey
       return predicted.bothTeamsToScore === undefined ? null : predicted.bothTeamsToScore ? "yes" : "no";
     case "x2AndOver1_5":
       return isX2AndOver1_5(predicted) ? "yes" : "no";
+    case "totalShotsOver22_5":
+      return predicted.shots ? (predicted.shots.over22_5 ? "yes" : "no") : null;
   }
 }
 
@@ -801,6 +823,8 @@ export function actualMarketValue(actual: ActualMarkets, key: MarketKey): string
       return actual.bothTeamsToScore === undefined ? null : actual.bothTeamsToScore ? "yes" : "no";
     case "x2AndOver1_5":
       return isActualX2AndOver1_5(actual) ? "yes" : "no";
+    case "totalShotsOver22_5":
+      return actual.shots ? (actual.shots.over22_5 ? "yes" : "no") : null;
   }
 }
 
@@ -824,7 +848,7 @@ export function isPickCorrect(
   return isMarketCorrect(predicted, actual, key);
 }
 
-const MARKET_CONFIDENCE_KEYS = ["o", "ht", "h2", "sh", "g1", "g2", "c1", "c3", "csh", "csa", "tch", "tca", "tgh", "tga", "btts"] as const;
+const MARKET_CONFIDENCE_KEYS = ["o", "ht", "h2", "sh", "g1", "g2", "c1", "c3", "csh", "csa", "tch", "tca", "tgh", "tga", "btts", "s1"] as const;
 
 function isMarketConfidences(value: unknown): value is MarketConfidences {
   if (!value || typeof value !== "object") return false;
@@ -852,6 +876,7 @@ export function isCompactPrediction(value: unknown): value is CompactPrediction 
     Array.isArray(v.tg) &&
     v.tg.length === 2 &&
     (v.btts === 0 || v.btts === 1) &&
+    (v.s === 0 || v.s === 1) &&
     isMarketConfidences(v.mc) &&
     typeof v.conf === "number" &&
     typeof v.sum === "string"

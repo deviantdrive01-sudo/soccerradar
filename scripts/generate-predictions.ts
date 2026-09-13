@@ -16,11 +16,23 @@
  * prompt/batching logic rather than importing it directly, because that
  * module (and lib/api-football.ts) are marked `import "server-only"`, which
  * throws when loaded outside Next.js's server bundler.
+ *
+ * For leagues with leagues.use_api_football set, each fixture also gets
+ * extra context from API-Football's /predictions endpoint (resolved via
+ * lib/api-football-context.ts, which is deliberately NOT server-only for
+ * the same reason above) — form/comparison/h2h data fed into the same
+ * Claude call as extra input, never a competing prediction to reconcile
+ * against. Fixtures whose match_id starts with "af-" were themselves
+ * discovered via API-Football (crawl-fixtures.ts's fallback path, for when
+ * Flashscore's own scrape missed them) rather than Flashscore, so they have
+ * no real Flashscore page to scrape H2H/corners from at all.
  */
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { chromium, type Page } from "playwright";
 import { hydratePrediction, isCompactPrediction, type HydratedPrediction } from "../lib/hydrate";
+import { resolveApiFootballFixture, fetchApiFootballPredictionContext } from "../lib/api-football-context";
+import type { ApiFootballPredictionContext } from "../lib/supabase/types";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -133,16 +145,32 @@ function parseCorners(statsText: string): { home: number; away: number } | null 
   return cornersMatch ? { home: Number(cornersMatch[1]), away: Number(cornersMatch[2]) } : null;
 }
 
+/** Combined yellow + red cards per side — display-only on the h2h rows, not a market input (deferred per plan). */
+function parseCards(statsText: string): { home: number; away: number } | null {
+  const yellow = statsText.match(/(\d+)\s*\n\s*Yellow Cards\s*\n\s*(\d+)/i);
+  const red = statsText.match(/(\d+)\s*\n\s*Red Cards\s*\n\s*(\d+)/i);
+  if (!yellow) return null;
+  return {
+    home: Number(yellow[1]) + (red ? Number(red[1]) : 0),
+    away: Number(yellow[2]) + (red ? Number(red[2]) : 0),
+  };
+}
+
 /**
  * Full-match and 1st-half corner counts for one h2h meeting — same approach
  * proven in update-results.ts: the Stats tab's URL has "overall" swapped for
  * "1st-half" for period-specific numbers, confirmed live to differ genuinely
- * from the full-match total, not just repeat it.
+ * from the full-match total, not just repeat it. Cards are read off the same
+ * already-fetched full-match stats text, no extra navigation.
  */
 async function extractCorners(
   page: Page,
   matchId: string,
-): Promise<{ corners: { home: number; away: number } | null; htCorners: { home: number; away: number } | null }> {
+): Promise<{
+  corners: { home: number; away: number } | null;
+  htCorners: { home: number; away: number } | null;
+  cards: { home: number; away: number } | null;
+}> {
   const url = `https://www.flashscore.com/match/football/${matchId}/#/match-summary`;
   try {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -151,6 +179,7 @@ async function extractCorners(
     await page.waitForTimeout(1800);
     const statsText = await page.evaluate(() => document.body.innerText);
     const corners = parseCorners(statsText);
+    const cards = parseCards(statsText);
 
     let htCorners: { home: number; away: number } | null = null;
     const statsUrl = page.url();
@@ -165,9 +194,9 @@ async function extractCorners(
       }
     }
 
-    return { corners, htCorners };
+    return { corners, htCorners, cards };
   } catch {
-    return { corners: null, htCorners: null };
+    return { corners: null, htCorners: null, cards: null };
   }
 }
 
@@ -189,6 +218,7 @@ Each array element must have EXACTLY these keys:
 - "tc": [home_corners_over_4_5, away_corners_over_4_5] each 0 or 1, whether that side's OWN corner count (not the match total) will exceed 4.5
 - "tg": [home_goals_over_1_5, away_goals_over_1_5] each 0 or 1, whether that side's OWN goals scored (not the match total) will exceed 1.5
 - "btts": 0 or 1, whether both teams will score at least one goal each
+- "s": 0 or 1, whether combined total shots (both teams) will exceed 22.5
 - "mc": independent integer confidence scores 1-100, one per market below — these are NOT all the same number, since your certainty genuinely varies market to market (e.g. very sure on the outcome but unsure on corners is normal and expected):
   - "o": confidence in the "o" pick
   - "ht": confidence in the "ht" pick
@@ -205,6 +235,7 @@ Each array element must have EXACTLY these keys:
   - "tgh": confidence in the home team's own over_1_5 goals pick
   - "tga": confidence in the away team's own over_1_5 goals pick
   - "btts": confidence in the "btts" pick
+  - "s1": confidence in the "s" pick
 - "conf": integer confidence score 1-100 for this prediction set overall
 - "sum": one short sentence (max ~25 words) of tactical reasoning
 
@@ -226,6 +257,14 @@ Team-specific goals methodology ("tg"): use each side's own scored-goals column 
 
 Both Teams To Score methodology ("btts"): derive this from how many of the available headToHead meetings had both sides score — a defensively sound side doesn't have to concede for "btts" to hit if the other side has a reliable scoring record against them specifically, so weigh each side's own attacking read against this opponent, not just the aggregate goal total. This is genuinely independent of "g"/"tg" — a match can be predicted over 2.5 total goals while btts is "no" (one side scoring 3+, the other nil), or under 1.5 while btts is "yes" is impossible by definition (mutually exclusive with over_1_5 being 0), so keep "btts" and "g"[0] (over_1_5) logically consistent: btts=1 requires at least 2 total goals, so over_1_5 must also be 1 whenever btts is 1.
 
+Total Shots methodology ("s"): predict whether combined total shots (both teams, on target and off) will exceed 22.5. When "externalComparison" is present, its "h2h" entries may include a "totalShots" field — the real combined shot count from that specific past meeting (only available when that meeting's own match-stats had coverage, so some entries will have it and others won't even on curated leagues) — when present, weigh these the same way real corner counts are weighed for corners: consistently high or low shot counts between these two specific teams is a stronger signal than generic form. When "externalComparison" is absent, or none of its "h2h" entries have "totalShots" data, fall back to each team's attacking output and shot-volume tendencies from "stats" and general judgment — the same fallback already used for corners when no real corner data is available.
+
+External comparison data methodology: some fixtures include an "externalComparison" object — independent statistical data (season-long form, scoring/conceding averages, clean-sheet and failed-to-score rates, a poisson-based goal-distribution comparison, and up to 10 historical meetings) from a separate, structured statistics provider, covering a longer window than the "stats" data above. Treat it as a second, independent evidence source to weigh alongside — not instead of — "stats", sharpening the same picks rather than introducing a competing view: it carries no outcome opinion of its own for you to reconcile against.
+- "comparison"'s home/away percentage splits (form, attack, defense, poisson) — when they clearly agree with each other, that's a stronger signal for "o"/"g"/"tg" than either source alone; when they diverge from "stats", favor whichever source has the more specific, recent evidence for that particular market (e.g. "stats.headToHead"'s real corner counts remain authoritative for corner markets — "externalComparison" has no corner data at all).
+- "teams.home"/"teams.away"'s season-long form/goals/clean-sheet rates are a longer-window sanity check against "stats"' last-5 reads — lean toward the season-long figure when a team's last-5 sample looks like a short hot/cold streak against its broader season.
+- "h2h" (up to 10 meetings vs. "stats.headToHead"'s ~4) can corroborate or weaken an outcome/goals/BTTS read — a pattern holding across 10 meetings is stronger than across 4 — but has no corner data, so keep using "stats.headToHead" alone for "c"/"tc". Its entries' "totalShots" field is the primary evidence for "s" (see Total Shots methodology above) — this is the one field "stats.headToHead" never carries.
+- "externalComparison" is null for most fixtures (only curated leagues have it) — its absence is routine, not a problem; rely on "stats" alone as today.
+
 Output strictly valid JSON: an array of objects with exactly those keys, no additional keys, no trailing commentary.`;
 
 interface FixtureContext {
@@ -235,10 +274,16 @@ interface FixtureContext {
   leagueName: string;
   kickoff: string;
   stats: {
-    headToHead: (H2hRow & { corners: { home: number; away: number } | null; htCorners: { home: number; away: number } | null })[];
+    headToHead: (H2hRow & {
+      corners: { home: number; away: number } | null;
+      htCorners: { home: number; away: number } | null;
+      cards: { home: number; away: number } | null;
+    })[];
     homeTeamForm: H2hRow[];
     awayTeamForm: H2hRow[];
   };
+  apiFootball: ApiFootballPredictionContext | null;
+  apiFootballFixtureId: number | null;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -265,6 +310,7 @@ async function predictBatch(client: Anthropic, batch: FixtureContext[]): Promise
     home: f.homeTeam,
     away: f.awayTeam,
     stats: f.stats,
+    externalComparison: f.apiFootball,
   }));
 
   const response = await client.messages.create({
@@ -321,7 +367,7 @@ async function main() {
 
   const { data: pending, error: pendingError } = await supabase
     .from("predictions")
-    .select("id, league_id, match_id, home_team, away_team, match_date")
+    .select("id, league_id, match_id, home_team, away_team, match_date, api_football_fixture_id")
     .is("markets", null)
     .gte("match_date", now.toISOString())
     .order("match_date", { ascending: true })
@@ -338,12 +384,15 @@ async function main() {
     return;
   }
 
-  const { data: leagues, error: leaguesError } = await supabase.from("leagues").select("id, name");
+  const { data: leagues, error: leaguesError } = await supabase
+    .from("leagues")
+    .select("id, name, api_league_id, use_api_football");
   if (leaguesError) {
     console.error("Failed to load leagues:", leaguesError.message);
     process.exit(1);
   }
   const leagueNameById = new Map(leagues.map((l) => [l.id, l.name]));
+  const leagueById = new Map(leagues.map((l) => [l.id, l]));
 
   console.log(`Found ${pending.length} pending fixture(s) needing predictions.`);
 
@@ -355,13 +404,52 @@ async function main() {
 
   for (const row of pending) {
     const leagueName = leagueNameById.get(row.league_id) ?? "Unknown league";
+    const league = leagueById.get(row.league_id);
+
+    // Discovered via crawl-fixtures.ts's API-Football fallback (Flashscore's
+    // scrape missed it) — no real Flashscore page exists for this fixture at
+    // all, so skip the H2H/corner scrape entirely and rely on API-Football
+    // context alone.
+    if (row.match_id.startsWith("af-")) {
+      const apiFootballFixtureId = row.api_football_fixture_id;
+      const apiFootball = apiFootballFixtureId !== null ? await fetchApiFootballPredictionContext(apiFootballFixtureId) : null;
+      fixtureContexts.push({
+        matchId: row.match_id,
+        homeTeam: row.home_team,
+        awayTeam: row.away_team,
+        leagueName,
+        kickoff: row.match_date,
+        stats: { headToHead: [], homeTeamForm: [], awayTeamForm: [] },
+        apiFootball,
+        apiFootballFixtureId,
+      });
+      continue;
+    }
+
     try {
       const h2h = await scrapeH2hSections(page, row.match_id);
 
       const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
       for (const meeting of h2h.headToHead) {
-        const { corners, htCorners } = await extractCorners(page, meeting.mid);
-        headToHeadWithCorners.push({ ...meeting, corners, htCorners });
+        const { corners, htCorners, cards } = await extractCorners(page, meeting.mid);
+        headToHeadWithCorners.push({ ...meeting, corners, htCorners, cards });
+      }
+
+      let apiFootballFixtureId: number | null = null;
+      let apiFootball: FixtureContext["apiFootball"] = null;
+      if (league?.use_api_football) {
+        try {
+          const match = await resolveApiFootballFixture(league.api_league_id, row.match_date, row.home_team, row.away_team);
+          if (match) {
+            apiFootballFixtureId = match.fixtureId;
+            apiFootball = await fetchApiFootballPredictionContext(match.fixtureId);
+          }
+        } catch (err) {
+          // API-Football context is best-effort extra input, never a hard
+          // dependency — log and continue with Flashscore-only data, same
+          // as a resolution "no match" outcome.
+          console.warn(`API-Football lookup failed for ${row.home_team} vs ${row.away_team}:`, err instanceof Error ? err.message : err);
+        }
       }
 
       fixtureContexts.push({
@@ -375,6 +463,8 @@ async function main() {
           homeTeamForm: h2h.homeTeamForm,
           awayTeamForm: h2h.awayTeamForm,
         },
+        apiFootball,
+        apiFootballFixtureId,
       });
     } catch (err) {
       // A single flaky page load (Flashscore navigation timeout, etc.) must
@@ -418,6 +508,8 @@ async function main() {
         confidence: prediction.confidence,
         summary: prediction.summary,
         h2h: fixture?.stats.headToHead ?? null,
+        api_football_fixture_id: fixture?.apiFootballFixtureId ?? null,
+        api_football_context: fixture?.apiFootball ?? null,
       })
       .eq("match_id", prediction.matchId);
 

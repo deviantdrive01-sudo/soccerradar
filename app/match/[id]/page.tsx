@@ -325,6 +325,20 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
           </div>
         </div>
 
+        {markets.shots && (
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Shots</div>
+            <div className="flex flex-wrap gap-1.5">
+              <YesNoBadge
+                label="O22.5"
+                value={markets.shots.over22_5}
+                predictionId={prediction.id}
+                marketKey="totalShotsOver22_5" markets={markets}
+              />
+            </div>
+          </div>
+        )}
+
         {markets.teamCorners && (
           <div className="space-y-1.5">
             <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/70">Team Corners O4.5</div>
@@ -393,11 +407,18 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
                       {meeting.competition ? ` · ${meeting.competition}` : ""}
                     </div>
                   </div>
-                  {meeting.corners && (
-                    <div className="shrink-0 text-xs text-muted-foreground">
-                      Corners {meeting.corners.home}–{meeting.corners.away}
-                    </div>
-                  )}
+                  <div className="shrink-0 space-y-0.5 text-right text-xs text-muted-foreground">
+                    {meeting.corners && (
+                      <div>
+                        Corners {meeting.corners.home}–{meeting.corners.away}
+                      </div>
+                    )}
+                    {meeting.cards && (
+                      <div>
+                        Cards {meeting.cards.home}–{meeting.cards.away}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

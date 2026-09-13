@@ -15,6 +15,7 @@ import "./globals.css";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
 const GA_MEASUREMENT_ID = "G-5DW3J6DCD0";
+const GOOGLE_ADS_ID = "AW-16787339885";
 const SITE_NAME = "SoccerRadar";
 const SITE_DESCRIPTION = `${SITE_TAGLINE} AI-generated football predictions across 16 top global leagues, backed by a public, verifiable track record. No cherry-picking, nothing held back.`;
 
@@ -56,6 +57,7 @@ const CONSENT_INIT_SCRIPT = `(function(){
   } catch (e) {}
   gtag('js', new Date());
   gtag('config', '${GA_MEASUREMENT_ID}');
+  gtag('config', '${GOOGLE_ADS_ID}');
 })();`;
 
 // Organization + WebSite structured data — lets Google associate the logo

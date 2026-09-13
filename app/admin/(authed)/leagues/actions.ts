@@ -13,7 +13,8 @@ export async function updateLeague(formData: FormData) {
   await verifySession();
 
   const id = Number(formData.get("id"));
-  if (!Number.isFinite(id)) return;
+  const apiLeagueId = Number(formData.get("api_league_id"));
+  if (!Number.isFinite(id) || !Number.isFinite(apiLeagueId)) return;
 
   const supabase = createAdminSupabaseClient();
   await supabase
@@ -21,8 +22,10 @@ export async function updateLeague(formData: FormData) {
     .update({
       name: String(formData.get("name") ?? "").trim(),
       country: String(formData.get("country") ?? "").trim(),
+      api_league_id: apiLeagueId,
       is_active: formData.get("is_active") === "on",
       flashscore_slug: nullableText(formData.get("flashscore_slug")),
+      use_api_football: formData.get("use_api_football") === "on",
     })
     .eq("id", id);
 
@@ -45,6 +48,7 @@ export async function createLeague(formData: FormData) {
     api_league_id: apiLeagueId,
     is_active: true,
     flashscore_slug: nullableText(formData.get("flashscore_slug")),
+    use_api_football: false,
   });
 
   revalidatePath("/admin/leagues");

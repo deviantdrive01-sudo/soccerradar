@@ -17,6 +17,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { LEAGUE_SOURCES, flashscoreFixturesUrl } from "../lib/league-sources";
+import { namesMatch } from "../lib/team-name-match";
+import { fetchApiFootballFixturesInRange } from "../lib/api-football-context";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -31,44 +33,6 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 const FIXTURE_WINDOW_DAYS = 3; // how far ahead to look for new fixtures each run
-
-// ---------- team-name matching (same approach as update-results.ts) ----------
-
-function normalizeTeamName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/ø/g, "o")
-    .replace(/æ/g, "ae")
-    .replace(/å/g, "a")
-    .replace(/ı/g, "i")
-    .replace(/ş/g, "s")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ç/g, "c")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\(.*?\)/g, "")
-    .replace(/[.''`´-]/g, " ")
-    .replace(/\butd\b/g, "united")
-    .replace(/\b(fc|cf|sc|ac|afc|cfk|sfk|cd|ca|club|de|do|da|w)\b/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-function namesMatch(a: string, b: string): boolean {
-  const ca = normalizeTeamName(a);
-  const cb = normalizeTeamName(b);
-  if (!ca || !cb) return false;
-  if (ca === cb) return true;
-  const wordsA = new Set(ca.split(" ").filter((w) => w.length > 1));
-  const wordsB = new Set(cb.split(" ").filter((w) => w.length > 1));
-  if (wordsA.size === 0 || wordsB.size === 0) return false;
-  const [shorter, longer] = wordsA.size <= wordsB.size ? [wordsA, wordsB] : [wordsB, wordsA];
-  let overlap = 0;
-  for (const w of shorter) if (longer.has(w)) overlap++;
-  return overlap === shorter.size && overlap > 0;
-}
 
 // ---------- Flashscore fixture discovery ----------
 
@@ -164,6 +128,7 @@ async function main() {
     home_team: string;
     away_team: string;
     match_date: string;
+    api_football_fixture_id?: number;
   }[] = [];
 
   for (const league of leagues) {
@@ -218,6 +183,52 @@ async function main() {
   }
 
   await browser.close();
+
+  // ---------- API-Football fallback discovery (curated leagues only) ----------
+  // Additive, not conditional on the Flashscore scrape above having failed —
+  // a stable scrape can still individually miss a fixture (e.g. a late
+  // scheduling change one source has and the other doesn't). Never blocks:
+  // a fetch failure just means this league gets nothing extra this run.
+  for (const league of leagues) {
+    if (!league.use_api_football) continue;
+
+    let discovered: Awaited<ReturnType<typeof fetchApiFootballFixturesInRange>>;
+    try {
+      discovered = await fetchApiFootballFixturesInRange(league.api_league_id, now, windowEnd);
+    } catch (e) {
+      console.log(`[${league.name}] API-Football fixture fetch failed: ${(e as Error).message}`);
+      continue;
+    }
+    if (discovered.length === 0) continue;
+
+    const { data: existing } = await supabase
+      .from("predictions")
+      .select("home_team, away_team")
+      .eq("league_id", league.id)
+      .gte("match_date", now.toISOString())
+      .lte("match_date", windowEnd.toISOString());
+
+    const alreadyQueued = newRows.filter((r) => r.league_id === league.id);
+
+    for (const fixture of discovered) {
+      const t = new Date(fixture.kickoff).getTime();
+      if (t < now.getTime() || t > windowEnd.getTime()) continue;
+
+      const known = [...(existing ?? []), ...alreadyQueued].some(
+        (r) => namesMatch(r.home_team, fixture.homeTeam) && namesMatch(r.away_team, fixture.awayTeam),
+      );
+      if (!known) {
+        newRows.push({
+          league_id: league.id,
+          match_id: `af-${fixture.fixtureId}`,
+          home_team: fixture.homeTeam,
+          away_team: fixture.awayTeam,
+          match_date: fixture.kickoff,
+          api_football_fixture_id: fixture.fixtureId,
+        });
+      }
+    }
+  }
 
   if (newRows.length === 0) {
     console.log("\n=== Crawl-fixtures summary ===");

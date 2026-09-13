@@ -147,6 +147,12 @@ function parseCorners(statsText: string): { home: number; away: number } | null 
   return cornersMatch ? { home: Number(cornersMatch[1]), away: Number(cornersMatch[2]) } : null;
 }
 
+/** Same already-fetched full-match Stats page text as parseCorners — no extra navigation or API call needed. */
+function parseShots(statsText: string): { home: number; away: number } | null {
+  const shotsMatch = statsText.match(/(\d+)\s*\n\s*Total shots\s*\n\s*(\d+)/i);
+  return shotsMatch ? { home: Number(shotsMatch[1]), away: Number(shotsMatch[2]) } : null;
+}
+
 async function extractMatchDetail(
   page: Page,
   matchId: string,
@@ -154,6 +160,7 @@ async function extractMatchDetail(
   ht: { home: number; away: number } | null;
   corners: { home: number; away: number } | null;
   htCorners: { home: number; away: number } | null;
+  shots: { home: number; away: number } | null;
 }> {
   const url = `https://www.flashscore.com/match/football/${matchId}/#/match-summary`;
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -165,11 +172,13 @@ async function extractMatchDetail(
 
   let corners: { home: number; away: number } | null = null;
   let htCorners: { home: number; away: number } | null = null;
+  let shots: { home: number; away: number } | null = null;
   try {
     await page.getByText("Stats", { exact: true }).first().click({ timeout: 5000 });
     await page.waitForTimeout(2000);
     const statsText = await page.evaluate(() => document.body.innerText);
     corners = parseCorners(statsText);
+    shots = parseShots(statsText);
 
     // The full-match Stats view (".../stats/overall/?mid=...") has sibling
     // "1st Half"/"2nd Half" period tabs at the same URL shape with "overall"
@@ -198,7 +207,7 @@ async function extractMatchDetail(
     // Stats tab not available/clickable — corners stay null, reported as a skip.
   }
 
-  return { ht, corners, htCorners };
+  return { ht, corners, htCorners, shots };
 }
 
 async function main() {
@@ -286,7 +295,7 @@ async function main() {
 
   for (const { prediction, row } of matched) {
     try {
-      const { ht, corners, htCorners } = await extractMatchDetail(page, row.matchId);
+      const { ht, corners, htCorners, shots } = await extractMatchDetail(page, row.matchId);
       if (!ht) {
         detailFailures.push({ prediction, reason: "could not extract half-time score" });
         continue;
@@ -301,6 +310,7 @@ async function main() {
         htScore: ht,
         corners,
         htCorners,
+        shots,
       };
       const actualResult = deriveActualResult(raw);
 

@@ -7,7 +7,54 @@ export interface League {
   api_league_id: number;
   is_active: boolean;
   flashscore_slug: string | null;
+  /** Opt-in to API-Football as an extra data source (fixture discovery fallback + Claude prediction context) — see lib/api-football-context.ts. */
+  use_api_football: boolean;
   created_at: string;
+}
+
+/**
+ * Trimmed shape of API-Football's /predictions response actually sent to
+ * Claude as extra context — see lib/api-football-context.ts, which builds
+ * this from the raw API response.
+ */
+export interface ApiFootballPredictionContext {
+  winnerComment: string | null;
+  advice: string | null;
+  percent: { home: string; draw: string; away: string };
+  comparison: {
+    form: { home: string; away: string };
+    att: { home: string; away: string };
+    def: { home: string; away: string };
+    poissonDistribution: { home: string; away: string };
+    h2h: { home: string; away: string };
+    goals: { home: string; away: string };
+    total: { home: string; away: string };
+  } | null;
+  teams: {
+    home: ApiFootballTeamSummary;
+    away: ApiFootballTeamSummary;
+  };
+  h2h: ApiFootballH2hMeeting[];
+}
+
+export interface ApiFootballTeamSummary {
+  last5Form: string | null;
+  seasonForm: string | null;
+  goalsForAvg: number | null;
+  goalsAgainstAvg: number | null;
+  cleanSheetPct: number | null;
+  failedToScorePct: number | null;
+}
+
+export interface ApiFootballH2hMeeting {
+  fixtureId: number;
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  /** Real "Total Shots" from this meeting's own /fixtures/statistics, when that fixture had stats coverage — see lib/api-football-context.ts's fetchH2hShots. */
+  totalShots?: { home: number; away: number } | null;
 }
 
 export interface AdSettings {
@@ -170,6 +217,8 @@ export interface H2hMeeting {
   corners: { home: number; away: number } | null;
   /** Absent on meetings scraped before this was added — null when scraped but unavailable for that match. */
   htCorners?: { home: number; away: number } | null;
+  /** Combined yellow + red cards per side — display-only, absent on meetings scraped before this was added. */
+  cards?: { home: number; away: number } | null;
 }
 
 export interface Prediction {
@@ -190,6 +239,10 @@ export interface Prediction {
   actual_result: ActualResult | null;
   /** Admin-toggled — surfaces this match in the "Top Match" scheduled Telegram broadcast. */
   is_featured: boolean;
+  /** API-Football's fixture id, once resolved — null when the league isn't curated (leagues.use_api_football) or no confident match was found. Also present (as the id embedded in match_id) when this fixture was discovered via API-Football rather than Flashscore — see scripts/crawl-fixtures.ts. */
+  api_football_fixture_id: number | null;
+  /** Trimmed API-Football /predictions payload sent to Claude as extra context — see lib/api-football-context.ts. Null whenever api_football_fixture_id is null. */
+  api_football_context: ApiFootballPredictionContext | null;
   created_at: string;
   updated_at: string;
 }
@@ -227,7 +280,20 @@ export interface Database {
       predictions: {
         Row: Row<Prediction>;
         Insert: Row<
-          Omit<Prediction, "id" | "created_at" | "updated_at" | "actual_result" | "markets" | "confidence" | "summary" | "h2h" | "is_featured"> & {
+          Omit<
+            Prediction,
+            | "id"
+            | "created_at"
+            | "updated_at"
+            | "actual_result"
+            | "markets"
+            | "confidence"
+            | "summary"
+            | "h2h"
+            | "is_featured"
+            | "api_football_fixture_id"
+            | "api_football_context"
+          > & {
             id?: number;
             // Optional so upserts that omit it (e.g. the weekly cron re-fetching a
             // fixture) don't clobber an actual_result already recorded for that match.
@@ -240,6 +306,9 @@ export interface Database {
             h2h?: H2hMeeting[] | null;
             // Optional — defaults to false in the DB; nothing inserts a featured row directly.
             is_featured?: boolean;
+            // Optional — filled in later by scripts/generate-predictions.ts, same as markets/confidence/summary.
+            api_football_fixture_id?: number | null;
+            api_football_context?: ApiFootballPredictionContext | null;
           }
         >;
         Update: Row<Partial<Omit<Prediction, "id">>>;
