@@ -14,7 +14,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: "bottom-nav",
     title: "Get around in one tap",
-    body: "Today's Pick opens quick-filter shortcuts, and Top Mixes and Collections are one tap away — More holds My Mixes, Track Record, and the tour.",
+    body: "Live takes you to live scores and fixtures, Predictions and Mixes are one tap away — More holds Today's Pick shortcuts, Collections, My Mixes, Track Record, and the tour.",
   },
   {
     target: "league-sidebar",

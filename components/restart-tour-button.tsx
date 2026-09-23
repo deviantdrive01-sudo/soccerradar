@@ -20,16 +20,16 @@ export function RestartTourButton({
 
   function handleClick() {
     onNavigate?.();
-    if (pathname === "/") {
+    if (pathname === "/predictions") {
       window.dispatchEvent(new Event(TOUR_REQUEST_EVENT));
       return;
     }
     try {
       sessionStorage.setItem("soccerradar-tour-requested", "1");
     } catch {
-      // If storage is unavailable the click still navigates home, just without auto-starting the tour.
+      // If storage is unavailable the click still navigates to Predictions, just without auto-starting the tour.
     }
-    router.push("/");
+    router.push("/predictions");
   }
 
   return (
