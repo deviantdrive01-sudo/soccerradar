@@ -1,5 +1,5 @@
 import "server-only";
-import { apiSportsKey } from "./api-sports-key";
+import { basketballApiKey } from "./api-sports-key";
 import { competitionsForSport } from "./competitions";
 import type { SportFixture, FixtureState } from "./types";
 
@@ -26,7 +26,7 @@ async function get(path: string, params: Record<string, string | number>): Promi
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
 
   const res = await fetch(url, {
-    headers: { "x-apisports-key": apiSportsKey() },
+    headers: { "x-apisports-key": basketballApiKey() },
     next: { revalidate: params.live ? 30 : 300 },
   });
   if (!res.ok) throw new Error(`API-Basketball ${path} failed: ${res.status} ${res.statusText}`);

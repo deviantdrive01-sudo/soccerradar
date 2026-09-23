@@ -1,16 +1,26 @@
 import "server-only";
 
-/**
- * API-Sports direct subscriptions (api-sports.io, not the RapidAPI mirror)
- * use one account key across every sport product (football, basketball,
- * etc.) — so the live-scores feature defaults to a dedicated
- * `API_SPORTS_KEY` but falls back to the existing `API_FOOTBALL_KEY` until
- * that var is added, so nothing breaks on deploy.
- */
-export function apiSportsKey(): string {
-  const key = process.env.API_SPORTS_KEY || process.env.API_FOOTBALL_KEY;
+/** Football uses the account's existing API-Football key. */
+export function footballApiKey(): string {
+  const key = process.env.API_FOOTBALL_KEY || process.env.API_SPORTS_KEY;
   if (!key) {
-    throw new Error("Missing API_SPORTS_KEY (or API_FOOTBALL_KEY) environment variable");
+    throw new Error("Missing API_FOOTBALL_KEY environment variable");
+  }
+  return key;
+}
+
+/**
+ * Basketball is a separate API-Sports product (v1.basketball.api-sports.io)
+ * — unlike football, this deliberately does NOT fall back to
+ * `API_FOOTBALL_KEY`, since that key isn't confirmed to authorize it.
+ * Requires its own `API_SPORTS_KEY`; until that's set, basketball stays
+ * disabled in the UI and this throws a clear "not configured" error rather
+ * than sending requests with a key that's the wrong product.
+ */
+export function basketballApiKey(): string {
+  const key = process.env.API_SPORTS_KEY;
+  if (!key) {
+    throw new Error("Missing API_SPORTS_KEY environment variable (basketball isn't configured yet)");
   }
   return key;
 }

@@ -8,13 +8,14 @@ import { useLivePolling } from "@/lib/use-live-polling";
 import type { Sport, SportFixture } from "@/lib/sports/types";
 import { todayKey } from "@/lib/date-key";
 
-type SportFilter = Sport | "all";
 type StatusFilter = "live" | "today" | "tomorrow";
 
-const SPORT_OPTIONS: { value: SportFilter; label: string }[] = [
-  { value: "all", label: "All" },
+// Basketball needs its own API_SPORTS_KEY, not configured yet — shown as
+// "Soon" and disabled rather than removed, so the pivot's end state stays
+// visible in the UI.
+const SPORT_OPTIONS: { value: Sport; label: string; disabled?: boolean }[] = [
   { value: "football", label: "Football" },
-  { value: "basketball", label: "Basketball" },
+  { value: "basketball", label: "Basketball", disabled: true },
 ];
 
 function tomorrowKey(): string {
@@ -23,9 +24,9 @@ function tomorrowKey(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function fixturesUrl(sport: SportFilter, status: StatusFilter): string {
+function fixturesUrl(sport: Sport, status: StatusFilter): string {
   const params = new URLSearchParams();
-  if (sport !== "all") params.set("sport", sport);
+  params.set("sport", sport);
   if (status === "live") {
     params.set("status", "live");
   } else {
@@ -35,7 +36,7 @@ function fixturesUrl(sport: SportFilter, status: StatusFilter): string {
 }
 
 export function LiveFixturesHub() {
-  const [sport, setSport] = useState<SportFilter>("all");
+  const [sport, setSport] = useState<Sport>("football");
   const [status, setStatus] = useState<StatusFilter>("live");
 
   const url = useMemo(() => fixturesUrl(sport, status), [sport, status]);
@@ -53,13 +54,19 @@ export function LiveFixturesHub() {
           <button
             key={opt.value}
             type="button"
+            disabled={opt.disabled}
             onClick={() => setSport(opt.value)}
             className={cn(
               "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-              sport === opt.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+              opt.disabled
+                ? "cursor-not-allowed bg-muted text-muted-foreground/50"
+                : sport === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground",
             )}
           >
             {opt.label}
+            {opt.disabled && <span className="ml-1.5 text-[10px] uppercase">Soon</span>}
           </button>
         ))}
       </div>

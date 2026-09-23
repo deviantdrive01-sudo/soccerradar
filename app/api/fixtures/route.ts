@@ -4,11 +4,14 @@ import { fetchLiveBasketballGames, fetchBasketballGamesByDate } from "@/lib/spor
 import type { Sport, SportFixture } from "@/lib/sports/types";
 import { todayKey } from "@/lib/date-key";
 
-const VALID_SPORTS: Sport[] = ["football", "basketball"];
-
+// Basketball needs its own API_SPORTS_KEY (see lib/sports/api-sports-key.ts)
+// which isn't configured yet, so an unspecified `sport` defaults to just
+// football rather than a request that's guaranteed to fail half its calls.
+// An explicit `sport=basketball` still goes through, surfacing that "not
+// configured yet" error rather than silently 404ing.
 function sportsToFetch(param: string | null): Sport[] {
-  if (param === "football" || param === "basketball") return [param];
-  return VALID_SPORTS;
+  if (param === "basketball") return ["basketball"];
+  return ["football"];
 }
 
 async function fixturesFor(sport: Sport, status: string, date: string): Promise<SportFixture[]> {
