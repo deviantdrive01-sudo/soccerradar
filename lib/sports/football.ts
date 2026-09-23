@@ -1,7 +1,7 @@
 import "server-only";
 import { footballApiKey } from "./api-sports-key";
 import { competitionsForSport } from "./competitions";
-import type { SportFixture, FixtureState } from "./types";
+import type { FixtureDetail, SportFixture, FixtureState } from "./types";
 
 const BASE_URL = "https://v3.football.api-sports.io";
 
@@ -13,8 +13,8 @@ interface RawFixture {
   };
   league: { id: number; name: string; country: string; logo: string };
   teams: {
-    home: { name: string; logo: string };
-    away: { name: string; logo: string };
+    home: { id: number; name: string; logo: string };
+    away: { id: number; name: string; logo: string };
   };
   goals: { home: number | null; away: number | null };
 }
@@ -58,8 +58,8 @@ function toSportFixture(raw: RawFixture): SportFixture {
       label: long,
       clock: elapsed != null ? `${elapsed}'` : null,
     },
-    home: { name: raw.teams.home.name, logo: raw.teams.home.logo, score: raw.goals.home },
-    away: { name: raw.teams.away.name, logo: raw.teams.away.logo, score: raw.goals.away },
+    home: { id: raw.teams.home.id, name: raw.teams.home.name, logo: raw.teams.home.logo, score: raw.goals.home },
+    away: { id: raw.teams.away.id, name: raw.teams.away.name, logo: raw.teams.away.logo, score: raw.goals.away },
   };
 }
 
@@ -77,4 +77,18 @@ export async function fetchFootballFixturesByDate(date: string): Promise<SportFi
     leagues.map((league) => get("/fixtures", { date, league: league.apiLeagueId, season: new Date(date).getFullYear() })),
   );
   return results.flat().map(toSportFixture);
+}
+
+/** A single fixture's current state, plus its two teams' most recent meetings. */
+export async function fetchFootballFixtureDetail(fixtureId: number): Promise<FixtureDetail | null> {
+  const [fixtureRaw] = await get("/fixtures", { id: fixtureId });
+  if (!fixtureRaw) return null;
+
+  const fixture = toSportFixture(fixtureRaw);
+  const h2hRaw = await get("/fixtures/headtohead", {
+    h2h: `${fixture.home.id}-${fixture.away.id}`,
+    last: 5,
+  });
+
+  return { fixture, headToHead: h2hRaw.map(toSportFixture) };
 }

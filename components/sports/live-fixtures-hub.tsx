@@ -1,14 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { cn } from "cn";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FixtureCard } from "@/components/sports/fixture-card";
+import { FixtureRow } from "@/components/sports/fixture-card";
 import { useLivePolling } from "@/lib/use-live-polling";
 import type { Sport, SportFixture } from "@/lib/sports/types";
 import { todayKey } from "@/lib/date-key";
 
 type StatusFilter = "live" | "today" | "tomorrow";
+type CompetitionFilter = number | "all";
 
 // Basketball needs its own API_SPORTS_KEY, not configured yet — shown as
 // "Soon" and disabled rather than removed, so the pivot's end state stays
@@ -35,9 +37,21 @@ function fixturesUrl(sport: Sport, status: StatusFilter): string {
   return `/api/fixtures?${params.toString()}`;
 }
 
+const EMPTY_FIXTURES: SportFixture[] = [];
+
+/** Distinct competitions present in the current fixture list, in first-seen order — powers the icon rail. */
+function competitionsIn(fixtures: SportFixture[]) {
+  const seen = new Map<number, SportFixture["competition"]>();
+  for (const fixture of fixtures) {
+    if (!seen.has(fixture.competition.id)) seen.set(fixture.competition.id, fixture.competition);
+  }
+  return Array.from(seen.values());
+}
+
 export function LiveFixturesHub() {
   const [sport, setSport] = useState<Sport>("football");
   const [status, setStatus] = useState<StatusFilter>("live");
+  const [competitionId, setCompetitionId] = useState<CompetitionFilter>("all");
 
   const url = useMemo(() => fixturesUrl(sport, status), [sport, status]);
   const { data, error, loading } = useLivePolling<{ fixtures: SportFixture[]; error?: string }>(
@@ -45,7 +59,18 @@ export function LiveFixturesHub() {
     status === "live" ? 20_000 : 60_000,
   );
 
-  const fixtures = data?.fixtures ?? [];
+  const fixtures = data?.fixtures ?? EMPTY_FIXTURES;
+  const competitions = useMemo(() => competitionsIn(fixtures), [fixtures]);
+
+  // Derived rather than synced via an effect: if the previously-picked
+  // competition has dropped out of the current fixture list (sport/date
+  // changed, or it simply has no games right now), fall back to "all"
+  // without a stateful reset.
+  const activeCompetitionId: CompetitionFilter =
+    competitionId !== "all" && competitions.some((c) => c.id === competitionId) ? competitionId : "all";
+
+  const visibleFixtures =
+    activeCompetitionId === "all" ? fixtures : fixtures.filter((f) => f.competition.id === activeCompetitionId);
 
   return (
     <div className="flex flex-col gap-4">
@@ -79,6 +104,48 @@ export function LiveFixturesHub() {
         </TabsList>
       </Tabs>
 
+      {competitions.length > 1 && (
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => setCompetitionId("all")}
+            className="flex shrink-0 flex-col items-center gap-1"
+          >
+            <span
+              className={cn(
+                "flex size-10 items-center justify-center rounded-full text-[10px] font-semibold",
+                activeCompetitionId === "all" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+              )}
+            >
+              All
+            </span>
+          </button>
+          {competitions.map((competition) => (
+            <button
+              key={competition.id}
+              type="button"
+              onClick={() => setCompetitionId(competition.id)}
+              className="flex shrink-0 flex-col items-center gap-1"
+              aria-label={competition.name}
+            >
+              <span
+                className={cn(
+                  "flex size-10 items-center justify-center rounded-full bg-white p-1.5 ring-2 transition-colors",
+                  activeCompetitionId === competition.id ? "ring-primary" : "ring-transparent",
+                )}
+              >
+                {competition.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={competition.logo} alt="" className="size-full object-contain" loading="lazy" />
+                ) : (
+                  <span className="size-full rounded-full bg-muted" />
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading && fixtures.length === 0 && (
         <p className="py-8 text-center text-sm text-muted-foreground">Loading fixtures…</p>
       )}
@@ -93,11 +160,19 @@ export function LiveFixturesHub() {
         </p>
       )}
 
-      <div className="flex flex-col gap-3">
-        {fixtures.map((fixture) => (
-          <FixtureCard key={fixture.id} fixture={fixture} />
-        ))}
-      </div>
+      {visibleFixtures.length > 0 && (
+        <div className="divide-y divide-border/60 rounded-xl bg-card ring-1 ring-foreground/10">
+          {visibleFixtures.map((fixture) => (
+            <Link
+              key={fixture.id}
+              href={`/fixtures/${fixture.sport}/${fixture.id.slice(fixture.sport.length + 1)}`}
+              className="block transition-colors hover:bg-muted/40"
+            >
+              <FixtureRow fixture={fixture} />
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

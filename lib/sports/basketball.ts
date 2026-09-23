@@ -1,7 +1,7 @@
 import "server-only";
 import { basketballApiKey } from "./api-sports-key";
 import { competitionsForSport } from "./competitions";
-import type { SportFixture, FixtureState } from "./types";
+import type { FixtureDetail, SportFixture, FixtureState } from "./types";
 
 const BASE_URL = "https://v1.basketball.api-sports.io";
 
@@ -12,8 +12,8 @@ interface RawGame {
   league: { id: number; name: string; logo: string };
   country: { name: string };
   teams: {
-    home: { name: string; logo: string };
-    away: { name: string; logo: string };
+    home: { id: number; name: string; logo: string };
+    away: { id: number; name: string; logo: string };
   };
   scores: {
     home: { total: number | null };
@@ -60,8 +60,8 @@ function toSportFixture(raw: RawGame): SportFixture {
       label: long,
       clock: timer,
     },
-    home: { name: raw.teams.home.name, logo: raw.teams.home.logo, score: raw.scores.home.total },
-    away: { name: raw.teams.away.name, logo: raw.teams.away.logo, score: raw.scores.away.total },
+    home: { id: raw.teams.home.id, name: raw.teams.home.name, logo: raw.teams.home.logo, score: raw.scores.home.total },
+    away: { id: raw.teams.away.id, name: raw.teams.away.name, logo: raw.teams.away.logo, score: raw.scores.away.total },
   };
 }
 
@@ -79,4 +79,22 @@ export async function fetchBasketballGamesByDate(date: string): Promise<SportFix
     leagues.map((league) => get("/games", { date, league: league.apiLeagueId, season: new Date(date).getFullYear() })),
   );
   return results.flat().map(toSportFixture);
+}
+
+/**
+ * A single game's current state, plus its two teams' most recent meetings.
+ * Untested against a live key (basketball isn't configured yet) — the
+ * `/games/h2h` path matches API-Basketball's documented convention but
+ * verify once `API_SPORTS_KEY` is in place.
+ */
+export async function fetchBasketballGameDetail(gameId: number): Promise<FixtureDetail | null> {
+  const [gameRaw] = await get("/games", { id: gameId });
+  if (!gameRaw) return null;
+
+  const fixture = toSportFixture(gameRaw);
+  const h2hRaw = await get("/games/h2h", {
+    h2h: `${fixture.home.id}-${fixture.away.id}`,
+  });
+
+  return { fixture, headToHead: h2hRaw.map(toSportFixture) };
 }

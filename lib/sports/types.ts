@@ -18,6 +18,8 @@ export interface FixtureCompetition {
 }
 
 export interface FixtureTeam {
+  /** Provider's own team id — needed to look up head-to-head history. */
+  id: number;
   name: string;
   logo?: string;
   /** Null before the match has any score to report. */
@@ -34,4 +36,10 @@ export interface SportFixture {
   status: FixtureStatus;
   home: FixtureTeam;
   away: FixtureTeam;
+}
+
+export interface FixtureDetail {
+  fixture: SportFixture;
+  /** Most recent past meetings between these two teams, newest first. */
+  headToHead: SportFixture[];
 }
