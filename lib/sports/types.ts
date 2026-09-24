@@ -38,8 +38,25 @@ export interface SportFixture {
   away: FixtureTeam;
 }
 
+export interface HeadToHeadSideStats {
+  home: number | null;
+  away: number | null;
+}
+
+export interface HeadToHeadStats {
+  shots: HeadToHeadSideStats;
+  corners: HeadToHeadSideStats;
+  cards: HeadToHeadSideStats;
+}
+
+export interface HeadToHeadMeeting {
+  fixture: SportFixture;
+  /** Null when the provider has no per-match stats for this meeting (common for older/lower-tier fixtures). */
+  stats: HeadToHeadStats | null;
+}
+
 export interface FixtureDetail {
   fixture: SportFixture;
-  /** Most recent past meetings between these two teams, newest first. */
-  headToHead: SportFixture[];
+  /** Most recent past meetings between these two teams, newest first, capped at 4. */
+  headToHead: HeadToHeadMeeting[];
 }

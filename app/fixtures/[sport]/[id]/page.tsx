@@ -4,7 +4,7 @@ import Link from "next/link";
 import { use } from "react";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "cn";
-import { FixtureRow } from "@/components/sports/fixture-card";
+import { HeadToHeadRow } from "@/components/sports/fixture-card";
 import { useLivePolling } from "@/lib/use-live-polling";
 import type { FixtureDetail } from "@/lib/sports/types";
 
@@ -91,7 +91,7 @@ export default function FixtureDetailPage({ params }: { params: Promise<{ sport:
             ) : (
               <div className="divide-y divide-border/60 rounded-xl bg-card ring-1 ring-foreground/10">
                 {data.headToHead.map((meeting) => (
-                  <FixtureRow key={meeting.id} fixture={meeting} showDate />
+                  <HeadToHeadRow key={meeting.fixture.id} meeting={meeting} />
                 ))}
               </div>
             )}

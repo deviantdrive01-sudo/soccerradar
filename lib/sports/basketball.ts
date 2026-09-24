@@ -1,7 +1,7 @@
 import "server-only";
 import { basketballApiKey } from "./api-sports-key";
 import { competitionsForSport } from "./competitions";
-import type { FixtureDetail, SportFixture, FixtureState } from "./types";
+import type { FixtureDetail, HeadToHeadMeeting, SportFixture, FixtureState } from "./types";
 
 const BASE_URL = "https://v1.basketball.api-sports.io";
 
@@ -82,10 +82,12 @@ export async function fetchBasketballGamesByDate(date: string): Promise<SportFix
 }
 
 /**
- * A single game's current state, plus its two teams' most recent meetings.
- * Untested against a live key (basketball isn't configured yet) — the
- * `/games/h2h` path matches API-Basketball's documented convention but
- * verify once `API_SPORTS_KEY` is in place.
+ * A single game's current state, plus its two teams' 4 most recent meetings.
+ * No per-match stat breakdown for basketball yet (shots/corners/cards are
+ * football concepts) — `stats` is always null here. Untested against a live
+ * key (basketball isn't configured yet) — the `/games/h2h` path matches
+ * API-Basketball's documented convention but verify once `API_SPORTS_KEY`
+ * is in place.
  */
 export async function fetchBasketballGameDetail(gameId: number): Promise<FixtureDetail | null> {
   const [gameRaw] = await get("/games", { id: gameId });
@@ -96,5 +98,7 @@ export async function fetchBasketballGameDetail(gameId: number): Promise<Fixture
     h2h: `${fixture.home.id}-${fixture.away.id}`,
   });
 
-  return { fixture, headToHead: h2hRaw.map(toSportFixture) };
+  const headToHead: HeadToHeadMeeting[] = h2hRaw.slice(0, 4).map((raw) => ({ fixture: toSportFixture(raw), stats: null }));
+
+  return { fixture, headToHead };
 }

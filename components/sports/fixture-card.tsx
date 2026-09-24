@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import type { SportFixture } from "@/lib/sports/types";
+import type { HeadToHeadMeeting, SportFixture } from "@/lib/sports/types";
 
 function TeamCrest({ name, logo }: { name: string; logo?: string }) {
   return (
@@ -18,13 +18,10 @@ function TeamCrest({ name, logo }: { name: string; logo?: string }) {
 /**
  * One scoreboard row: crest+name on the outside, score flanking a centered
  * competition/status column — mirrors the Apple Sports card layout.
- * `showDate` swaps the status line for the fixture's date, for
- * head-to-head lists where matches can span many months.
  */
-export function FixtureRow({ fixture, showDate }: { fixture: SportFixture; showDate?: boolean }) {
+export function FixtureRow({ fixture }: { fixture: SportFixture }) {
   const isLive = fixture.status.state === "live";
   const kickoffLabel = new Date(fixture.kickoff).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  const dateLabel = new Date(fixture.kickoff).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const statusLabel = fixture.status.state === "scheduled" ? kickoffLabel : fixture.status.clock ?? fixture.status.label;
 
   return (
@@ -36,20 +33,52 @@ export function FixtureRow({ fixture, showDate }: { fixture: SportFixture; showD
 
       <div className="flex flex-col items-center gap-0.5 px-1 text-center">
         <span className="truncate text-[11px] text-muted-foreground">{fixture.competition.name}</span>
-        {showDate ? (
-          <span className="text-[10px] text-muted-foreground">{dateLabel}</span>
-        ) : (
-          <span className={cn("flex items-center gap-1 text-[11px] font-medium", isLive && "text-primary")}>
-            {isLive && <span className="size-1.5 animate-pulse rounded-full bg-primary" />}
-            {statusLabel}
-          </span>
-        )}
+        <span className={cn("flex items-center gap-1 text-[11px] font-medium", isLive && "text-primary")}>
+          {isLive && <span className="size-1.5 animate-pulse rounded-full bg-primary" />}
+          {statusLabel}
+        </span>
       </div>
 
       <span className={cn("min-w-6 text-left text-xl font-semibold tabular-nums", isLive && "text-primary")}>
         {fixture.away.score ?? "–"}
       </span>
       <TeamCrest name={fixture.away.name} logo={fixture.away.logo} />
+    </div>
+  );
+}
+
+/**
+ * One past-meeting row for the head-to-head list: final score + date/
+ * competition on the left, per-team shots/corners/cards on the right when
+ * the provider has stats for that fixture.
+ */
+export function HeadToHeadRow({ meeting }: { meeting: HeadToHeadMeeting }) {
+  const { fixture, stats } = meeting;
+  const dateLabel = new Date(fixture.kickoff).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });
+
+  return (
+    <div className="flex items-start justify-between gap-3 px-4 py-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">
+          {fixture.home.name} {fixture.home.score}–{fixture.away.score} {fixture.away.name}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {dateLabel} · {fixture.competition.name}
+        </p>
+      </div>
+      {stats && (
+        <div className="shrink-0 text-right text-xs text-muted-foreground">
+          <p>
+            Shots {stats.shots.home ?? "–"}–{stats.shots.away ?? "–"}
+          </p>
+          <p>
+            Corners {stats.corners.home ?? "–"}–{stats.corners.away ?? "–"}
+          </p>
+          <p>
+            Cards {stats.cards.home ?? "–"}–{stats.cards.away ?? "–"}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
