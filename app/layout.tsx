@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import localFont from "next/font/local";
 import { Geist_Mono } from "next/font/google";
@@ -7,17 +7,20 @@ import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { NavigationHistoryTracker } from "@/components/navigation-history-tracker";
 import { CookieConsent } from "@/components/cookie-consent";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { AdSettingsProvider } from "@/components/ad-settings-provider";
 import { AccountProvider } from "@/components/account-provider";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
-import { SITE_URL, SITE_TAGLINE } from "@/lib/site";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
 const GA_MEASUREMENT_ID = "G-5DW3J6DCD0";
 const GOOGLE_ADS_ID = "AW-16787339885";
 const SITE_NAME = "SoccerRadar";
-const SITE_DESCRIPTION = `${SITE_TAGLINE} AI-generated football predictions across 16 top global leagues, backed by a public, verifiable track record. No cherry-picking, nothing held back.`;
+const SITE_DESCRIPTION =
+  "Live scores and fixtures for football and basketball, updated as they happen — plus AI-generated football predictions backed by a public, verifiable track record.";
 
 // Dark is the default for every visitor without an explicit saved choice —
 // intentionally ignores prefers-color-scheme so brand-dark stays the norm
@@ -96,35 +99,45 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — AI Match Predictions`,
+    default: `${SITE_NAME} — Live Scores & Fixtures`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   keywords: [
+    "live football scores",
+    "live basketball scores",
+    "football fixtures",
+    "basketball fixtures",
     "football predictions",
-    "soccer predictions",
     "AI match predictions",
-    "over 2.5 goals prediction",
-    "correct score prediction",
-    "football betting tips",
   ],
   robots: { index: true, follow: true },
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — AI Match Predictions`,
+    title: `${SITE_NAME} — Live Scores & Fixtures`,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
   },
   twitter: {
     card: "summary",
-    title: `${SITE_NAME} — AI Match Predictions`,
+    title: `${SITE_NAME} — Live Scores & Fixtures`,
     description: SITE_DESCRIPTION,
   },
   other: {
     "google-adsense-account": ADSENSE_CLIENT_ID,
   },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -171,10 +184,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <AccountProvider>
             <NavigationHistoryTracker />
             <SiteHeader />
+            <InstallPrompt />
             {children}
             <SiteFooter />
             <MobileBottomNav />
             <CookieConsent />
+            <ServiceWorkerRegister />
           </AccountProvider>
         </AdSettingsProvider>
       </body>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
+  { href: "/predictions", label: "Predictions" },
   { href: "/accuracy", label: "Track Record" },
   { href: "/top-mixes", label: "Top Mixes" },
 ] as const;

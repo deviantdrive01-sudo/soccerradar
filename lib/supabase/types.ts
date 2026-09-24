@@ -206,6 +206,50 @@ export interface TeamCrest {
   updated_at: string;
 }
 
+/**
+ * A fixture fetched from API-Sports, archived so the Match Streak engine's
+ * team-form/head-to-head lookups can query our own data instead of
+ * re-hitting the provider on every visit — see lib/sports/football.ts and
+ * supabase/migrations/21_sport_fixture_archive.sql. Live/scheduled rows get
+ * overwritten as their status/score changes; a finished row is effectively
+ * permanent.
+ */
+export interface SportFixtureRow {
+  id: string;
+  sport: string;
+  competition_id: number;
+  competition_name: string;
+  competition_country: string | null;
+  competition_logo: string | null;
+  kickoff: string;
+  status_state: string;
+  status_label: string;
+  status_clock: string | null;
+  home_team_id: number;
+  home_team_name: string;
+  home_team_logo: string | null;
+  home_score: number | null;
+  home_ht_score: number | null;
+  away_team_id: number;
+  away_team_name: string;
+  away_team_logo: string | null;
+  away_score: number | null;
+  away_ht_score: number | null;
+  updated_at: string;
+}
+
+/** Per-fixture shots/corners/cards, populated once from /fixtures/statistics after a match finishes — immutable from that point on. */
+export interface FixtureStatsRow {
+  fixture_id: string;
+  home_shots: number | null;
+  away_shots: number | null;
+  home_corners: number | null;
+  away_corners: number | null;
+  home_cards: number | null;
+  away_cards: number | null;
+  fetched_at: string;
+}
+
 /** One past meeting between these two exact teams, scraped from its own Flashscore match page. */
 export interface H2hMeeting {
   date: string;
@@ -410,6 +454,18 @@ export interface Database {
         Row: Row<TeamCrest>;
         Insert: Row<Omit<TeamCrest, "updated_at"> & { updated_at?: string }>;
         Update: Row<Partial<TeamCrest>>;
+        Relationships: [];
+      };
+      sport_fixtures: {
+        Row: Row<SportFixtureRow>;
+        Insert: Row<Omit<SportFixtureRow, "updated_at"> & { updated_at?: string }>;
+        Update: Row<Partial<SportFixtureRow>>;
+        Relationships: [];
+      };
+      fixture_stats: {
+        Row: Row<FixtureStatsRow>;
+        Insert: Row<Omit<FixtureStatsRow, "fetched_at"> & { fetched_at?: string }>;
+        Update: Row<Partial<FixtureStatsRow>>;
         Relationships: [];
       };
       template_settings: {

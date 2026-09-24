@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Compass, Flag, Equal, Goal, Swords, Shuffle, type LucideIcon } from "lucide-react";
-import { TodaysPickIcon, TodaysPickIconFilled, BookingsIcon, CollectionsIcon, CollectionsIconFilled, MoreMenuIcon } from "@/components/bottom-nav-icons";
+import { BarChart3, Compass, Flag, Equal, Goal, Swords, Shuffle, Radio, type LucideIcon } from "lucide-react";
+import { TodaysPickIcon, TodaysPickIconFilled, BookingsIcon, CollectionsIcon, MoreMenuIcon } from "@/components/bottom-nav-icons";
 import { RestartTourButton } from "@/components/restart-tour-button";
 import { QUICK_FILTER_OPTIONS, type QuickFilter } from "@/lib/quick-filter";
 import { cn } from "cn";
@@ -25,20 +25,24 @@ const FILTER_ICONS: Partial<Record<QuickFilter, LucideIcon>> = {
 
 const TAB_CLASS = "flex flex-1 flex-col items-center justify-center gap-1 py-4";
 
-type OpenPanel = "todaysPick" | "more" | null;
+type OpenPanel = "more" | null;
 
 /**
  * Site-wide phone tab bar — replaces the old hamburger drawer entirely. The
- * header still keeps its own avatar/community/theme controls. Today's Pick
- * opens the quick-filter shortcuts; Top Mixes and Collections are direct
- * links; More holds everything else (My Mixes, Track Record, the tour).
+ * header still keeps its own avatar/community/theme controls. Live and
+ * Predictions are direct links (Live is the homepage since the 2026-09
+ * fixtures/live-scores pivot); Mixes is a direct link; More holds everything
+ * else (Today's Pick shortcuts, Collections, My Mixes, Track Record, the
+ * tour) — folded in here so the bar stays at four slots instead of growing
+ * to five.
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
 
-  const topMixesActive = pathname.startsWith("/top-mixes");
-  const collectionsActive = pathname.startsWith("/account/collections");
+  const liveActive = pathname === "/";
+  const predictionsActive = pathname.startsWith("/predictions");
+  const mixesActive = pathname.startsWith("/top-mixes");
 
   function togglePanel(panel: OpenPanel) {
     setOpenPanel((current) => (current === panel ? null : panel));
@@ -50,7 +54,7 @@ export function MobileBottomNav() {
         <>
           <div className="fixed inset-0 z-40 bg-black/40 sm:hidden" onClick={() => setOpenPanel(null)} />
 
-          {openPanel === "todaysPick" && (
+          {openPanel === "more" && (
             <div className={PANEL_CLASS}>
               <nav className="flex flex-col">
                 {QUICK_FILTER_OPTIONS.map((option) => {
@@ -67,13 +71,10 @@ export function MobileBottomNav() {
                     </Link>
                   );
                 })}
-              </nav>
-            </div>
-          )}
-
-          {openPanel === "more" && (
-            <div className={PANEL_CLASS}>
-              <nav className="flex flex-col">
+                <Link href="/account/collections" onClick={() => setOpenPanel(null)} className={PANEL_ROW_CLASS}>
+                  <CollectionsIcon className="size-4 shrink-0" />
+                  Collections
+                </Link>
                 <Link href="/account/mixes" onClick={() => setOpenPanel(null)} className={PANEL_ROW_CLASS}>
                   <BookingsIcon className="size-4 shrink-0" />
                   My Mixes
@@ -97,47 +98,36 @@ export function MobileBottomNav() {
         className="fixed inset-x-4 bottom-4 z-40 flex items-stretch justify-between rounded-2xl border border-border/60 bg-card shadow-lg sm:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <button
-          type="button"
-          onClick={() => togglePanel("todaysPick")}
-          className={TAB_CLASS}
-          aria-label="Today's Pick"
-          aria-expanded={openPanel === "todaysPick"}
-        >
+        <Link href="/" className={TAB_CLASS} aria-label="Live" aria-current={liveActive ? "page" : undefined}>
           <span
             className={cn(
               "flex size-8 items-center justify-center rounded-full",
-              openPanel === "todaysPick" ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+              liveActive ? "bg-primary text-primary-foreground" : "text-muted-foreground",
             )}
           >
-            {openPanel === "todaysPick" ? <TodaysPickIconFilled className="size-4" /> : <TodaysPickIcon className="size-4" />}
-          </span>
-        </button>
-
-        <Link href="/top-mixes" className={TAB_CLASS} aria-label="Top Mixes" aria-current={topMixesActive ? "page" : undefined}>
-          <span
-            className={cn(
-              "flex size-8 items-center justify-center rounded-full",
-              topMixesActive ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-            )}
-          >
-            <BookingsIcon className="size-4" />
+            <Radio className="size-4" />
           </span>
         </Link>
 
-        <Link
-          href="/account/collections"
-          className={TAB_CLASS}
-          aria-label="Collections"
-          aria-current={collectionsActive ? "page" : undefined}
-        >
+        <Link href="/predictions" className={TAB_CLASS} aria-label="Predictions" aria-current={predictionsActive ? "page" : undefined}>
           <span
             className={cn(
               "flex size-8 items-center justify-center rounded-full",
-              collectionsActive ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+              predictionsActive ? "bg-primary text-primary-foreground" : "text-muted-foreground",
             )}
           >
-            {collectionsActive ? <CollectionsIconFilled className="size-4" /> : <CollectionsIcon className="size-4" />}
+            {predictionsActive ? <TodaysPickIconFilled className="size-4" /> : <TodaysPickIcon className="size-4" />}
+          </span>
+        </Link>
+
+        <Link href="/top-mixes" className={TAB_CLASS} aria-label="Mixes" aria-current={mixesActive ? "page" : undefined}>
+          <span
+            className={cn(
+              "flex size-8 items-center justify-center rounded-full",
+              mixesActive ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+            )}
+          >
+            <BookingsIcon className="size-4" />
           </span>
         </Link>
 
