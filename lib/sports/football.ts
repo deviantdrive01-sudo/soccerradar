@@ -231,8 +231,8 @@ async function computeTeamFormStats(teamId: number, venue: "home" | "away"): Pro
 function resultMarket(home: TeamFormStats, away: TeamFormStats): StreakMarket {
   const draw = (home.drawRate + away.drawRate) / 2;
   const max = Math.max(home.winRate, draw, away.winRate);
-  const pick = max === home.winRate ? "Home Win" : max === away.winRate ? "Away Win" : "Draw";
-  return { key: "result", label: "Full-Time Result", pick, confidence: Math.round(max * 100) };
+  const pick = max === home.winRate ? "Home Leading" : max === away.winRate ? "Away Leading" : "Even Contest";
+  return { key: "result", label: "Match Trend", pick, confidence: Math.round(max * 100) };
 }
 
 function binaryMarket(
@@ -255,13 +255,27 @@ export async function computeMatchStreak(homeId: number, awayId: number): Promis
 
   const markets: StreakMarket[] = [
     resultMarket(home, away),
-    binaryMarket("half_time_draw", "Half-Time Draw", home.halfTimeDrawRate, away.halfTimeDrawRate, "Yes", "No"),
-    binaryMarket("over_2_5", "Total Goals", home.over2_5Rate, away.over2_5Rate, "Over 2.5", "Under 2.5"),
-    binaryMarket("btts", "Both Teams to Score", home.bttsRate, away.bttsRate, "Yes", "No"),
-    binaryMarket("corners", "Total Corners", home.cornersOverRate, away.cornersOverRate, `Over ${CORNERS_LINE}`, `Under ${CORNERS_LINE}`),
-    binaryMarket("cards", "Total Cards", home.cardsOverRate, away.cardsOverRate, `Over ${CARDS_LINE}`, `Under ${CARDS_LINE}`),
-    binaryMarket("shots", "Total Shots", home.shotsOverRate, away.shotsOverRate, `Over ${SHOTS_LINE}`, `Under ${SHOTS_LINE}`),
-    binaryMarket("draw_or_over_2_5", "Draw or Over 2.5", home.drawOrOver2_5Rate, away.drawOrOver2_5Rate, "Yes", "No"),
+    binaryMarket(
+      "half_time_draw",
+      "First-Half Tempo",
+      home.halfTimeDrawRate,
+      away.halfTimeDrawRate,
+      "Tight at the Break",
+      "Clear Lead at the Break",
+    ),
+    binaryMarket("over_2_5", "Goal Trend", home.over2_5Rate, away.over2_5Rate, "High-Scoring", "Low-Scoring"),
+    binaryMarket("btts", "Scoring Pattern", home.bttsRate, away.bttsRate, "Both Teams Scoring", "One-Sided Scoring"),
+    binaryMarket("corners", "Corner Activity", home.cornersOverRate, away.cornersOverRate, "High Corner Count", "Low Corner Count"),
+    binaryMarket("cards", "Discipline Trend", home.cardsOverRate, away.cardsOverRate, "Cards Likely", "Clean Game Likely"),
+    binaryMarket("shots", "Shot Volume", home.shotsOverRate, away.shotsOverRate, "High Shot Volume", "Low Shot Volume"),
+    binaryMarket(
+      "draw_or_over_2_5",
+      "Match Character",
+      home.drawOrOver2_5Rate,
+      away.drawOrOver2_5Rate,
+      "Unpredictable",
+      "Comfortable Win Likely",
+    ),
   ];
 
   return { markets, home, away };

@@ -90,7 +90,7 @@ export default function FixtureDetailPage({ params }: { params: Promise<{ sport:
               <div>
                 <h2 className="text-sm font-semibold">Match Streak</h2>
                 <p className="text-xs text-muted-foreground">
-                  Computed from each team&apos;s last 5 matches — statistics only, no AI involved.
+                  Trends from each team&apos;s last 5 matches — statistics only, not betting advice.
                 </p>
               </div>
               <div className="divide-y divide-border/60 rounded-xl bg-card ring-1 ring-foreground/10">
