@@ -5,6 +5,7 @@ import { use } from "react";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "cn";
 import { HeadToHeadRow } from "@/components/sports/fixture-card";
+import { Badge } from "@/components/ui/badge";
 import { useLivePolling } from "@/lib/use-live-polling";
 import type { FixtureDetail } from "@/lib/sports/types";
 
@@ -83,6 +84,28 @@ export default function FixtureDetailPage({ params }: { params: Promise<{ sport:
               />
             </div>
           </div>
+
+          {data.streak && (
+            <div className="flex flex-col gap-2">
+              <div>
+                <h2 className="text-sm font-semibold">Match Streak</h2>
+                <p className="text-xs text-muted-foreground">
+                  Computed from each team&apos;s last 5 matches — statistics only, no AI involved.
+                </p>
+              </div>
+              <div className="divide-y divide-border/60 rounded-xl bg-card ring-1 ring-foreground/10">
+                {data.streak.markets.map((market) => (
+                  <div key={market.key} className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm">{market.label}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{market.pick}</span>
+                      <Badge variant="secondary">{market.confidence}%</Badge>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <h2 className="text-sm font-semibold">Head-to-Head</h2>

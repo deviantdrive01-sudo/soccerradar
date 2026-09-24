@@ -84,8 +84,9 @@ export async function fetchBasketballGamesByDate(date: string): Promise<SportFix
 /**
  * A single game's current state, plus its two teams' 4 most recent meetings.
  * No per-match stat breakdown for basketball yet (shots/corners/cards are
- * football concepts) — `stats` is always null here. Untested against a live
- * key (basketball isn't configured yet) — the `/games/h2h` path matches
+ * football concepts) — `stats` is always null here, and there's no Match
+ * Streak engine for basketball yet either. Untested against a live key
+ * (basketball isn't configured yet) — the `/games/h2h` path matches
  * API-Basketball's documented convention but verify once `API_SPORTS_KEY`
  * is in place.
  */
@@ -100,5 +101,5 @@ export async function fetchBasketballGameDetail(gameId: number): Promise<Fixture
 
   const headToHead: HeadToHeadMeeting[] = h2hRaw.slice(0, 4).map((raw) => ({ fixture: toSportFixture(raw), stats: null }));
 
-  return { fixture, headToHead };
+  return { fixture, headToHead, streak: null };
 }
