@@ -87,10 +87,10 @@ export interface TeamFormStats {
 export interface StreakMarket {
   key: "result" | "half_time_draw" | "over_2_5" | "btts" | "corners" | "cards" | "shots" | "draw_or_over_2_5";
   label: string;
-  /** Display value for the pick, e.g. "Home Win", "Over 2.5", "Yes". */
+  /** Display value for the pick, e.g. "Home Leading", "Over 2.5 Goals". */
   pick: string;
-  /** The statistical rate backing this pick, 0-100. */
-  confidence: number;
+  /** How many of the matches considered actually showed this — e.g. "4/5". A factual count, not a probability. */
+  streak: string;
 }
 
 export interface MatchStreak {

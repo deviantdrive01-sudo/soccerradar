@@ -99,7 +99,7 @@ export default function FixtureDetailPage({ params }: { params: Promise<{ sport:
                     <span className="text-sm">{market.label}</span>
                     <span className="flex items-center gap-2">
                       <span className="text-sm font-semibold">{market.pick}</span>
-                      <Badge variant="secondary">{market.confidence}%</Badge>
+                      <Badge variant="secondary">{market.streak}</Badge>
                     </span>
                   </div>
                 ))}
