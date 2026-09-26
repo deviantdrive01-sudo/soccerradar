@@ -50,7 +50,11 @@ const USER_AGENT =
 const MAX_H2H_MEETINGS = 4; // bumped from 3 (2026-09-08) for a slightly larger sample to benchmark corner/goals reads against — still capped to bound the extra scraping this adds per fixture
 const MAX_PENDING_PER_RUN = 60; // bounds Claude spend per run
 const BATCH_SIZE = 8;
-const DEFAULT_MODEL = "claude-sonnet-5";
+// Switched from claude-sonnet-5 to the cheaper/faster Haiku tier (2026-09-13)
+// to cut per-fixture cost on this high-volume, schedule-driven call — a
+// deliberate quality/cost tradeoff, not a bug. Override with ANTHROPIC_MODEL
+// to test a different model without a redeploy.
+const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
 
 // ---------- H2H + corner history (same approach as crawl-fixtures.ts's sibling, update-results.ts) ----------
 
@@ -156,6 +160,12 @@ function parseCards(statsText: string): { home: number; away: number } | null {
   };
 }
 
+/** Same already-fetched full-match Stats page text as parseCorners/parseCards — display-only on the h2h rows, not a market input (the "s" market weighs API-Football's externalComparison.h2h[].totalShots, not this). */
+function parseShots(statsText: string): { home: number; away: number } | null {
+  const shotsMatch = statsText.match(/(\d+)\s*\n\s*Total shots\s*\n\s*(\d+)/i);
+  return shotsMatch ? { home: Number(shotsMatch[1]), away: Number(shotsMatch[2]) } : null;
+}
+
 /**
  * Full-match and 1st-half corner counts for one h2h meeting — same approach
  * proven in update-results.ts: the Stats tab's URL has "overall" swapped for
@@ -170,6 +180,7 @@ async function extractCorners(
   corners: { home: number; away: number } | null;
   htCorners: { home: number; away: number } | null;
   cards: { home: number; away: number } | null;
+  shots: { home: number; away: number } | null;
 }> {
   const url = `https://www.flashscore.com/match/football/${matchId}/#/match-summary`;
   try {
@@ -180,6 +191,7 @@ async function extractCorners(
     const statsText = await page.evaluate(() => document.body.innerText);
     const corners = parseCorners(statsText);
     const cards = parseCards(statsText);
+    const shots = parseShots(statsText);
 
     let htCorners: { home: number; away: number } | null = null;
     const statsUrl = page.url();
@@ -194,9 +206,9 @@ async function extractCorners(
       }
     }
 
-    return { corners, htCorners, cards };
+    return { corners, htCorners, cards, shots };
   } catch {
-    return { corners: null, htCorners: null, cards: null };
+    return { corners: null, htCorners: null, cards: null, shots: null };
   }
 }
 
@@ -278,6 +290,7 @@ interface FixtureContext {
       corners: { home: number; away: number } | null;
       htCorners: { home: number; away: number } | null;
       cards: { home: number; away: number } | null;
+      shots: { home: number; away: number } | null;
     })[];
     homeTeamForm: H2hRow[];
     awayTeamForm: H2hRow[];
@@ -431,8 +444,8 @@ async function main() {
 
       const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
       for (const meeting of h2h.headToHead) {
-        const { corners, htCorners, cards } = await extractCorners(page, meeting.mid);
-        headToHeadWithCorners.push({ ...meeting, corners, htCorners, cards });
+        const { corners, htCorners, cards, shots } = await extractCorners(page, meeting.mid);
+        headToHeadWithCorners.push({ ...meeting, corners, htCorners, cards, shots });
       }
 
       let apiFootballFixtureId: number | null = null;

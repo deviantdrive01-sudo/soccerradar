@@ -107,7 +107,13 @@ function rowsEqual(a: FixtureRow[], b: FixtureRow[]): boolean {
 // ---------- main ----------
 
 async function main() {
-  const { data: leagues, error: leaguesError } = await supabase.from("leagues").select("*").eq("is_active", true);
+  let leaguesQuery = supabase.from("leagues").select("*").eq("is_active", true);
+  // Ad-hoc single-league runs (e.g. LEAGUE_ID=14 for MLS) — unset in the
+  // scheduled workflow, so the normal run still covers every active league.
+  if (process.env.LEAGUE_ID) {
+    leaguesQuery = leaguesQuery.eq("id", Number(process.env.LEAGUE_ID));
+  }
+  const { data: leagues, error: leaguesError } = await leaguesQuery;
   if (leaguesError) {
     console.error("Failed to load leagues:", leaguesError.message);
     process.exit(1);

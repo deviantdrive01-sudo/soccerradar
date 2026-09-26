@@ -34,7 +34,11 @@ export interface FixtureStatsContext {
  *     expands that shorthand into UI/DB-ready labels afterward.
  */
 
-const DEFAULT_MODEL = "claude-sonnet-5";
+// Switched from claude-sonnet-5 to the cheaper/faster Haiku tier (2026-09-13)
+// to cut per-fixture cost on this high-volume, schedule-driven call — a
+// deliberate quality/cost tradeoff, not a bug. Override with ANTHROPIC_MODEL
+// to test a different model without a redeploy.
+const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
 const BATCH_SIZE = 8; // fixtures per Claude call — keeps prompts small & cacheable
 
 export interface FixtureContext {

@@ -413,6 +413,11 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
                         Corners {meeting.corners.home}–{meeting.corners.away}
                       </div>
                     )}
+                    {meeting.shots && (
+                      <div>
+                        Shots {meeting.shots.home}–{meeting.shots.away}
+                      </div>
+                    )}
                     {meeting.cards && (
                       <div>
                         Cards {meeting.cards.home}–{meeting.cards.away}

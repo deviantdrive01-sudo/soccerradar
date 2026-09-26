@@ -219,6 +219,8 @@ export interface H2hMeeting {
   htCorners?: { home: number; away: number } | null;
   /** Combined yellow + red cards per side — display-only, absent on meetings scraped before this was added. */
   cards?: { home: number; away: number } | null;
+  /** Total shots per side for this meeting — display-only, absent on meetings scraped before this was added. */
+  shots?: { home: number; away: number } | null;
 }
 
 export interface Prediction {
