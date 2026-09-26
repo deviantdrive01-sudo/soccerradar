@@ -442,12 +442,6 @@ async function main() {
     try {
       const h2h = await scrapeH2hSections(page, row.match_id);
 
-      const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
-      for (const meeting of h2h.headToHead) {
-        const { corners, htCorners, cards, shots } = await extractCorners(page, meeting.mid);
-        headToHeadWithCorners.push({ ...meeting, corners, htCorners, cards, shots });
-      }
-
       let apiFootballFixtureId: number | null = null;
       let apiFootball: FixtureContext["apiFootball"] = null;
       if (league?.use_api_football) {
@@ -462,6 +456,39 @@ async function main() {
           // dependency — log and continue with Flashscore-only data, same
           // as a resolution "no match" outcome.
           console.warn(`API-Football lookup failed for ${row.home_team} vs ${row.away_team}:`, err instanceof Error ? err.message : err);
+        }
+      }
+
+      // Per-meeting corners/cards/shots normally come from a slow Playwright
+      // scrape of each h2h meeting's own Flashscore stats page (up to 4
+      // meetings x several page loads each). Curated leagues get real shot
+      // data far faster from API-Football's own h2h (fetched above, HTTP-only,
+      // up to 10 meetings) — skip the slow per-meeting scrape entirely for
+      // them and show API-Football's h2h (with real shots, no corners — it
+      // has none of its own) instead of Flashscore's. Corners methodology
+      // already has a documented current-form fallback for exactly this case.
+      const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
+      if (apiFootball) {
+        for (const meeting of apiFootball.h2h.slice(0, MAX_H2H_MEETINGS)) {
+          if (meeting.homeScore === null || meeting.awayScore === null) continue;
+          headToHeadWithCorners.push({
+            date: new Date(meeting.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+            competition: "",
+            home: meeting.homeTeam,
+            away: meeting.awayTeam,
+            homeScore: meeting.homeScore,
+            awayScore: meeting.awayScore,
+            mid: "",
+            corners: null,
+            htCorners: null,
+            cards: null,
+            shots: meeting.totalShots ?? null,
+          });
+        }
+      } else {
+        for (const meeting of h2h.headToHead) {
+          const { corners, htCorners, cards, shots } = await extractCorners(page, meeting.mid);
+          headToHeadWithCorners.push({ ...meeting, corners, htCorners, cards, shots });
         }
       }
 
