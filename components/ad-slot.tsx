@@ -5,6 +5,12 @@ import { X } from "lucide-react";
 import { useAdSettings } from "@/components/ad-settings-provider";
 
 const ADSENSE_CLIENT_ID = "ca-pub-8047973291517576";
+// All ad rendering paused site-wide (2026-10) — every AdSlot call site
+// (house ads and AdSense units alike) short-circuits on this. The AdSense
+// account verification meta tag in app/layout.tsx is untouched by this;
+// that's unrelated to whether any ad unit actually renders. Flip this back
+// to false to bring ads back everywhere at once.
+const ADS_DISABLED = true;
 const VIEW_COUNT_KEY = "soccerradar-ad-views";
 const VIEW_COUNT_EVENT = "soccerradar-ad-view-changed";
 
@@ -122,20 +128,7 @@ function getRollServerSnapshot(): number {
   return 0;
 }
 
-/**
- * Rotates between our own house ad and a live AdSense unit. The pick is made
- * once per page load — client-side only, swapping in right after hydration —
- * never on a timer, since AdSense policy treats refreshing/swapping a slot
- * without a real new pageview as invalid traffic.
- */
-export function AdSlot({
-  slotId,
-  className,
-  orientation = "vertical",
-  dismissible = false,
-  autoHideMs,
-  maxViewsPerSession,
-}: {
+interface AdSlotProps {
   slotId?: string;
   className?: string;
   orientation?: AdOrientation;
@@ -145,7 +138,35 @@ export function AdSlot({
   autoHideMs?: number;
   /** Once this many page loads in the current tab session have shown an ad slot, stop showing it. */
   maxViewsPerSession?: number;
-}) {
+}
+
+/**
+ * Every call site goes through this wrapper rather than ActiveAdSlot
+ * directly, so the site-wide ADS_DISABLED switch above is a single early
+ * return with zero hooks involved — flipping it can't trip
+ * react-hooks/rules-of-hooks, since ActiveAdSlot (with all the hooks) is a
+ * genuinely separate component that either mounts or doesn't, rather than a
+ * conditional return partway through one component's hook calls.
+ */
+export function AdSlot(props: AdSlotProps) {
+  if (ADS_DISABLED) return null;
+  return <ActiveAdSlot {...props} />;
+}
+
+/**
+ * Rotates between our own house ad and a live AdSense unit. The pick is made
+ * once per page load — client-side only, swapping in right after hydration —
+ * never on a timer, since AdSense policy treats refreshing/swapping a slot
+ * without a real new pageview as invalid traffic.
+ */
+function ActiveAdSlot({
+  slotId,
+  className,
+  orientation = "vertical",
+  dismissible = false,
+  autoHideMs,
+  maxViewsPerSession,
+}: AdSlotProps) {
   const settings = useAdSettings();
   const roll = useSyncExternalStore(subscribeRoll, getRollSnapshot, getRollServerSnapshot);
   const variant: AdVariant = settings.googleEnabled && roll * 100 >= settings.houseWeight ? "google" : "house";

@@ -148,12 +148,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
         />
         <Script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
-        <Script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
+        {/* adsbygoogle.js loader intentionally removed (2026-10) — all ad
+            rendering is paused site-wide (see components/ad-slot.tsx), so
+            there's nothing left for this script to serve. The
+            "google-adsense-account" meta tag above stays — that's the
+            account verification tag, unrelated to whether ads render. */}
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground pb-24 sm:pb-0">
         <AdSettingsProvider
