@@ -151,7 +151,7 @@ async function main() {
 
   // ---------- API-Football discovery (default — runs first, for every league with a real api_league_id) ----------
   // Primary source now: fast, HTTP-only, and fetches+attaches each fixture's
-  // stats (h2h with real shots, team/comparison context) right now, at
+  // stats (h2h with real shots/corners, team/comparison context) right now, at
   // discovery time — so the site has real stats as soon as the fixture
   // appears, not only once a prediction is generated later. The Flashscore
   // scrape below runs second and only as a gap-filler (it dedups against

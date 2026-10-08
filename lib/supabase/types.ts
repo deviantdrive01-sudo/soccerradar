@@ -53,8 +53,9 @@ export interface ApiFootballH2hMeeting {
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
-  /** Real "Total Shots" from this meeting's own /fixtures/statistics, when that fixture had stats coverage — see lib/api-football-context.ts's fetchH2hShots. */
+  /** Real "Total Shots"/"Corner Kicks" from this meeting's own /fixtures/statistics, when that fixture had stats coverage — see lib/api-football-context.ts's fetchH2hMatchStats. */
   totalShots?: { home: number; away: number } | null;
+  corners?: { home: number; away: number } | null;
 }
 
 export interface AdSettings {

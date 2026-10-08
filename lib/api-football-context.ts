@@ -217,35 +217,46 @@ interface RawFixtureStatisticsItem {
   statistics: { type: string; value: string | number | null }[];
 }
 
+interface MatchStatsPair {
+  shots: { home: number; away: number } | null;
+  corners: { home: number; away: number } | null;
+}
+
 /**
- * "Total Shots" for both sides of a batch of already-played h2h meetings,
- * keyed by fixture id — used to enrich the h2h array for the Total Shots
- * market. One /fixtures/statistics call per meeting; a meeting with no
- * stats coverage that season (or a request failure) just contributes null
- * rather than failing the batch, same "degrade, don't block" contract as
- * every other API-Football call in this module. Matches each side's stats
- * by team name rather than array position — the API's own team ordering
- * within /fixtures/statistics isn't documented as home-first.
+ * "Total Shots" and "Corner Kicks" for both sides of a batch of
+ * already-played h2h meetings, keyed by fixture id — one /fixtures/statistics
+ * call per meeting already covers both stat types, so there's no extra
+ * request cost to pull corners alongside shots. A meeting with no stats
+ * coverage that season (or a request failure) just contributes nulls rather
+ * than failing the batch, same "degrade, don't block" contract as every
+ * other API-Football call in this module. Matches each side's stats by team
+ * name rather than array position — the API's own team ordering within
+ * /fixtures/statistics isn't documented as home-first.
  */
-async function fetchH2hShots(
+async function fetchH2hMatchStats(
   meetings: { fixtureId: number; homeTeam: string; awayTeam: string }[],
-): Promise<Map<number, { home: number; away: number } | null>> {
-  const results = new Map<number, { home: number; away: number } | null>();
+): Promise<Map<number, MatchStatsPair>> {
+  const results = new Map<number, MatchStatsPair>();
   await Promise.all(
     meetings.map(async ({ fixtureId, homeTeam, awayTeam }) => {
       try {
         const stats = await apiFootballGet<RawFixtureStatisticsItem[]>("/fixtures/statistics", { fixture: fixtureId });
-        const shotsFor = (teamName: string) => {
+        const statFor = (teamName: string, type: string) => {
           const team = stats.find((s) => s.team.name === teamName);
-          const found = team?.statistics.find((s) => s.type === "Total Shots");
+          const found = team?.statistics.find((s) => s.type === type);
           return typeof found?.value === "number" ? found.value : null;
         };
-        const home = shotsFor(homeTeam);
-        const away = shotsFor(awayTeam);
-        results.set(fixtureId, home !== null && away !== null ? { home, away } : null);
+        const shotsHome = statFor(homeTeam, "Total Shots");
+        const shotsAway = statFor(awayTeam, "Total Shots");
+        const cornersHome = statFor(homeTeam, "Corner Kicks");
+        const cornersAway = statFor(awayTeam, "Corner Kicks");
+        results.set(fixtureId, {
+          shots: shotsHome !== null && shotsAway !== null ? { home: shotsHome, away: shotsAway } : null,
+          corners: cornersHome !== null && cornersAway !== null ? { home: cornersHome, away: cornersAway } : null,
+        });
       } catch (err) {
         console.warn(`API-Football: /fixtures/statistics fetch failed for fixture ${fixtureId}:`, err instanceof Error ? err.message : err);
-        results.set(fixtureId, null);
+        results.set(fixtureId, { shots: null, corners: null });
       }
     }),
   );
@@ -268,11 +279,14 @@ function summarizeTeam(raw: RawTeamSummary): ApiFootballPredictionContext["teams
   };
 }
 
-/** Fills in .totalShots for each h2h meeting via fetchH2hShots, in one parallel batch. */
-async function attachH2hShots(meetings: ApiFootballH2hMeeting[]): Promise<ApiFootballH2hMeeting[]> {
+/** Fills in .totalShots and .corners for each h2h meeting via fetchH2hMatchStats, in one parallel batch. */
+async function attachH2hMatchStats(meetings: ApiFootballH2hMeeting[]): Promise<ApiFootballH2hMeeting[]> {
   if (meetings.length === 0) return meetings;
-  const shotsById = await fetchH2hShots(meetings);
-  return meetings.map((m) => ({ ...m, totalShots: shotsById.get(m.fixtureId) ?? null }));
+  const statsById = await fetchH2hMatchStats(meetings);
+  return meetings.map((m) => {
+    const stats = statsById.get(m.fixtureId);
+    return { ...m, totalShots: stats?.shots ?? null, corners: stats?.corners ?? null };
+  });
 }
 
 /**
@@ -305,7 +319,7 @@ export async function fetchApiFootballPredictionContext(fixtureId: number): Prom
         home: summarizeTeam(raw.teams.home),
         away: summarizeTeam(raw.teams.away),
       },
-      h2h: await attachH2hShots(
+      h2h: await attachH2hMatchStats(
         raw.h2h.slice(0, 10).map((m) => ({
           fixtureId: m.fixture.id,
           date: m.fixture.date,
@@ -338,11 +352,11 @@ export interface DisplayH2hMeeting {
 }
 
 /**
- * Converts API-Football's own h2h array (real shots, no corners — it has
- * none of its own) into the display shape used for Flashscore-sourced h2h
- * meetings, so a curated-league fixture can show real head-to-head stats
- * without the slow per-meeting Flashscore scrape. Shared by
- * scripts/crawl-fixtures.ts (fetched at discovery time) and
+ * Converts API-Football's own h2h array (real shots and corners, both from
+ * that meeting's own /fixtures/statistics) into the display shape used for
+ * Flashscore-sourced h2h meetings, so a curated-league fixture can show real
+ * head-to-head stats without the slow per-meeting Flashscore scrape. Shared
+ * by scripts/crawl-fixtures.ts (fetched at discovery time) and
  * scripts/generate-predictions.ts (fetched at prediction time, for rows
  * crawl-fixtures.ts didn't already attach this to).
  */
@@ -358,7 +372,7 @@ export function toDisplayH2h(apiFootball: ApiFootballPredictionContext, maxMeeti
       homeScore: meeting.homeScore,
       awayScore: meeting.awayScore,
       mid: "",
-      corners: null,
+      corners: meeting.corners ?? null,
       htCorners: null,
       cards: null,
       shots: meeting.totalShots ?? null,
