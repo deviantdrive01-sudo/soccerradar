@@ -321,3 +321,53 @@ export async function fetchApiFootballPredictionContext(fixtureId: number): Prom
     return null;
   }
 }
+
+/** Same shape the match page already renders for Flashscore-sourced h2h meetings (lib/supabase/types.ts's H2hMeeting), plus "mid" (always "" here — there's no real Flashscore match page behind one of these). */
+export interface DisplayH2hMeeting {
+  date: string;
+  competition: string;
+  home: string;
+  away: string;
+  homeScore: number;
+  awayScore: number;
+  mid: string;
+  corners: { home: number; away: number } | null;
+  htCorners: { home: number; away: number } | null;
+  cards: { home: number; away: number } | null;
+  shots: { home: number; away: number } | null;
+}
+
+/**
+ * Converts API-Football's own h2h array (real shots, no corners — it has
+ * none of its own) into the display shape used for Flashscore-sourced h2h
+ * meetings, so a curated-league fixture can show real head-to-head stats
+ * without the slow per-meeting Flashscore scrape. Shared by
+ * scripts/crawl-fixtures.ts (fetched at discovery time) and
+ * scripts/generate-predictions.ts (fetched at prediction time, for rows
+ * crawl-fixtures.ts didn't already attach this to).
+ */
+export function toDisplayH2h(apiFootball: ApiFootballPredictionContext, maxMeetings: number): DisplayH2hMeeting[] {
+  const result: DisplayH2hMeeting[] = [];
+  for (const meeting of apiFootball.h2h.slice(0, maxMeetings)) {
+    if (meeting.homeScore === null || meeting.awayScore === null) continue;
+    result.push({
+      date: new Date(meeting.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+      competition: "",
+      home: meeting.homeTeam,
+      away: meeting.awayTeam,
+      homeScore: meeting.homeScore,
+      awayScore: meeting.awayScore,
+      mid: "",
+      corners: null,
+      htCorners: null,
+      cards: null,
+      shots: meeting.totalShots ?? null,
+    });
+  }
+  return result;
+}
+
+/** Our established synthetic-placeholder convention for leagues without a confirmed real API-Football id (see supabase/migrations + admin/leagues) — never worth an API call. */
+export function hasRealApiLeagueId(apiLeagueId: number): boolean {
+  return apiLeagueId < 900000;
+}

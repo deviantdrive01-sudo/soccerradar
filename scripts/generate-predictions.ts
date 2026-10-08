@@ -31,7 +31,7 @@ import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { chromium, type Page } from "playwright";
 import { hydratePrediction, isCompactPrediction, type HydratedPrediction } from "../lib/hydrate";
-import { resolveApiFootballFixture, fetchApiFootballPredictionContext } from "../lib/api-football-context";
+import { resolveApiFootballFixture, fetchApiFootballPredictionContext, toDisplayH2h } from "../lib/api-football-context";
 import type { ApiFootballPredictionContext } from "../lib/supabase/types";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -380,7 +380,7 @@ async function main() {
 
   const { data: pending, error: pendingError } = await supabase
     .from("predictions")
-    .select("id, league_id, match_id, home_team, away_team, match_date, api_football_fixture_id")
+    .select("id, league_id, match_id, home_team, away_team, match_date, api_football_fixture_id, api_football_context, h2h")
     .is("markets", null)
     .gte("match_date", now.toISOString())
     .order("match_date", { ascending: true })
@@ -422,17 +422,22 @@ async function main() {
     // Discovered via crawl-fixtures.ts's API-Football fallback (Flashscore's
     // scrape missed it) — no real Flashscore page exists for this fixture at
     // all, so skip the H2H/corner scrape entirely and rely on API-Football
-    // context alone.
+    // context alone. crawl-fixtures.ts now fetches+stores that context at
+    // discovery time (see its "attach stats alongside fixtures" step), so
+    // the common case is just reusing it here — only re-fetch if that step
+    // failed or this row predates it.
     if (row.match_id.startsWith("af-")) {
       const apiFootballFixtureId = row.api_football_fixture_id;
-      const apiFootball = apiFootballFixtureId !== null ? await fetchApiFootballPredictionContext(apiFootballFixtureId) : null;
+      const apiFootball =
+        row.api_football_context ??
+        (apiFootballFixtureId !== null ? await fetchApiFootballPredictionContext(apiFootballFixtureId) : null);
       fixtureContexts.push({
         matchId: row.match_id,
         homeTeam: row.home_team,
         awayTeam: row.away_team,
         leagueName,
         kickoff: row.match_date,
-        stats: { headToHead: [], homeTeamForm: [], awayTeamForm: [] },
+        stats: { headToHead: row.h2h ?? [], homeTeamForm: [], awayTeamForm: [] },
         apiFootball,
         apiFootballFixtureId,
       });
@@ -442,9 +447,13 @@ async function main() {
     try {
       const h2h = await scrapeH2hSections(page, row.match_id);
 
-      let apiFootballFixtureId: number | null = null;
-      let apiFootball: FixtureContext["apiFootball"] = null;
-      if (league?.use_api_football) {
+      let apiFootballFixtureId: number | null = row.api_football_fixture_id;
+      let apiFootball: FixtureContext["apiFootball"] = row.api_football_context ?? null;
+      // Already fetched+stored by crawl-fixtures.ts at discovery time — the
+      // common case now that API-Football is the default discovery source.
+      // Only resolve+fetch here as a fallback for rows that predate that, or
+      // where it wasn't available (e.g. a Flashscore-only league).
+      if (!apiFootball && league?.use_api_football) {
         try {
           const match = await resolveApiFootballFixture(league.api_league_id, row.match_date, row.home_team, row.away_team);
           if (match) {
@@ -467,25 +476,9 @@ async function main() {
       // them and show API-Football's h2h (with real shots, no corners — it
       // has none of its own) instead of Flashscore's. Corners methodology
       // already has a documented current-form fallback for exactly this case.
-      const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] = [];
-      if (apiFootball) {
-        for (const meeting of apiFootball.h2h.slice(0, MAX_H2H_MEETINGS)) {
-          if (meeting.homeScore === null || meeting.awayScore === null) continue;
-          headToHeadWithCorners.push({
-            date: new Date(meeting.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-            competition: "",
-            home: meeting.homeTeam,
-            away: meeting.awayTeam,
-            homeScore: meeting.homeScore,
-            awayScore: meeting.awayScore,
-            mid: "",
-            corners: null,
-            htCorners: null,
-            cards: null,
-            shots: meeting.totalShots ?? null,
-          });
-        }
-      } else {
+      const headToHeadWithCorners: FixtureContext["stats"]["headToHead"] =
+        row.h2h ?? (apiFootball ? toDisplayH2h(apiFootball, MAX_H2H_MEETINGS) : []);
+      if (!row.h2h && !apiFootball) {
         for (const meeting of h2h.headToHead) {
           const { corners, htCorners, cards, shots } = await extractCorners(page, meeting.mid);
           headToHeadWithCorners.push({ ...meeting, corners, htCorners, cards, shots });

@@ -18,7 +18,10 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { LEAGUE_SOURCES, flashscoreFixturesUrl } from "../lib/league-sources";
 import { namesMatch } from "../lib/team-name-match";
-import { fetchApiFootballFixturesInRange } from "../lib/api-football-context";
+import { fetchApiFootballFixturesInRange, fetchApiFootballPredictionContext, toDisplayH2h, hasRealApiLeagueId } from "../lib/api-football-context";
+import type { ApiFootballPredictionContext } from "../lib/supabase/types";
+
+const MAX_H2H_MEETINGS = 4; // same cap generate-predictions.ts uses for its display h2h
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -142,8 +145,76 @@ async function main() {
     away_team: string;
     match_date: string;
     api_football_fixture_id?: number;
+    api_football_context?: ApiFootballPredictionContext | null;
+    h2h?: ReturnType<typeof toDisplayH2h> | null;
   }[] = [];
 
+  // ---------- API-Football discovery (default — runs first, for every league with a real api_league_id) ----------
+  // Primary source now: fast, HTTP-only, and fetches+attaches each fixture's
+  // stats (h2h with real shots, team/comparison context) right now, at
+  // discovery time — so the site has real stats as soon as the fixture
+  // appears, not only once a prediction is generated later. The Flashscore
+  // scrape below runs second and only as a gap-filler (it dedups against
+  // what's already queued here), since it can't attach stats this cheaply.
+  // Never blocks: a fetch failure just means this league (or this one
+  // fixture's stats) gets nothing extra this run.
+  for (const league of leagues) {
+    if (!hasRealApiLeagueId(league.api_league_id)) continue;
+
+    let discovered: Awaited<ReturnType<typeof fetchApiFootballFixturesInRange>>;
+    try {
+      discovered = await fetchApiFootballFixturesInRange(league.api_league_id, now, windowEnd);
+    } catch (e) {
+      console.log(`[${league.name}] API-Football fixture fetch failed: ${(e as Error).message}`);
+      continue;
+    }
+    if (discovered.length === 0) continue;
+
+    const { data: existing } = await supabase
+      .from("predictions")
+      .select("home_team, away_team")
+      .eq("league_id", league.id)
+      .gte("match_date", now.toISOString())
+      .lte("match_date", windowEnd.toISOString());
+
+    const alreadyQueued = newRows.filter((r) => r.league_id === league.id);
+
+    for (const fixture of discovered) {
+      const t = new Date(fixture.kickoff).getTime();
+      if (t < now.getTime() || t > windowEnd.getTime()) continue;
+
+      const known = [...(existing ?? []), ...alreadyQueued].some(
+        (r) => namesMatch(r.home_team, fixture.homeTeam) && namesMatch(r.away_team, fixture.awayTeam),
+      );
+      if (known) continue;
+
+      let apiFootballContext: ApiFootballPredictionContext | null = null;
+      try {
+        apiFootballContext = await fetchApiFootballPredictionContext(fixture.fixtureId);
+      } catch (e) {
+        console.log(`[${league.name}] API-Football stats fetch failed for fixture ${fixture.fixtureId}: ${(e as Error).message}`);
+      }
+
+      newRows.push({
+        league_id: league.id,
+        match_id: `af-${fixture.fixtureId}`,
+        home_team: fixture.homeTeam,
+        away_team: fixture.awayTeam,
+        match_date: fixture.kickoff,
+        api_football_fixture_id: fixture.fixtureId,
+        api_football_context: apiFootballContext,
+        h2h: apiFootballContext ? toDisplayH2h(apiFootballContext, MAX_H2H_MEETINGS) : null,
+      });
+    }
+  }
+
+  // ---------- Flashscore scrape (secondary — fills gaps API-Football missed) ----------
+  // No stats attached here (Flashscore's own per-meeting scrape only
+  // happens later, in generate-predictions.ts, same as before) — this pass
+  // exists purely to catch fixtures API-Football's /fixtures endpoint
+  // didn't have (coverage gaps, or a league with only a placeholder
+  // api_league_id). API_FOOTBALL_ONLY skips this entirely for a faster,
+  // API-Football-only ad-hoc run.
   if (apiFootballOnly) {
     console.log("API_FOOTBALL_ONLY set — skipping the Flashscore browser scrape entirely.");
   } else {
@@ -185,11 +256,13 @@ async function main() {
         .gte("match_date", now.toISOString())
         .lte("match_date", windowEnd.toISOString());
 
+      const alreadyQueued = newRows.filter((r) => r.league_id === league.id);
+
       for (const row of upcoming) {
-        const alreadyExists = (existing ?? []).some(
+        const known = [...(existing ?? []), ...alreadyQueued].some(
           (p) => namesMatch(p.home_team, row.home) && namesMatch(p.away_team, row.away),
         );
-        if (!alreadyExists) {
+        if (!known) {
           newRows.push({
             league_id: league.id,
             match_id: row.matchId,
@@ -202,53 +275,6 @@ async function main() {
     }
 
     await browser.close();
-  }
-
-  // ---------- API-Football fallback discovery ----------
-  // Normally curated leagues only — additive, not conditional on the
-  // Flashscore scrape above having failed (a stable scrape can still
-  // individually miss a fixture). API_FOOTBALL_ONLY widens this to every
-  // league with a real api_league_id, for an ad-hoc API-Football-only crawl.
-  // Never blocks: a fetch failure just means this league gets nothing extra.
-  for (const league of leagues) {
-    if (!league.use_api_football && !apiFootballOnly) continue;
-
-    let discovered: Awaited<ReturnType<typeof fetchApiFootballFixturesInRange>>;
-    try {
-      discovered = await fetchApiFootballFixturesInRange(league.api_league_id, now, windowEnd);
-    } catch (e) {
-      console.log(`[${league.name}] API-Football fixture fetch failed: ${(e as Error).message}`);
-      continue;
-    }
-    if (discovered.length === 0) continue;
-
-    const { data: existing } = await supabase
-      .from("predictions")
-      .select("home_team, away_team")
-      .eq("league_id", league.id)
-      .gte("match_date", now.toISOString())
-      .lte("match_date", windowEnd.toISOString());
-
-    const alreadyQueued = newRows.filter((r) => r.league_id === league.id);
-
-    for (const fixture of discovered) {
-      const t = new Date(fixture.kickoff).getTime();
-      if (t < now.getTime() || t > windowEnd.getTime()) continue;
-
-      const known = [...(existing ?? []), ...alreadyQueued].some(
-        (r) => namesMatch(r.home_team, fixture.homeTeam) && namesMatch(r.away_team, fixture.awayTeam),
-      );
-      if (!known) {
-        newRows.push({
-          league_id: league.id,
-          match_id: `af-${fixture.fixtureId}`,
-          home_team: fixture.homeTeam,
-          away_team: fixture.awayTeam,
-          match_date: fixture.kickoff,
-          api_football_fixture_id: fixture.fixtureId,
-        });
-      }
-    }
   }
 
   if (newRows.length === 0) {
