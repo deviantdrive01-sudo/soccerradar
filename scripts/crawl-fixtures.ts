@@ -120,11 +120,18 @@ async function main() {
   }
 
   const sourceByLeagueId = new Map(LEAGUE_SOURCES.map((s) => [s.leagueId, s]));
-  const now = new Date();
-  const windowEnd = new Date(now.getTime() + FIXTURE_WINDOW_DAYS * 24 * 3600 * 1000);
-
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ userAgent: USER_AGENT });
+  // Ad-hoc custom window (e.g. WINDOW_FROM=2026-10-09 WINDOW_TO=2026-10-12 to
+  // seed a specific weekend) — both unset in the scheduled workflow, so the
+  // normal run still just looks FIXTURE_WINDOW_DAYS ahead of right now.
+  const now = process.env.WINDOW_FROM ? new Date(`${process.env.WINDOW_FROM}T00:00:00Z`) : new Date();
+  const windowEnd = process.env.WINDOW_TO
+    ? new Date(`${process.env.WINDOW_TO}T23:59:59Z`)
+    : new Date(now.getTime() + FIXTURE_WINDOW_DAYS * 24 * 3600 * 1000);
+  // Skip the slow Flashscore browser scrape entirely and discover fixtures
+  // for every league (not just curated ones) via API-Football's fast,
+  // HTTP-only /fixtures endpoint instead — for leagues with a real
+  // api_league_id, this is both faster and covers the same ground.
+  const apiFootballOnly = process.env.API_FOOTBALL_ONLY === "1";
 
   const noSlugLeagues: string[] = [];
   const unstableLeagues: string[] = [];
@@ -137,66 +144,74 @@ async function main() {
     api_football_fixture_id?: number;
   }[] = [];
 
-  for (const league of leagues) {
-    const source = sourceByLeagueId.get(league.id);
-    if (!source) {
-      noSlugLeagues.push(league.name);
-      continue;
-    }
+  if (apiFootballOnly) {
+    console.log("API_FOOTBALL_ONLY set — skipping the Flashscore browser scrape entirely.");
+  } else {
+    const browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage({ userAgent: USER_AGENT });
 
-    const url = flashscoreFixturesUrl(source.slug);
-    let snapshots: FixtureRow[][];
-    try {
-      snapshots = [await scrapeFixturesOnce(page, url), await scrapeFixturesOnce(page, url), await scrapeFixturesOnce(page, url)];
-    } catch (e) {
-      console.log(`[${league.name}] scrape failed: ${(e as Error).message}`);
-      unstableLeagues.push(league.name);
-      continue;
-    }
-    if (!rowsEqual(snapshots[0], snapshots[1]) || !rowsEqual(snapshots[1], snapshots[2])) {
-      console.log(`[${league.name}] fixtures page unstable across reloads, skipping`);
-      unstableLeagues.push(league.name);
-      continue;
-    }
+    for (const league of leagues) {
+      const source = sourceByLeagueId.get(league.id);
+      if (!source) {
+        noSlugLeagues.push(league.name);
+        continue;
+      }
 
-    const upcoming = snapshots[0].filter((r) => {
-      const t = new Date(r.kickoff).getTime();
-      return t >= now.getTime() && t <= windowEnd.getTime();
-    });
-    if (upcoming.length === 0) continue;
+      const url = flashscoreFixturesUrl(source.slug);
+      let snapshots: FixtureRow[][];
+      try {
+        snapshots = [await scrapeFixturesOnce(page, url), await scrapeFixturesOnce(page, url), await scrapeFixturesOnce(page, url)];
+      } catch (e) {
+        console.log(`[${league.name}] scrape failed: ${(e as Error).message}`);
+        unstableLeagues.push(league.name);
+        continue;
+      }
+      if (!rowsEqual(snapshots[0], snapshots[1]) || !rowsEqual(snapshots[1], snapshots[2])) {
+        console.log(`[${league.name}] fixtures page unstable across reloads, skipping`);
+        unstableLeagues.push(league.name);
+        continue;
+      }
 
-    const { data: existing } = await supabase
-      .from("predictions")
-      .select("home_team, away_team")
-      .eq("league_id", league.id)
-      .gte("match_date", now.toISOString())
-      .lte("match_date", windowEnd.toISOString());
+      const upcoming = snapshots[0].filter((r) => {
+        const t = new Date(r.kickoff).getTime();
+        return t >= now.getTime() && t <= windowEnd.getTime();
+      });
+      if (upcoming.length === 0) continue;
 
-    for (const row of upcoming) {
-      const alreadyExists = (existing ?? []).some(
-        (p) => namesMatch(p.home_team, row.home) && namesMatch(p.away_team, row.away),
-      );
-      if (!alreadyExists) {
-        newRows.push({
-          league_id: league.id,
-          match_id: row.matchId,
-          home_team: row.home,
-          away_team: row.away,
-          match_date: row.kickoff,
-        });
+      const { data: existing } = await supabase
+        .from("predictions")
+        .select("home_team, away_team")
+        .eq("league_id", league.id)
+        .gte("match_date", now.toISOString())
+        .lte("match_date", windowEnd.toISOString());
+
+      for (const row of upcoming) {
+        const alreadyExists = (existing ?? []).some(
+          (p) => namesMatch(p.home_team, row.home) && namesMatch(p.away_team, row.away),
+        );
+        if (!alreadyExists) {
+          newRows.push({
+            league_id: league.id,
+            match_id: row.matchId,
+            home_team: row.home,
+            away_team: row.away,
+            match_date: row.kickoff,
+          });
+        }
       }
     }
+
+    await browser.close();
   }
 
-  await browser.close();
-
-  // ---------- API-Football fallback discovery (curated leagues only) ----------
-  // Additive, not conditional on the Flashscore scrape above having failed —
-  // a stable scrape can still individually miss a fixture (e.g. a late
-  // scheduling change one source has and the other doesn't). Never blocks:
-  // a fetch failure just means this league gets nothing extra this run.
+  // ---------- API-Football fallback discovery ----------
+  // Normally curated leagues only — additive, not conditional on the
+  // Flashscore scrape above having failed (a stable scrape can still
+  // individually miss a fixture). API_FOOTBALL_ONLY widens this to every
+  // league with a real api_league_id, for an ad-hoc API-Football-only crawl.
+  // Never blocks: a fetch failure just means this league gets nothing extra.
   for (const league of leagues) {
-    if (!league.use_api_football) continue;
+    if (!league.use_api_football && !apiFootballOnly) continue;
 
     let discovered: Awaited<ReturnType<typeof fetchApiFootballFixturesInRange>>;
     try {
