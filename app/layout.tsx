@@ -106,7 +106,7 @@ export const metadata: Metadata = {
     "AI match predictions",
     "over 2.5 goals prediction",
     "correct score prediction",
-    "football betting tips",
+    "football match tips",
   ],
   robots: { index: true, follow: true },
   alternates: { canonical: "/" },

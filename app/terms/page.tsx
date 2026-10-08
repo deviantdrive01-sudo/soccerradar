@@ -25,12 +25,11 @@ export default function TermsOfUsePage() {
       </div>
 
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed">
-        <p className="font-semibold text-foreground">SoccerRadar is informational and entertainment content, not betting advice.</p>
+        <p className="font-semibold text-foreground">SoccerRadar is informational and entertainment content, not professional advice.</p>
         <p className="mt-1 text-muted-foreground">
-          Predictions reflect statistical probability, not certainty. Nothing on this site is betting, financial, or
-          professional advice, and we accept no responsibility for decisions made using it, including any wagers
-          placed. If you choose to bet, do so responsibly, within your means, only where legal in your jurisdiction,
-          and only if you are of legal age to do so.
+          Predictions reflect statistical probability, not certainty. Nothing on this site is financial or
+          professional advice, and we accept no responsibility for decisions made using it. Act responsibly, within
+          your means, only where legal in your jurisdiction, and only if you are of legal age to do so.
         </p>
       </div>
 
@@ -46,8 +45,8 @@ export default function TermsOfUsePage() {
         <p>
           SoccerRadar publishes AI-generated football match predictions across a range of statistical markets
           (outcome, goals, corners, and others), along with a public track record grading every prediction against
-          what actually happened. It is a prediction and analysis tool, not a bookmaker, sportsbook, or gambling
-          operator — we don&apos;t accept wagers, hold funds, or facilitate betting of any kind.
+          what actually happened. It is a prediction and analysis tool — we don&apos;t accept payments, hold funds, or
+          facilitate transactions of any kind.
         </p>
       </Section>
 
@@ -66,7 +65,7 @@ export default function TermsOfUsePage() {
       <Section title="Mixes and public content">
         <p>
           A &ldquo;Mix&rdquo; is a personal list of picks you assemble from our predictions, purely for tracking and
-          sharing — not a real wager, and no money changes hands through it. If you choose to make a Mix or
+          sharing — not a real transaction, and no money changes hands through it. If you choose to make a Mix or
           Collection public, its title, picks, and your username become visible to other visitors and may appear in
           site features like the Top Mixes leaderboard.
         </p>
@@ -81,7 +80,7 @@ export default function TermsOfUsePage() {
         <ul className="list-disc space-y-1 pl-5">
           <li>Don&apos;t attempt to disrupt, overload, or scrape the site in a way that harms its availability for others.</li>
           <li>Don&apos;t attempt to circumvent account, rate-limit, or access controls.</li>
-          <li>Don&apos;t use the site to violate any applicable law, including gambling laws in your jurisdiction.</li>
+          <li>Don&apos;t use the site to violate any applicable law in your jurisdiction.</li>
         </ul>
       </Section>
 
@@ -100,7 +99,7 @@ export default function TermsOfUsePage() {
         <p>
           To the fullest extent permitted by law, SoccerRadar and its operators aren&apos;t liable for any loss or
           damage arising from your use of the site or reliance on any prediction, including financial losses from
-          bets placed based on information found here.
+          decisions made based on information found here.
         </p>
       </Section>
 

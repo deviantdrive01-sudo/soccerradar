@@ -29,9 +29,9 @@ export default function PrivacyPolicyPage() {
         <p className="mt-1 text-muted-foreground">
           Every prediction on SoccerRadar is generated from team form, head-to-head history, and other statistical
           and performance data. They reflect probability, not certainty — no outcome is assured. Nothing on this
-          site is betting, financial, or professional advice, and we accept no responsibility for decisions made
-          using it, including any wagers placed. If you choose to bet, do so responsibly, within your means, and
-          only where legal in your jurisdiction and you are of legal age to do so.
+          site is financial or professional advice, and we accept no responsibility for decisions made using it.
+          Act responsibly, within your means, and only where legal in your jurisdiction and you are of legal age to
+          do so.
         </p>
       </div>
 

@@ -93,7 +93,7 @@ export default async function TopBookingsPage() {
           <a href={`${SITE_URL}/accuracy`} className="underline hover:text-foreground">
             Track Record
           </a>
-          . No cherry-picking, nothing held back. A Mix is a personal prediction list, not a real wager — see our{" "}
+          . No cherry-picking, nothing held back. A Mix is a personal prediction list, not a real transaction — see our{" "}
           <a href={`${SITE_URL}/terms`} className="underline hover:text-foreground">
             Terms
           </a>
