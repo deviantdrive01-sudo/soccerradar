@@ -120,6 +120,7 @@ export function MatchCard({
   const showDrawOrOver = marketFilter === "all" || marketFilter === "drawOrOver";
   const showGoals = marketFilter === "all" || marketFilter === "goals";
   const showCorners = marketFilter === "all" || marketFilter === "corners";
+  const showShots = marketFilter === "all" || marketFilter === "shots";
   const markets = prediction.markets;
   const winEitherHalf = winEitherHalfCode(markets);
 
@@ -188,6 +189,7 @@ export function MatchCard({
                 <PickBadge label="1HC3.5" value={markets.corners.firstHalfOver3_5} tone="sky" />
               </>
             )}
+            {showShots && <PickBadge label="S22.5" value={markets.shots?.over22_5 ?? null} tone="sky" />}
           </div>
         )}
 

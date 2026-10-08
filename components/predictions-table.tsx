@@ -56,6 +56,7 @@ export function PredictionsTable({
   const showDrawOrOver = marketFilter === "all" || marketFilter === "drawOrOver";
   const showGoals = marketFilter === "all" || marketFilter === "goals";
   const showCorners = marketFilter === "all" || marketFilter === "corners";
+  const showShots = marketFilter === "all" || marketFilter === "shots";
   // Most predictions are pre-match — don't waste a column on "–" when nothing in view has settled yet.
   const showResult = predictions.some((p) => p.actual_result !== null);
 
@@ -68,6 +69,7 @@ export function PredictionsTable({
     (showDrawOrOver ? 1 : 0) +
     (showGoals ? 2 : 0) +
     (showCorners ? 2 : 0) +
+    (showShots ? 1 : 0) +
     1 + // Confidence
     (rowAction ? 1 : 0);
 
@@ -95,6 +97,7 @@ export function PredictionsTable({
             {showGoals && <TableHead className={cn(CELL, "text-center")}>O2.5</TableHead>}
             {showCorners && <TableHead className={cn(CELL, "text-center")}>C7.5</TableHead>}
             {showCorners && <TableHead className={cn(CELL, "text-center")}>1H C3.5</TableHead>}
+            {showShots && <TableHead className={cn(CELL, "text-center")}>S22.5</TableHead>}
             <TableHead className={cn(CELL, "text-center")}>Conf</TableHead>
           </TableRow>
         </TableHeader>
@@ -202,6 +205,11 @@ export function PredictionsTable({
                   {showCorners && (
                     <TableCell className={cn(CELL, "text-center")}>
                       <YesNo value={m ? m.corners.firstHalfOver3_5 : null} />
+                    </TableCell>
+                  )}
+                  {showShots && (
+                    <TableCell className={cn(CELL, "text-center")}>
+                      <YesNo value={m ? (m.shots?.over22_5 ?? null) : null} />
                     </TableCell>
                   )}
                   <TableCell className={cn(CELL, "text-center")}>

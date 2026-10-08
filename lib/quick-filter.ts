@@ -13,7 +13,8 @@ export type QuickFilter =
   | "over2_5Yes"
   | "winEitherYes"
   | "ftDrawYes"
-  | "drawOrOverYes";
+  | "drawOrOverYes"
+  | "totalShotsH2hAvg20Yes";
 
 export interface QuickFilterOption {
   value: QuickFilter;
@@ -86,6 +87,14 @@ export const QUICK_FILTER_OPTIONS: QuickFilterOption[] = [
     marketFilter: "drawOrOver",
     marketKey: "drawOrOver2_5",
   },
+  {
+    value: "totalShotsH2hAvg20Yes",
+    label: "Total Shots: Yes",
+    slug: "total-shots",
+    collectionTitle: "Total Shots",
+    marketFilter: "shots",
+    marketKey: "totalShotsOver22_5",
+  },
 ];
 
 export function quickFilterOptionBySlug(slug: string): QuickFilterOption | undefined {
@@ -94,6 +103,16 @@ export function quickFilterOptionBySlug(slug: string): QuickFilterOption | undef
 
 export function matchesQuickFilter(prediction: Prediction, filter: QuickFilter): boolean {
   if (filter === QUICK_FILTER_NONE) return true;
+  // Pure h2h-stat evidence, independent of whether a prediction exists yet
+  // (unlike every other filter below) — so it's checked before the "no
+  // markets yet" bailout, letting a fixture qualify purely on real
+  // historical shot counts even while its AI prediction is still pending.
+  if (filter === "totalShotsH2hAvg20Yes") {
+    const samples = (prediction.h2h ?? []).map((meeting) => meeting.shots).filter((s): s is { home: number; away: number } => !!s);
+    if (samples.length === 0) return false;
+    const avgTotal = samples.reduce((sum, s) => sum + s.home + s.away, 0) / samples.length;
+    return avgTotal >= 20;
+  }
   const m = prediction.markets;
   if (!m) return false; // no prediction yet — can't match any specific market filter
   switch (filter) {

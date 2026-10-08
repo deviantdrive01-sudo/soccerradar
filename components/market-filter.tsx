@@ -11,7 +11,8 @@ export type MarketFilter =
   | "winEitherHalf"
   | "drawOrOver"
   | "goals"
-  | "corners";
+  | "corners"
+  | "shots";
 
 const OPTIONS: { value: MarketFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -21,6 +22,7 @@ const OPTIONS: { value: MarketFilter; label: string }[] = [
   { value: "drawOrOver", label: "Draw/O2.5" },
   { value: "goals", label: "Goals" },
   { value: "corners", label: "Corners" },
+  { value: "shots", label: "Shots" },
 ];
 
 export function MarketFilterToggle({
