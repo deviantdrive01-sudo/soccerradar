@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import { createSupabaseReadClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +28,31 @@ import type { Prediction, League } from "@/lib/supabase/types";
 
 export const revalidate = 300;
 
-async function getMatchData(id: number): Promise<{ prediction: Prediction; league: League | null } | null> {
+interface NextMatch {
+  id: number;
+  home_team: string;
+  away_team: string;
+}
+
+async function getMatchData(
+  id: number,
+): Promise<{ prediction: Prediction; league: League | null; nextMatch: NextMatch | null } | null> {
   const supabase = createSupabaseReadClient();
   const { data: prediction } = await supabase.from("predictions").select("*").eq("id", id).maybeSingle();
   if (!prediction) return null;
-  const { data: league } = await supabase.from("leagues").select("*").eq("id", prediction.league_id).maybeSingle();
-  return { prediction, league: league ?? null };
+  const [{ data: league }, { data: nextMatch }] = await Promise.all([
+    supabase.from("leagues").select("*").eq("id", prediction.league_id).maybeSingle(),
+    supabase
+      .from("predictions")
+      .select("id, home_team, away_team")
+      .eq("league_id", prediction.league_id)
+      .gt("match_date", prediction.match_date)
+      .order("match_date", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  return { prediction, league: league ?? null, nextMatch: nextMatch ?? null };
 }
 
 export async function generateMetadata({ params }: PageProps<"/match/[id]">): Promise<Metadata> {
@@ -66,6 +87,24 @@ function ConfidenceSuffix({ markets, marketKey }: { markets: HydratedMarkets; ma
   const confidence = marketConfidence(markets, marketKey);
   if (confidence === null) return null;
   return <span className="ml-1 opacity-70">{confidence}%</span>;
+}
+
+function NextMatchLink({ nextMatch, leagueName }: { nextMatch: NextMatch | null; leagueName: string }) {
+  if (!nextMatch) return null;
+  return (
+    <Link
+      href={`/match/${nextMatch.id}`}
+      className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+    >
+      <span className="text-muted-foreground">Next in {leagueName}</span>
+      <span className="flex min-w-0 items-center gap-1 font-medium text-foreground">
+        <span className="truncate">
+          {nextMatch.home_team} vs {nextMatch.away_team}
+        </span>
+        <ArrowRight className="size-4 shrink-0" />
+      </span>
+    </Link>
+  );
 }
 
 /**
@@ -154,9 +193,10 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
 
   const data = await getMatchData(numericId);
   if (!data) notFound();
-  const { prediction, league } = data;
+  const { prediction, league, nextMatch } = data;
 
   const kickoff = new Date(prediction.match_date);
+  const leagueName = league ? `${league.country} · ${league.name}` : "this league";
 
   if (!isPredicted(prediction)) {
     return (
@@ -203,6 +243,8 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
 
           <H2hStatsBox h2h={prediction.h2h} />
         </div>
+
+        <NextMatchLink nextMatch={nextMatch} leagueName={leagueName} />
 
         <AdSlot orientation="horizontal" />
       </main>
@@ -452,6 +494,8 @@ export default async function MatchPage({ params }: PageProps<"/match/[id]">) {
           </div>
         )}
       </div>
+
+      <NextMatchLink nextMatch={nextMatch} leagueName={leagueName} />
 
       <AdSlot orientation="horizontal" />
     </main>
