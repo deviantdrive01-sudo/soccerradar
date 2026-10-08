@@ -1,0 +1,39 @@
+name: Generate stat predictions
+
+on:
+  schedule:
+    # Every 2 hours, 30 min after crawl-fixtures (:13) so freshly-crawled
+    # fixtures (with api_football_context already attached at crawl time)
+    # are there to pick up. Same slot the old Claude-based generate-
+    # predictions.yml used — that workflow is disabled now that this one
+    # covers prediction generation, no LLM involved.
+    - cron: "43 */2 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: generate-stat-predictions
+  cancel-in-progress: false
+
+jobs:
+  generate-stat-predictions:
+    runs-on: ubuntu-latest
+    # No Playwright here — the stat engine is pure computation over
+    # already-stored api_football_context, no scraping or external API
+    # calls at all, so this job is fast and has no headless-browser
+    # dependency to install.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Run stat-engine prediction generation
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/generate-stat-predictions.ts

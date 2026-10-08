@@ -8,9 +8,12 @@
  * (same reasoning as lib/api-football-context.ts: needs to run from a
  * plain-tsx script, not just inside Next's server runtime).
  *
- * This is a shadow/experimental second engine (see scripts/generate-stat-
- * predictions.ts + scripts/compare-engines.ts) — it does not touch
- * `predictions.markets`, which stays 100% Claude-sourced on the live site.
+ * As of 2026-10, this is the live engine for every fixture that didn't
+ * already have a Claude-generated prediction (see scripts/generate-stat-
+ * predictions.ts, which writes into `predictions.markets` for rows where
+ * it's still null) — the ~831 already-published, already-graded Claude
+ * predictions are left untouched; this only fills in what's still empty.
+ * scripts/compare-engines.ts remains for comparing the two going forward.
  *
  * Deliberately simple: independent-Poisson is the standard baseline real
  * statistical models start from, before Dixon-Coles-style low-score
@@ -235,3 +238,12 @@ export function computeStatPrediction(context: ApiFootballPredictionContext): St
 
 const OUTCOME_LABELS: Record<OutcomeCode, string> = { "1": "Home Win", X: "Draw", "2": "Away Win" };
 const SCORING_HALF_LABELS: Record<ScoringHalfCode, string> = { "1st": "First Half", "2nd": "Second Half", Equal: "Evenly Split" };
+
+/** A plain templated sentence — no LLM, so no real "tactical reasoning", just stating what the numbers say. Written to predictions.summary, which the match page displays prominently. */
+export function statEngineSummary(prediction: StatEnginePrediction, homeTeam: string, awayTeam: string): string {
+  const { markets } = prediction;
+  const favored = markets.outcome.code === "1" ? homeTeam : markets.outcome.code === "2" ? awayTeam : null;
+  const outcomeText = favored ? `${favored} favored to win` : "a close game, leaning toward a draw";
+  const goalsText = markets.goals.over2_5 ? "over 2.5 goals expected" : "a tighter, lower-scoring game expected";
+  return `Stat model (Poisson-based on current scoring form — no AI judgment involved): ${outcomeText}, ${goalsText}.`;
+}

@@ -1,16 +1,18 @@
 /**
- * Populates `stat_predictions` — the shadow, stat-only engine's output —
- * for every prediction row that already has `api_football_context` stored
- * (attached at crawl time now, see scripts/crawl-fixtures.ts) but doesn't
- * have a stat prediction yet. Pure computation, no network calls: see
- * lib/stat-engine.ts for the actual Poisson math.
- *
- * Manual/ad-hoc only for now (not wired into a GitHub Actions workflow) —
- * this is a shadow engine being validated against Claude via
- * scripts/compare-engines.ts, not live infrastructure yet.
+ * Computes the stat-only engine's output (lib/stat-engine.ts — pure
+ * computation, no network calls) for every prediction row that has
+ * `api_football_context` stored (attached at crawl time, see
+ * scripts/crawl-fixtures.ts) but no stat prediction yet, and:
+ *   1. always writes it to `stat_predictions` (comparison/audit trail,
+ *      see scripts/compare-engines.ts), and
+ *   2. ALSO writes it into `predictions.markets`/`confidence`/`summary`
+ *      when that row's `markets` is still null — i.e. this is now the live
+ *      engine for any fixture that didn't already get a Claude prediction.
+ *      Rows that already have a (published, possibly already-graded)
+ *      Claude prediction are never touched.
  */
 import { createClient } from "@supabase/supabase-js";
-import { computeStatPrediction } from "../lib/stat-engine";
+import { computeStatPrediction, statEngineSummary } from "../lib/stat-engine";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,7 +31,7 @@ async function main() {
 
   const { data: rows, error } = await supabase
     .from("predictions")
-    .select("id, home_team, away_team, api_football_context")
+    .select("id, home_team, away_team, markets, api_football_context")
     .not("api_football_context", "is", null);
 
   if (error) {
@@ -48,7 +50,9 @@ async function main() {
 
   let computed = 0;
   let skipped = 0;
-  const writes: { prediction_id: number; markets: unknown; confidence: number; inputs: unknown }[] = [];
+  let liveFilled = 0;
+  const shadowWrites: { prediction_id: number; markets: unknown; confidence: number; inputs: unknown }[] = [];
+  const liveUpdates: { id: number; markets: unknown; confidence: number; summary: string }[] = [];
 
   for (const row of targetRows) {
     const result = computeStatPrediction(row.api_football_context);
@@ -56,25 +60,47 @@ async function main() {
       skipped++;
       continue;
     }
-    writes.push({
+    shadowWrites.push({
       prediction_id: row.id,
       markets: result.markets,
       confidence: result.confidence,
       inputs: result.inputs,
     });
     computed++;
+
+    if (row.markets === null) {
+      liveUpdates.push({
+        id: row.id,
+        markets: result.markets,
+        confidence: result.confidence,
+        summary: statEngineSummary(result, row.home_team, row.away_team),
+      });
+      liveFilled++;
+    }
   }
 
-  if (writes.length > 0) {
-    const { error: upsertError } = await supabase.from("stat_predictions").upsert(writes, { onConflict: "prediction_id" });
+  if (shadowWrites.length > 0) {
+    const { error: upsertError } = await supabase.from("stat_predictions").upsert(shadowWrites, { onConflict: "prediction_id" });
     if (upsertError) {
       console.error("Failed to write stat predictions:", upsertError.message);
       process.exit(1);
     }
   }
 
+  for (const update of liveUpdates) {
+    const { error: liveError } = await supabase
+      .from("predictions")
+      .update({ markets: update.markets, confidence: update.confidence, summary: update.summary })
+      .eq("id", update.id)
+      .is("markets", null); // belt-and-suspenders: never overwrite a prediction that landed between our read and this write
+    if (liveError) {
+      console.error(`Failed to write live prediction for id ${update.id}:`, liveError.message);
+    }
+  }
+
   console.log("\n=== Generate-stat-predictions summary ===");
-  console.log(`Computed & written: ${computed}`);
+  console.log(`Computed & written to stat_predictions: ${computed}`);
+  console.log(`Also filled in predictions.markets (was null): ${liveFilled}`);
   console.log(`Skipped (missing goalsForAvg/goalsAgainstAvg): ${skipped}`);
 }
 
